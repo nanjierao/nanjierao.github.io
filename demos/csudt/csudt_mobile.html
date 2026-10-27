@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0e1420"/>
+<title>CS-UDT — Citizen Client (zero install)</title>
+<style>
+  :root{
+    --bg:#0e1420; --panel:#161f2e; --panel2:#1c2739; --line:#2a3950;
+    --text:#e8eef7; --muted:#8fa1b8; --accent:#4da3ff; --warn:#ffb347; --bad:#ff5d5d; --good:#43d17c; --purple:#c77dff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:76px;}
+  header{position:sticky; top:0; z-index:5; background:var(--panel); border-bottom:1px solid var(--line); padding:10px 14px; display:flex; align-items:center; gap:10px;}
+  header h1{font-size:15px; font-weight:800;} header h1 span{color:var(--accent);}
+  .hstat{margin-left:auto; display:flex; gap:8px; font-size:12px; font-weight:700;}
+  .hstat b{color:var(--accent);} .hstat .fire{color:var(--warn);}
+  #storm{background:#3a1220; border-bottom:1px solid #5c2233; color:#ffb3b3; font-size:11.5px; font-weight:700; padding:7px 14px;}
+  main{padding:14px; display:flex; flex-direction:column; gap:12px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px;}
+  .card h2{font-size:10.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:10px; font-weight:800;}
+  .big{font-size:40px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .unit{color:var(--muted); font-size:14px;}
+  .muted{color:var(--muted); font-size:11.5px; line-height:16px;}
+  .btn{display:block; width:100%; background:var(--accent); color:#04101f; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:800; cursor:pointer;}
+  .btn.sub{background:var(--panel2); color:var(--text); border:1px solid var(--line); font-weight:600; font-size:13px; padding:10px;}
+  .btn:disabled{opacity:.45;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{background:var(--panel2); border:1px solid var(--line); border-radius:16px; padding:8px 12px; font-size:13px; color:var(--muted); cursor:pointer;}
+  .chip.on{background:#0d2b4d; border-color:var(--accent); color:#9fd0ff; font-weight:700;}
+  .sevrow{display:flex; gap:8px;}
+  .sev{flex:1; height:38px; border-radius:9px; background:var(--panel2); border:1px solid var(--line); color:var(--text); font-weight:800; cursor:pointer;}
+  .sev.on{background:var(--warn); color:#3a2600; border-color:var(--warn);}
+  .sev.on.hi{background:var(--bad); color:#fff; border-color:var(--bad);}
+  textarea{width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:10px; color:var(--text); padding:11px; min-height:64px; font-size:14px;}
+  select{width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:10px; color:var(--text); padding:11px; font-size:14px;}
+  .photo{width:100%; border-radius:10px; max-height:200px; object-fit:cover; display:block;}
+  .filebox{border:1.5px dashed var(--line); border-radius:12px; padding:18px; text-align:center; color:var(--muted); font-size:13px; cursor:pointer;}
+  input[type=file]{display:none;}
+  .feeditem{display:flex; flex-direction:column; gap:7px;}
+  .fhead{display:flex; align-items:center; gap:8px; font-size:12.5px;}
+  .fuser{font-weight:800;} .ftime{color:#5c6b80; font-size:11px;}
+  .pill{margin-left:auto; font-size:10px; font-weight:800; color:#04101f; border-radius:9px; padding:3px 8px;}
+  .ftxt{font-size:13.5px; line-height:19px; color:#c7d2e0;}
+  .frow{display:flex; align-items:center; gap:8px;}
+  .llm{background:#2a0d3a; color:#e0a8ff; font-size:10px; font-weight:700; border-radius:8px; padding:3px 7px;}
+  .statechip{font-size:10px; font-weight:700; border-radius:8px; padding:3px 7px;}
+  .st1{background:#2a3950; color:#8fa1b8;} .st2{background:#4d3a0d; color:#ffd58a;} .st3{background:#0d3a22; color:#7dffb0;}
+  .pts{margin-left:auto; color:var(--good); font-size:12px; font-weight:800;}
+  .kudos{background:var(--panel2); border:1px solid var(--line); border-radius:10px; color:var(--text); padding:5px 11px; font-size:12.5px; cursor:pointer;}
+  .questcard{border-left:4px solid var(--purple);}
+  .questbtns{display:flex; gap:8px; margin-top:10px;}
+  .qb{flex:1; border-radius:10px; border:1px solid var(--line); background:var(--panel2); color:var(--text); padding:11px 4px; font-size:12.5px; font-weight:700; cursor:pointer;}
+  .qb.yes{background:#0d3a22; border-color:var(--good); color:#7dffb0;}
+  .done{opacity:.55;}
+  nav{position:fixed; bottom:0; left:0; right:0; display:flex; background:var(--panel); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom);}
+  nav button{flex:1; background:none; border:none; color:var(--muted); font-size:11px; font-weight:700; padding:9px 0 7px; cursor:pointer;}
+  nav button .ico{display:block; font-size:19px; margin-bottom:2px;}
+  nav button.on{color:var(--accent);}
+  .view{display:none;} .view.on{display:flex; flex-direction:column; gap:12px;}
+  #toast{position:fixed; left:50%; bottom:86px; transform:translateX(-50%) translateY(20px); background:#0d3a22; color:#7dffb0; border:1px solid var(--good); border-radius:12px; padding:10px 16px; font-size:13.5px; font-weight:800; opacity:0; transition:all .25s; pointer-events:none; z-index:9; max-width:88vw; text-align:center;}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .bars{display:flex; align-items:flex-end; gap:2px; height:34px; margin-top:8px;}
+  .bars i{width:5px; background:var(--accent); border-radius:2px; display:block;}
+  .badge{background:#241d10; color:#ffd166; border-radius:9px; padding:5px 9px; font-size:12px; font-weight:700;}
+  #qrmodal{display:none; position:fixed; inset:0; background:rgba(4,8,16,.85); z-index:20; align-items:center; justify-content:center;}
+  .qmbox{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px; width:min(86vw,320px); text-align:center;}
+  #qrbox{display:flex; justify-content:center; background:#fff; padding:10px; border-radius:10px; min-height:120px; align-items:center;}
+</style>
+</head>
+<body>
+<header>
+  <h1>CS-<span>UDT</span> <span style="color:var(--muted);font-size:10px;font-weight:600">· citizen client</span></h1>
+  <div class="hstat"><span><b id="hpts">0</b> pts</span><span class="fire" id="hstreak">🔥3</span></div>
+</header>
+<div id="storm">⚡ STORM WATCH — Irma-scenario demo. Reports earn 2× community impact. <span style="opacity:.7">(simulated scenario)</span></div>
+
+<main>
+  <!-- SENSE -->
+  <section class="view on" id="v-sense">
+    <div class="card">
+      <h2>Nearest official station · pressure anchor</h2>
+      <div style="display:flex; align-items:flex-end; gap:8px;">
+        <span class="big" id="stationP">1008.2</span><span class="unit">hPa</span>
+        <span id="ptrend" style="margin-left:auto; font-weight:800; font-size:13px; color:var(--bad)">▼ falling</span>
+      </div>
+      <div class="muted" style="margin-top:6px">NOAA 8720218 — Mayport (St. Johns R.) · <i>simulated feed for demo</i></div>
+      <div class="muted" style="margin-top:8px">ℹ️ Browsers can't read your phone's barometer — pressure anchors come from official stations. (An optional native companion app can add phone pressure for power users.)</div>
+    </div>
+
+    <div class="card">
+      <h2>Your phone's in-browser sensors (real)</h2>
+      <div id="motionOff">
+        <button class="btn sub" id="motionBtn">📳 Enable motion sensing</button>
+        <div class="muted" style="margin-top:7px">Uses the accelerometer via your browser — no install. iOS will ask once. Requires HTTPS.</div>
+      </div>
+      <div id="motionOn" style="display:none">
+        <div style="font-weight:800; font-size:15px">Accelerometer <span id="accv" style="color:var(--accent)">—</span> m/s²</div>
+        <div class="bars" id="accbars"></div>
+        <div class="muted" style="margin-top:6px">Live from your device — proof the crowd layer needs zero install.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Location</h2>
+      <button class="btn sub" id="locBtn">📍 Use my location</button>
+      <div style="height:8px"></div>
+      <select id="hoodSel">
+        <option value="">…or pick your neighborhood (fallback)</option>
+        <option>San Marco</option><option>Downtown</option><option>Riverside</option><option>Southbank</option>
+        <option>Springfield</option><option>Avondale</option><option>Ortega</option><option>Jax Beach</option>
+        <option>Arlington</option><option>Murray Hill</option>
+      </select>
+      <div class="muted" id="locStatus" style="margin-top:7px">Geolocation needs HTTPS (see README). Fallback picker always works.</div>
+    </div>
+
+    <div class="card">
+      <h2>Badges</h2>
+      <div class="chips" id="badges"></div>
+    </div>
+  </section>
+
+  <!-- REPORT -->
+  <section class="view" id="v-report">
+    <label class="filebox" for="photoIn" id="photoBox">📷 Tap to add a photo<br/><span class="muted">ground truth beats rumors — camera opens directly, no install</span></label>
+    <input type="file" id="photoIn" accept="image/*" capture="environment"/>
+    <div class="card">
+      <h2>What are you seeing?</h2>
+      <div class="chips" id="typeChips"></div>
+    </div>
+    <div class="card">
+      <h2>Severity — <span id="sevLabel">3/5</span></h2>
+      <div class="sevrow" id="sevRow"></div>
+    </div>
+    <div class="card">
+      <h2>Note (the LLM structures this)</h2>
+      <textarea id="note" placeholder='e.g. "Water crossing San Marco Blvd, curb-deep"'></textarea>
+    </div>
+    <button class="btn" id="submitBtn">Share with community →</button>
+    <div class="muted" style="text-align:center">+50 pts · +30 bonus if severity ≥4 · retroactive +25 if your report becomes part of a confirmed triangle</div>
+  </section>
+
+  <!-- QUESTS -->
+  <section class="view" id="v-quests">
+    <div class="muted" style="padding:0 2px">When 2 of 3 channels agree but the third is missing, the twin asks nearby people to be <b style="color:var(--text)">the third tape</b>. One tap. +10 pts.</div>
+    <div id="questList"></div>
+  </section>
+
+  <!-- FEED -->
+  <section class="view" id="v-feed">
+    <div class="card" style="padding:11px 14px">
+      <h2 style="margin-bottom:6px">⛈ Storm leaderboard</h2>
+      <div class="muted">🥇 SquareSquirrel 1240 · 🥈 UrbanCoreUF 980 · 🥉 ParkStPaddler 760 · <b style="color:var(--accent)">You <span id="lbpts">0</span></b></div>
+    </div>
+    <div id="feedList" style="display:flex; flex-direction:column; gap:12px"></div>
+  </section>
+</main>
+
+<nav>
+  <button data-v="sense" class="on"><span class="ico">📡</span>Sense</button>
+  <button data-v="report"><span class="ico">📷</span>Report</button>
+  <button data-v="quests"><span class="ico">🧭</span>Quests <b id="qbadge" style="color:var(--purple)"></b></button>
+  <button data-v="feed"><span class="ico">👥</span>Community</button>
+</nav>
+
+<div id="toast"></div>
+
+<div id="qrmodal">
+  <div class="qmbox">
+    <h3 style="font-size:14px; margin-bottom:4px">📡 Offline relay QR</h3>
+    <div class="muted" style="margin-bottom:10px">No signal? Anyone who scans this carries your report and delivers it when they find network. Courier earns +5. (Photo stays on your device.)</div>
+    <div id="qrbox"></div>
+    <button class="btn sub" style="margin-top:12px" onclick="document.getElementById('qrmodal').style.display='none'">Close</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+"use strict";
+/* CS-UDT zero-install citizen client — demo build.
+   All community content is SYNTHETIC (Irma-style scenario). Your reports stay in
+   this browser (localStorage) — no backend in the demo. */
+
+/* ---------- state ---------- */
+const DEF = {pts:120, streak:3, badges:["First Responder"], reports:[], kudos:{}, quests:{}};
+let S;
+try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem("csudt")||"{}")); }
+catch(e){ S = {...DEF}; }
+const save = () => localStorage.setItem("csudt", JSON.stringify(S));
+
+/* ---------- mock LLM parse (same rules as dashboard) ---------- */
+function llmParse(txt, sev){
+  const t=(txt||"").toLowerCase();
+  const hazard = /flood|water|river|submerg|waist|curb|axle/.test(t) ? "flood"
+    : /wind|tree|palm|lines/.test(t) ? "wind_damage"
+    : /power|dark|lights|outage/.test(t) ? "power_outage"
+    : /shortage|empty|aisle|batter|generator/.test(t) ? "resource_shortage"
+    : /shelter|evac/.test(t) ? "evacuation"
+    : /closed|closure/.test(t) ? "closure" : "other";
+  const s = sev || (/record|waist|unreal|axle|rescue/.test(t)?5:/flood|impassable|closed/.test(t)?4:2);
+  return {hazard, severity:s, confidence:(0.75+(s%3)*0.06).toFixed(2)};
+}
+
+/* ---------- seed community feed ---------- */
+const SEED = [
+ {id:"s1", user:"SquareSquirrel", time:"12m", type:"Flooded road", sev:5, txt:"San Marco Blvd is a river. Water entering shops on the square", state:3, k:14, pts:80},
+ {id:"s2", user:"UrbanCoreUF", time:"28m", type:"Flooded road", sev:5, txt:"St Johns over the seawall — Water St impassable downtown", state:3, k:11, pts:80},
+ {id:"s3", user:"ParkStPaddler", time:"1h", type:"Flooded road", sev:4, txt:"Memorial Park underwater, King St closed at the river", state:2, k:9, pts:65},
+ {id:"s4", user:"MainStMike", time:"3h", type:"Store shortage", sev:2, txt:"Publix water aisle completely empty, generators gone too", state:2, k:6, pts:50},
+ {id:"s5", user:"RiverRat_Jax", time:"4h", type:"Power outage", sev:3, txt:"Whole block dark on University Blvd N", state:1, k:4, pts:50}
+];
+
+/* ---------- verification quests (2-of-3 cells needing the third tape) ---------- */
+const QUESTS = [
+ {id:"q1", hood:"San Marco", type:"Flooded road", have:"report + social post", need:"an eyes-on confirm"},
+ {id:"q2", hood:"Southbank", type:"Garage flooding", have:"social post + sensor anomaly", need:"a citizen report"},
+ {id:"q3", hood:"Springfield", type:"Store shortage", have:"2 reports (same channel)", need:"an independent channel"}
+];
+
+/* ---------- tiny helpers ---------- */
+const $ = id => document.getElementById(id);
+const toast = (msg) => { const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); };
+const sevColor = s => s>=5?"#ff2e2e":s>=4?"#ff5d5d":s>=3?"#ffb347":"#43d17c";
+const stChip = st => st===3?'<span class="statechip st3">▲ CONFIRMED · 3 ch</span>':st===2?'<span class="statechip st2">2/3 · quest open</span>':'<span class="statechip st1">1/3 unverified</span>';
+
+/* ---------- header / badges ---------- */
+function paintHeader(){ $("hpts").textContent=S.pts; $("hstreak").textContent="🔥"+S.streak; $("lbpts").textContent=S.pts;
+  $("badges").innerHTML = S.badges.map(b=>`<span class="badge">🏅 ${b}</span>`).join("") + '<span class="badge" style="opacity:.4">🔒 Neighborhood Sentinel</span>';
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); $("v-"+b.dataset.v).classList.add("on");
+}));
+
+/* ---------- SENSE: station pressure (simulated), motion (real), location ---------- */
+let p=1008.2;
+setInterval(()=>{ p += (Math.random()-0.55)*0.3; p=Math.max(978,Math.min(1013,p));
+  $("stationP").textContent=p.toFixed(1);
+  $("ptrend").textContent = p<1005 ? "▼ falling" : "◆ unsettled";
+},1500);
+
+$("motionBtn").addEventListener("click", async ()=>{
+  try{
+    if (typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function"){
+      const r = await DeviceMotionEvent.requestPermission();
+      if (r!=="granted"){ toast("Motion permission denied"); return; }
+    }
+    const bars=$("accbars"); bars.innerHTML=""; const els=[];
+    for(let i=0;i<36;i++){const b=document.createElement("i"); b.style.height="3px"; bars.appendChild(b); els.push(b);}
+    let hist=[];
+    window.addEventListener("devicemotion", e=>{
+      const a=e.accelerationIncludingGravity; if(!a) return;
+      const m=Math.sqrt((a.x||0)**2+(a.y||0)**2+(a.z||0)**2);
+      $("accv").textContent=m.toFixed(1);
+      hist=[...hist.slice(-35), m];
+      els.forEach((el,i)=>{ el.style.height = hist[i]? Math.min(32, Math.abs(hist[i]-9.8)*6+3)+"px" : "3px"; });
+    });
+    $("motionOff").style.display="none"; $("motionOn").style.display="block";
+  }catch(err){ toast("Motion needs HTTPS (see README)"); }
+});
+
+let coords=null;
+$("locBtn").addEventListener("click", ()=>{
+  if(!navigator.geolocation){ $("locStatus").textContent="No geolocation API — use the picker."; return; }
+  $("locStatus").textContent="Locating…";
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ coords=pos.coords; $("locStatus").textContent=`📍 ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)} ✓ attached`; },
+    err=>{ $("locStatus").textContent="Location blocked (HTTPS needed?) — use the neighborhood picker below."; }
+  );
+});
+
+/* ---------- REPORT ---------- */
+const TYPES=["Flooded road","Downed tree","Power outage","Store shortage","Wind damage","Office closed","Rescue/help"];
+let type=null, sev=3, photoData=null;
+$("typeChips").innerHTML = TYPES.map(t=>`<span class="chip" data-t="${t}">${t}</span>`).join("");
+document.querySelectorAll("#typeChips .chip").forEach(c=>c.addEventListener("click",()=>{
+  document.querySelectorAll("#typeChips .chip").forEach(x=>x.classList.remove("on"));
+  c.classList.add("on"); type=c.dataset.t;
+}));
+function paintSev(){ $("sevRow").innerHTML=[1,2,3,4,5].map(n=>`<button class="sev ${n<=sev?("on"+(n>=4?" hi":"")):""}" data-n="${n}">${n}</button>`).join("");
+  $("sevLabel").textContent=sev+"/5"+(sev>=4?" · +30 bonus":"");
+  document.querySelectorAll(".sev").forEach(b=>b.addEventListener("click",()=>{sev=+b.dataset.n; paintSev();}));
+}
+$("photoIn").addEventListener("change", e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ photoData=r.result; $("photoBox").innerHTML=`<img class="photo" src="${photoData}"/>`; };
+  r.readAsDataURL(f);
+});
+$("submitBtn").addEventListener("click", ()=>{
+  if(!type){ toast("Pick a hazard type first"); return; }
+  const note=$("note").value, hood=$("hoodSel").value||"your area";
+  const parse=llmParse(note||type, sev);
+  const bonus = sev>=4?30:0;
+  S.pts += 50+bonus;
+  const mine = S.reports.length+1;
+  if(mine>=3 && !S.badges.includes("Storm Chaser")){ S.badges.push("Storm Chaser"); toast("🏅 Badge unlocked: Storm Chaser"); }
+  S.reports.unshift({id:"u"+Date.now(), user:"You", time:"now", type, sev, txt:note||"(photo report)", photo:photoData, state:1, k:0, pts:50+bonus, parse, hood, coords:coords?[coords.latitude,coords.longitude]:null});
+  save(); paintHeader(); paintFeed();
+  toast(`+${50+bonus} pts! Shared with the community ✓`);
+  type=null; sev=3; photoData=null; $("note").value="";
+  document.querySelectorAll("#typeChips .chip").forEach(x=>x.classList.remove("on"));
+  $("photoBox").innerHTML='📷 Tap to add a photo<br/><span class="muted">ground truth beats rumors — camera opens directly, no install</span>';
+  paintSev();
+  document.querySelector('nav button[data-v="feed"]').click();
+});
+
+/* ---------- QUESTS ---------- */
+function paintQuests(){
+  const open = QUESTS.filter(q=>!S.quests[q.id]);
+  $("qbadge").textContent = open.length? "·"+open.length : "";
+  $("questList").innerHTML = QUESTS.map(q=>{
+    const done=S.quests[q.id];
+    return `<div class="card questcard ${done?"done":""}" style="margin-bottom:12px">
+      <h2 style="color:var(--purple)">Verification quest · ${q.hood}</h2>
+      <div style="font-weight:800; font-size:15px">${q.type}</div>
+      <div class="muted" style="margin-top:4px">Have: ${q.have} · Missing: ${q.need}</div>
+      ${done
+        ? `<div class="statechip ${done==="yes"?"st3":"st1"}" style="display:inline-block;margin-top:10px">${done==="yes"?"▲ CONFIRMED — you were the third tape (+10)":"Answered — thanks (+10)"}</div>`
+        : `<div class="questbtns">
+            <button class="qb yes" data-q="${q.id}" data-a="yes">👁 I see it</button>
+            <button class="qb" data-q="${q.id}" data-a="clear">All clear</button>
+            <button class="qb" data-q="${q.id}" data-a="na">Can't check</button>
+          </div>`}
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".qb").forEach(b=>b.addEventListener("click",()=>{
+    const {q,a}=b.dataset;
+    S.quests[q]=a; S.pts+=10; save(); paintHeader(); paintQuests();
+    toast(a==="yes"?"▲ CONFIRMED — 3 channels converged (+10)":"Thanks — logged (+10)");
+  }));
+}
+
+/* ---------- FEED ---------- */
+function paintFeed(){
+  const items=[...S.reports, ...SEED];
+  $("feedList").innerHTML = items.map(f=>`
+    <div class="card feeditem">
+      <div class="fhead"><span class="fuser">@${f.user}</span><span class="ftime">${f.time}</span>
+        <span class="pill" style="background:${sevColor(f.sev)}">${f.type} · ${f.sev}/5</span></div>
+      ${f.photo?`<img class="photo" src="${f.photo}"/>`:""}
+      <div class="ftxt">“${f.txt}”</div>
+      <div class="frow">
+        <span class="llm">🤖 ${(f.parse||llmParse(f.txt,f.sev)).hazard} · conf ${(f.parse||llmParse(f.txt,f.sev)).confidence}</span>
+        ${stChip(f.state)}
+        <span class="pts">+${f.pts}</span>
+        ${f.user==="You"?`<button class="kudos" data-r="${f.id}">📡 QR</button>`:""}
+        <button class="kudos" data-k="${f.id}">👏 ${f.k + (S.kudos[f.id]?1:0)}</button>
+      </div>
+    </div>`).join("");
+  document.querySelectorAll(".kudos[data-k]").forEach(b=>b.addEventListener("click",()=>{
+    const id=b.dataset.k;
+    if(S.kudos[id]) return;
+    S.kudos[id]=1; S.pts+=2; save(); paintHeader(); paintFeed();
+    toast("👏 Kudos = lightweight verification (+2)");
+  }));
+  document.querySelectorAll(".kudos[data-r]").forEach(b=>b.addEventListener("click",()=>{
+    const rep=S.reports.find(x=>x.id===b.dataset.r); if(rep) showRelayQR(rep);
+  }));
+}
+
+/* ---------- offline peer relay: report-as-QR "data mule" ----------
+   Networks fail in extreme weather. A report can hop device-to-device as a QR
+   until a phone with connectivity opens the link and delivers it. Encode-only:
+   any native camera app decodes the URL — no scanner library needed. */
+function showRelayQR(rep){
+  const payload={v:1, id:rep.id, user:rep.user, type:rep.type, sev:rep.sev,
+    txt:rep.txt, hood:rep.hood||"", coords:rep.coords||null, t:Date.now()}; // photo stays on-device
+  const url=location.origin+location.pathname+"#relay="+
+    encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
+  const box=$("qrbox"); box.innerHTML="";
+  if(typeof QRCode!=="undefined"){
+    new QRCode(box,{text:url,width:220,height:220,correctLevel:QRCode.CorrectLevel.M});
+  } else {
+    box.innerHTML='<div class="muted" style="color:#333">QR library offline — copy the link instead:<br/>'+url.slice(0,90)+'…</div>';
+  }
+  $("qrmodal").style.display="flex";
+}
+(function importRelayedReport(){
+  if(!location.hash.startsWith("#relay=")) return;
+  try{
+    const j=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(location.hash.slice(7))))));
+    if(!j || !j.type || S.reports.some(x=>x.id===j.id)) return;
+    S.reports.unshift({id:j.id, user:j.user+" · relayed", time:"relayed", type:j.type,
+      sev:j.sev, txt:j.txt, hood:j.hood, coords:j.coords, state:1, k:0, pts:0,
+      parse:llmParse(j.txt||j.type, j.sev)});
+    S.pts+=5; save();
+    history.replaceState(null,"",location.pathname);
+    setTimeout(()=>toast("📡 Relayed report delivered — courier +5"),400);
+  }catch(e){ /* malformed relay payloads are ignored */ }
+})();
+
+/* ---------- boot ---------- */
+paintHeader(); paintSev(); paintQuests(); paintFeed();
+</script>
+</body>
+</html>

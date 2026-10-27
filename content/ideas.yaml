@@ -1,0 +1,73 @@
+# Easter egg (homepage, bottom-right): "Things I want to try / 想尝试的事".
+# DRAFT — Jimmy edits. Bilingual cards. Status is always honest: idea | sketching | piloting.
+trigger:
+  glyph: "luopan (feng shui compass) — an original minimal SVG, not a copied image"
+  hint_en: "to be continued…"
+  hint_zh: "未完待续"
+  label_for_screen_readers: "Things I want to try next"
+ideas:
+  - id: fengshui-hci-ai
+    status: idea
+    title_en: "Feng shui × HCI × AI: one room, three readings"
+    title_zh: "风水 × 人机交互 × AI：一个空间，三种解读"
+    why_en: >-
+      Feng shui is a centuries-old, culturally specific vocabulary for how spaces affect people:
+      orientation, enclosure, flow, sightlines. Some of its heuristics resemble findings in
+      environmental psychology — a seat with a protected back and a view of the door looks a lot
+      like prospect–refuge theory — while others have no empirical support. I want to study how
+      people weigh a traditional reading against an evidence-based one, and how an AI should
+      present both honestly.
+    why_zh: >-
+      风水是一套延续千年、根植于文化的空间语言，讲朝向、围合、气的流动与视线。其中一些经验与环境心理学
+      的发现相近（比如"背有靠、前有照"的座位，很像"眺望—庇护"理论），另一些则没有实证支持。我想研究：
+      人们如何在传统解读和循证解读之间取舍，AI 又该如何诚实地同时呈现两者。
+    inspiration:
+      - "刘克明《中国技术思想研究：古代机械设计与方法》，巴蜀书社，2004（ISBN 9787806596517）— 把《周易》《考工记》《墨子》等典籍当作设计理论来读：制器尚象、致中和、标准化思想。"
+      - "Prospect–refuge theory (Appleton, 1975) as the environmental-psychology counterpart."
+    first_steps_en:
+      - "Collect room-level feng shui heuristics and tag each with an environmental-psychology counterpart, or none."
+      - "Build a demo that reads a floor plan both ways and marks where they agree, using this site's grounded/inferred convention for what each claim rests on."
+      - "Run a small study of how cultural background shapes trust in AI advice about one's own space."
+    links: [/research/grounding/]
+    teaser: "Luopan widget: on phones (after permission), the needle turns to north using the device compass; on desktop, it follows the cursor. Respects reduced motion."
+  - id: kids-and-ai
+    status: idea
+    title_en: "Growing up with LLMs: helping children use AI well"
+    title_zh: "与大模型一起长大：如何引导孩子用好 AI"
+    why_en: >-
+      Children now talk with powerful LLMs at home and at school. My work on interest-based
+      learning and on checking what AI asserts points to habits worth teaching early: tell the AI
+      what you care about, ask it how it knows, and check.
+    why_zh: >-
+      孩子们已经在家里和学校里和强大的大模型对话。我关于兴趣驱动学习、以及核查 AI 说法的研究，指向几个
+      值得从小培养的习惯：告诉 AI 你在乎什么，问它"你怎么知道的"，然后自己核对。
+    first_steps_en:
+      - "Co-design sessions with parents and teachers."
+      - "An interest-based tutor mode in which the child confirms what the AI thinks they like."
+      - "'How do you know?' buttons that show the source behind each claim, with age-appropriate privacy defaults."
+    ethics_en: "Research only under IRB review with parental permission and child assent. This website collects nothing from children."
+    links: [/research/interest-identification/, /teaching/]
+  - id: personal-digital-twin
+    status: idea
+    title_en: "A digital twin of my own decisions"
+    title_zh: "给自己的决策做一个数字孪生"
+    why_en: >-
+      Record more of my own days — voice notes, calendar, app and account access logs, LLM chats —
+      and use an LLM to replay my choices: what I planned, what I did, and what I remember doing.
+      It's Quantified Self meets my grounding audit: separate what the records show from what I
+      infer about myself.
+    why_zh: >-
+      尽量把自己的日常记录下来——语音笔记、日程、应用和账号访问记录、与大模型的对话——再用大模型复盘
+      自己的选择：计划了什么、实际做了什么、记得自己做了什么。这是"量化自我"加上我的"有据/推测"核查：
+      把记录能证明的，和我对自己的推测分开。
+    first_steps_en:
+      - "A self-experiment with my own data only, kept on-device or in private encrypted storage."
+      - "Weekly review prompts that compare plans, actions, and recollections."
+      - "Measure whether the reviews change later choices."
+    ethics_en: >-
+      Record only myself, or with everyone's consent — Florida generally requires the consent of
+      everyone in a private conversation before it is recorded. Never record bystanders; make
+      deletion easy.
+    links: [/research/grounding/]
+contact_line_en: "Want to think about one of these together? Email me."
+contact_line_zh: "对其中某个想法感兴趣？欢迎来信一起聊。"

@@ -1,0 +1,39 @@
+# Stories for the left portal (/hands). DRAFT — Jimmy edits.
+# A puppet character ("Pip") tells each story. Camera mode: the visitor's hand is Pip's mouth
+# (thumb–index distance opens the jaw); each "open-and-close" of the mouth, or Space, shows the
+# next line. Holding an open palm for 1 s moves to the next story. Scripted mode is what the page
+# opens with (DECISIONS D23) and the fallback without a camera: the same puppet plays back recorded
+# hand motion (public/hands/recordings/<story-id>.json) and lines advance on a timer. Captions are
+# always on; speech synthesis is optional and off by default.
+# Each story nods to real work — the "about this story" link says which.
+character:
+  name: Pip
+  description: "A round sock-style puppet with button eyes; color tokens from the site theme."
+stories:
+  - id: long-distance-hand
+    title: "The Long-Distance Hand"
+    about: { text: "Telepresence robot, ANA Avatar XPRIZE semifinals (2021)", link: /builds/xprize-avatar/ }
+    lines:
+      - "Pip wants to shake hands with a friend who lives very far away."
+      - "So Pip borrows a robot. When Pip moves, the robot moves."
+      - "The night before the big test — pop! The robot's power converter breaks."
+      - "Pip can't fix everything in one night, so Pip keeps the one thing that counts: the handshake."
+      - "When things break, protect what matters most."
+  - id: interest-detective
+    title: "The Interest Detective"
+    about: { text: "Dissertation Study 1: what students disclose when a tutor asks", link: /research/interest-identification/ }
+    lines:
+      - "Pip is a tutor. Today's lesson: fractions."
+      - "Pip asks Sam, \"What are you into?\" Sam says, \"Soccer.\" That's all."
+      - "But halfway through the lesson, Sam explains the offside rule in amazing detail!"
+      - "People often show what they know while they're doing something, not when they're asked."
+      - "So keep listening after the first answer."
+  - id: three-witnesses
+    title: "Three Witnesses"
+    about: { text: "CS-UDT flood digital twin (DTRUE 2026)", link: /demos/csudt/ }
+    lines:
+      - "A storm is coming. Pip watches the river from a map."
+      - "A river gauge beeps: the water is rising here."
+      - "A neighbor taps a button: my street is flooding."
+      - "A photo appears online: the same street, under water."
+      - "One voice is a rumor. Three that agree are a report. Pip marks the map: confirmed."
