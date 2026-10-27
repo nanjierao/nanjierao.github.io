@@ -1,6 +1,6 @@
 ---
 // Latest YouTube video (D50), read from the channel's RSS feed at build time. Hidden when the
-// feed was unavailable. The thumbnail and the title show only when Jimmy turns them on (D54).
+// feed was unavailable. The thumbnail and the title each follow a FLAGS switch (D54: both on).
 import { ELSEWHERE, FLAGS } from '../data/site.ts';
 import { getGeneratedImage } from '../lib/external.ts';
 import type { ExternalData } from '../lib/external-types.ts';
@@ -14,7 +14,7 @@ interface Props {
 const { latest, thumbnail } = Astro.props.youtube;
 const poster = FLAGS.showLatestVideoThumbnail ? getGeneratedImage(thumbnail) : null;
 const channel = ELSEWHERE.find((link) => link.id === 'youtube');
-// D54: the title shows only when Jimmy has turned titles on.
+// D54: the title shows while its flag is on (fetch-external.ts already filtered it).
 const title = FLAGS.showLatestVideoTitle && latest.title ? latest.title : 'Latest video on YouTube';
 ---
 

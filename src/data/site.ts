@@ -89,16 +89,13 @@ export const FLAGS = {
   /** D28: list the in-preparation manuscripts ("Working papers") only once Jimmy approves. */
   showWorkingPapers: false,
   /**
-   * D31 vs D50: channel thumbnails may show people D31 keeps off the site. The latest-video card
-   * shows a neutral poster until Jimmy turns this on.
-   * TODO(jimmy): decide whether thumbnails from your channel may appear on the site.
+   * D54 (Jimmy, 2026-10-27): the latest-video card shows the channel's thumbnail, downloaded and
+   * re-encoded at build time (no hot-linking).
    */
-  showLatestVideoThumbnail: false,
+  showLatestVideoThumbnail: true,
   /**
-   * D54 again: video titles may name or describe people facts.md §15 keeps off the site, and no
-   * word filter catches every form. Until Jimmy turns this on, the
-   * latest-video card shows a plain label, the date and the click-to-load player. When on, only
-   * titles that pass the strict family filter appear. TODO(jimmy): decide.
+   * D54 (Jimmy, 2026-10-27): the card shows the video's title. Titles still pass the facts.md §15
+   * rules and the strict family filter, so the card shows the newest video whose title passes.
    */
-  showLatestVideoTitle: false,
+  showLatestVideoTitle: true,
 } as const;

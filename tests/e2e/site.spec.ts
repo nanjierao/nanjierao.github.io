@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import sharp from 'sharp';
 
 const PAGES = [
   '/',
@@ -341,4 +342,101 @@ test('the browser refresh shows only repositories the build approved', async ({ 
   );
   await expect(root.locator('li').first()).toBeVisible();
   await expect(root).not.toContainText('not-approved-by-the-build');
+});
+
+test('the latest-video card shows the newest title that passes the filters (D54)', async ({
+  page,
+}) => {
+  const external = await isolate(page);
+  await page.goto('/');
+  const card = page.locator('section[aria-labelledby="latest-video"]');
+  test.skip((await card.count()) === 0, 'Build with EXTERNAL_DATA=fixtures to test the card');
+  // The newest fixture title names a child, so the card skips to the next one.
+  await expect(card).toContainText(
+    'Fixture video: testing a common piece of advice & what happened',
+  );
+  await expect(card).not.toContainText('daughter');
+  await expect(card.locator('img')).toHaveAttribute('src', /^\/_astro\//);
+  expect(external.filter((host) => host.includes('youtube') || host.includes('ytimg'))).toEqual([]);
+});
+
+test.describe('CS-UDT phone demo', () => {
+  const DEMO = '/demos/csudt/csudt_mobile.html';
+  const relayLink = (payload: object, query = '') =>
+    `${DEMO}${query}#relay=${encodeURIComponent(Buffer.from(JSON.stringify(payload)).toString('base64'))}`;
+  const report = {
+    v: 1,
+    id: 'r-test-1',
+    user: 'Neighbor',
+    type: 'Flooded road',
+    sev: 4,
+    txt: 'Water over the curb',
+    hood: 'San Marco',
+    coords: null,
+    t: 0,
+  };
+  const injected = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __relayed?: number }).__relayed);
+
+  test('shows relayed report fields as text, also after a reload', async ({ page }) => {
+    await isolate(page);
+    await page.goto(
+      relayLink({
+        ...report,
+        user: '<img src=x onerror="window.__relayed=1">',
+        txt: '<b>bold</b><img src=x onerror="window.__relayed=2">',
+      }),
+    );
+    const feed = page.locator('#feedList');
+    await expect(feed).toContainText('<b>bold</b>');
+    await expect(feed.locator('b, img, script')).toHaveCount(0);
+    expect(await injected(page)).toBeUndefined();
+    await page.goto(DEMO);
+    await expect(feed).toContainText('<b>bold</b>');
+    await expect(feed.locator('b, img, script')).toHaveCount(0);
+    expect(await injected(page)).toBeUndefined();
+  });
+
+  test('accepts a valid relayed report and ignores malformed ones', async ({ page }) => {
+    await isolate(page);
+    const feed = page.locator('#feedList');
+    const bad = [
+      { ...report, id: 'bad-type', type: 'Anything', txt: 'marker bad type' },
+      { ...report, id: 'bad-sev', sev: 9, txt: 'marker bad severity' },
+      { ...report, id: 'bad-coords', coords: ['x', 1], txt: 'marker bad coordinates' },
+      { ...report, id: 'bad id!', txt: 'marker bad id' },
+    ];
+    for (const [i, payload] of bad.entries()) {
+      await page.goto(relayLink(payload, `?case=${i}`));
+      await expect(feed).not.toContainText(payload.txt);
+    }
+    await page.goto(relayLink({ ...report, coords: [30.31, -81.66] }, '?case=ok'));
+    await expect(feed).toContainText('Water over the curb');
+    await expect(feed).toContainText('@Neighbor · relayed');
+  });
+
+  test('shrinks photos and keeps working when storage is full', async ({ page }) => {
+    await isolate(page);
+    await page.addInitScript(() => {
+      Storage.prototype.setItem = () => {
+        throw new DOMException('Storage is full', 'QuotaExceededError');
+      };
+    });
+    await page.goto(DEMO);
+    await page.locator('nav button[data-v="report"]').click();
+    const big = await sharp({
+      create: { width: 3000, height: 2000, channels: 3, background: '#3a6' },
+    })
+      .png()
+      .toBuffer();
+    await page.setInputFiles('#photoIn', { name: 'big.png', mimeType: 'image/png', buffer: big });
+    const photo = page.locator('#photoBox img');
+    await expect(photo).toHaveAttribute('src', /^data:image\/jpeg;base64,/);
+    expect(await photo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1024);
+    await page.locator('#typeChips .chip').first().click();
+    await page.locator('#submitBtn').click();
+    await expect(page.locator('#toast')).toContainText("Couldn't save in this browser");
+    await expect(page.locator('#feedList .feeditem').first()).toContainText('@You');
+    await expect(page.locator('#feedList .feeditem').first().locator('img')).toHaveCount(1);
+  });
 });

@@ -143,7 +143,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 ## Images and media (D31)
 
 - Only landscapes, objects, and Jimmy himself. No family members, no children, and no other
-  people's faces unless Jimmy confirms their consent.
+  people's faces unless Jimmy confirms their consent. One exception Jimmy allowed (D54): the
+  latest-video card shows his own YouTube thumbnail.
 - Every photo or screenshot lives in `src/assets/` (or beside its blog post) and goes through
   Astro's image pipeline, which strips metadata. None go raw into `public/` (favicons, the QR SVG,
   and the demo files are the only images there). CI fails if any built image carries GPS or other
@@ -161,7 +162,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   per visitor) with a `sessionStorage` cache. On any error, keep the build-time data quietly.
 - Latest YouTube video: read the channel's public RSS feed during the build (channel ID in
   facts.md §13); show title, date and a click-to-load facade. Download and process the thumbnail
-  at build time instead of hot-linking it. If the feed fails, hide the card.
+  at build time instead of hot-linking it. If the feed fails, hide the card. Titles pass the
+  facts.md §15 rules and the strict family filter first, so the card shows the newest video
+  whose title passes (D54).
 
 ## AI: static first, live only through the Worker
 
