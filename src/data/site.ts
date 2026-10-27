@@ -89,14 +89,14 @@ export const FLAGS = {
   /** D28: list the in-preparation manuscripts ("Working papers") only once Jimmy approves. */
   showWorkingPapers: false,
   /**
-   * D31 vs D50: channel thumbnails may show family members or children, which D31 keeps off the
-   * site. The latest-video card shows a neutral poster until Jimmy turns this on.
+   * D31 vs D50: channel thumbnails may show people D31 keeps off the site. The latest-video card
+   * shows a neutral poster until Jimmy turns this on.
    * TODO(jimmy): decide whether thumbnails from your channel may appear on the site.
    */
   showLatestVideoThumbnail: false,
   /**
-   * D54 again: titles on a family-life channel often name or describe children (facts.md §15
-   * "Family members"), and no word filter catches every form. Until Jimmy turns this on, the
+   * D54 again: video titles may name or describe people facts.md §15 keeps off the site, and no
+   * word filter catches every form. Until Jimmy turns this on, the
    * latest-video card shows a plain label, the date and the click-to-load player. When on, only
    * titles that pass the strict family filter appear. TODO(jimmy): decide.
    */
