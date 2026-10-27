@@ -3,6 +3,16 @@
 Newest first. Status: **proposed** (drafted for Jimmy, in effect unless he objects) ·
 **needs Jimmy** (blocked on his choice) · **accepted** · **superseded**.
 
+## 2026-10-27 (evening) — S1 build choices
+
+| ID | Decision | Why | Status |
+|---|---|---|---|
+| D53 | **Old-site images under D31.** Only the headshot (`NJProfile.jpg`) and the puppet-system photo (hands and screens, `PuppetSystemcomp1.jpg`) moved to `src/assets/` and appear on the site. Held back in `source/old-site/img/`: `enactment.png` (two children's faces), `Enactment1.png` (another person's face), `p2cap.jpg` (a participant's webcam and their typed story), `NJRposter.png` (children's first names and quotations from a study), and `ObjectInter.jpg` (a study participant from behind; a crop would still show the photographer's reflection). | D31 allows landscapes, objects and Jimmy; facts.md §15 bars participant data and quotations. | needs Jimmy (consent for any held-back photo; whether to remove them from `source/`) |
+| D54 | **Latest-video card without the channel thumbnail** until Jimmy allows it (`FLAGS.showLatestVideoThumbnail`). The build still processes the thumbnail when the flag is on (no hot-linking). Fetched video titles pass the facts.md §15 word filter; the newest passing video is shown. | The channel is about family life, so thumbnails and titles may show or name family members or children, which D31 and §15 keep off the site. | needs Jimmy |
+| D55 | **VERIFY items stay off the site, including DTRUE 2026's title and author list.** The DTRUE talk and news say "our design framework and working prototype" (coauthored, not sole-authored, D46) without naming the paper or the coauthor until facts.md §6 [10] is verified. Publication 10 is hidden until then. | CLAUDE.md: lines marked VERIFY stay off the site. | proposed |
+| D56 | **check:privacy allowlist by fingerprint.** Known exceptions (`scripts/privacy-allowlist.json`) list the file, a SHA-256 fingerprint of the match and a reason, never the value. Built output fails on any image metadata at all, not only location. | An allowlist that repeated the values would copy them into another public file. | proposed |
+| D57 | **GitHub token only for the fetch step.** In CI, `npm run fetch:external` gets the read-only `GITHUB_TOKEN`; the Astro action then builds with `EXTERNAL_DATA=keep`, so dependency install scripts never see the token. Pull requests run all checks and the build but don't deploy. | Least privilege; unauthenticated calls from shared Actions runners hit GitHub's rate limit. | proposed |
+
 ## 2026-10-27 (afternoon) — Cloud sessions again; YouTube and Zhihu links
 
 | ID | Decision | Why | Status |

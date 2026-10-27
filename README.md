@@ -17,7 +17,14 @@ Jimmy with Claude Code cloud sessions. This repository is public.
 - `source/` — public-safe research materials: dissertation abstract, extraction prompt (App. C), coding-scheme definitions (App. A, no participant quotations), old site, CS-UDT notes
 - `public/demos/csudt/` — CS-UDT flood digital twin demo (self-contained HTML, synthetic data)
 - `migration/cise/` — redirect files + HOWTO for the old cise.ufl.edu/~nr0 page (`.htaccess` is a hidden file)
-- `setup/post-zhihu/` — the `/post-zhihu` command that turns a Zhihu draft into a blog post; S1 moves it to `.claude/skills/post-zhihu/`
+- `.claude/skills/post-zhihu/` — the `/post-zhihu` command that turns a Zhihu draft into a blog post
 - `inbox/` — where Jimmy uploads files meant for the site (drafts, images, CV PDF); sessions move them
+
+The Astro site itself (S1 onward):
+
+- `src/` — pages, components, styles (`src/styles/tokens.css`), content collections (`src/content/`), site constants (`src/data/`), and images (`src/assets/`)
+- `scripts/` — `fetch-external.ts` (GitHub activity and the latest video, at build time) and `check-privacy.ts`
+- `tests/` — Vitest unit and content checks, Playwright + axe end-to-end tests, synthetic fixtures
+- `.github/workflows/deploy.yml` — checks, build and deploy to GitHub Pages
 
 Workflow: Claude Code cloud session → pull request with screenshots → Jimmy merges → GitHub Actions → GitHub Pages.

@@ -25,6 +25,40 @@ entry that ships goes on `/credits`.
 | Worker tooling (S8, optional) | `wrangler` | MIT OR Apache-2.0 | 4.153.0 · 2026-10 | Only inside `worker/`. |
 | Image metadata check (CI, D31) | `sharp` (already pulled in by Astro's image service) or `exifr` | Apache-2.0 / MIT | check at install | Fail the build if any output image has GPS/EXIF location tags. Prefer `sharp` to avoid a new dependency. |
 
+## Installed in S1 (versions checked 27 Oct 2026)
+
+Shipped or used to build pages (also on `/credits`):
+
+| Package | Version | License | Why |
+|---|---|---|---|
+| `astro` | 7.4.2 | MIT | Static site; Node 24 (Astro 7.4.2 needs Node ≥ 22.23.4). |
+| `@astrojs/react`, `react`, `react-dom` | 7.1.1, 19.3.1 | MIT | Islands for the portals; no island ships on S1 pages. |
+| `@astrojs/sitemap`, `@astrojs/rss` | 3.7.4, 4.0.19 | MIT | Sitemap and blog RSS. |
+| `@fontsource-variable/inter`, `@fontsource-variable/source-serif-4`, `@fontsource/ibm-plex-mono` | 5.3.0, 5.3.1, 5.3.0 | OFL-1.1 | Self-hosted fonts (SITE_PLAN §8 baseline). |
+| `fast-xml-parser` | 5.11.2 | MIT | Parses the YouTube RSS feed in the build script. |
+| `sharp` | 0.35.5 | Apache-2.0 | Already Astro's image service; declared so the privacy check can read image metadata (EXIF/XMP/IPTC). |
+
+Development and CI only (never reach visitors):
+
+| Package | Version | License | Why |
+|---|---|---|---|
+| `typescript`, `@astrojs/check` | 6.0.3, 0.9.12 | Apache-2.0, MIT | `npm run check`. TypeScript stays on 6.0: `@astrojs/check` and `typescript-eslint` don't support 7.x yet. |
+| `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-astro`, `globals` | 10.13.0, 10.0.1, 8.72.1, 3.2.1, 17.13.0 | MIT | Linting. |
+| `eslint-plugin-jsx-a11y-x` | 0.2.0 | MIT | Accessibility lint rules for Astro templates (via `eslint-plugin-astro`); the original `eslint-plugin-jsx-a11y` doesn't support ESLint 10. |
+| `prettier`, `prettier-plugin-astro` | 3.9.10, 1.1.2 | MIT | Formatting. |
+| `vitest` | 5.0.5 | MIT | Unit and content tests. |
+| `@playwright/test` | 1.64.1 | Apache-2.0 | End-to-end tests (uses the session's pre-installed Chromium when present). |
+| `@axe-core/playwright` (+ `axe-core`) | 4.14.0 | **MPL-2.0** | Accessibility checks; requested by name in the S1 prompt. MPL-2.0 is OSI-approved file-level copyleft; it is a dev dependency and nothing of it is shipped or modified. |
+| `yaml` | 2.9.1 | ISC | Reads content YAML in the content tests. |
+
+Compared and not used:
+
+- **YouTube facade.** `lite-youtube-embed` 0.3.4 (Apache-2.0) and `@justinribeiro/lite-youtube`
+  1.9.0 (MIT) both load the poster from `i.ytimg.com` as soon as the page renders, and the first
+  preconnects to google.com and doubleclick.net on hover. That breaks "never hot-link images"
+  and "nothing from YouTube before a click", so `src/components/YouTubeFacade.astro` is a small
+  custom element (a link that becomes a youtube-nocookie.com iframe on click) with local posters.
+
 ## Alternatives (pick in a spike if the recommended one disappoints)
 
 | Use | Project | License | Latest release | Notes |

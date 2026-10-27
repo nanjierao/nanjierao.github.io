@@ -68,19 +68,33 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Live AI (optional): `worker/` has its own package.json and wrangler config and deploys to
   Cloudflare separately. The site reads the Worker's address from the build variable
   `PUBLIC_API_URL`; when it is empty, only the static modes exist.
-- npm, Node LTS. Prettier + ESLint. Vitest for unit tests, Playwright + axe-core for end-to-end
-  and accessibility checks.
+- npm, Node LTS (24, `.nvmrc`; Astro 7.4 needs Node ≥ 22.23.4). Prettier + ESLint. Vitest for
+  unit tests, Playwright + axe-core for end-to-end and accessibility checks.
+- Whitespace in `.astro` templates follows Astro 7's JSX rules (the default, and what Prettier's
+  Astro plugin assumes): a line break between text and an inline element removes the space, so
+  write `{' '}` where a space must stay. The end-to-end tests catch run-together links.
 
 ## Commands (keep this section accurate as scripts change)
 
+- Cloud sessions start on Node 22: run `source /opt/nvm/nvm.sh && nvm install 24` (or put
+  `/opt/nvm/versions/node/v24.*/bin` first on `PATH`) before npm commands.
 - `npm run dev` — dev server at http://localhost:4321 (inside the session; use it for screenshots)
-- `npm run build` · `npm run preview` — production build and a local look at it
+- `npm run build` · `npm run preview` — production build and a local look at it. `build` first
+  runs `fetch:external` and afterwards `check:privacy --dist` (npm pre/post hooks).
+- `npm run fetch:external` — writes GitHub activity and the latest video to `src/generated/`
+  (git-ignored). `EXTERNAL_DATA=fixtures` uses `tests/fixtures/`, `off` skips the network, `keep`
+  (CI) reuses data fetched earlier in the job. Blocked hosts fail quietly.
 - `npm run check` — `astro check` and TypeScript
-- `npm run lint` · `npm run format`
+- `npm run lint` · `npm run format` — ESLint and `prettier --check` · `prettier --write`
 - `npm run test` — Vitest, including content checks (every publication has year, venue, authors)
-- `npm run test:e2e` — Playwright smoke tests and axe accessibility checks
+- `npm run test:e2e` — Playwright smoke tests and axe accessibility checks against `dist/` (build
+  first). For the full set, build with `EXTERNAL_DATA=fixtures BLOG_FIXTURES=1 npm run build`
+  (a synthetic blog post; never for the real site). Agents: `astro preview` runs in the
+  background unless `--ignore-lock` is passed (the Playwright config does this).
 - `npm run check:privacy` — scans the repository and the build output for phone numbers,
   unexpected email addresses, street addresses, facts.md §15 terms, and image GPS/EXIF. Runs in CI.
+  `--repo` or `--dist` limits the scope; known exceptions live in `scripts/privacy-allowlist.json`
+  as fingerprints with a reason, never as the values themselves.
 
 ## Content rules (non-negotiable)
 
