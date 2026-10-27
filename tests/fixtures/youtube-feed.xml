@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/" xmlns="http://www.w3.org/2005/Atom">
+ <id>yt:channel:UCsaBHMWGQFx1Mltl3nFQc3g</id>
+ <yt:channelId>UCsaBHMWGQFx1Mltl3nFQc3g</yt:channelId>
+ <title>Fixture channel</title>
+ <entry>
+  <id>yt:video:AAAAAAAAAA1</id>
+  <yt:videoId>AAAAAAAAAA1</yt:videoId>
+  <title>Fixture: my daughter and the bedtime rule</title>
+  <published>2026-10-26T14:00:00+00:00</published>
+ </entry>
+ <entry>
+  <id>yt:video:AAAAAAAAAA2</id>
+  <yt:videoId>AAAAAAAAAA2</yt:videoId>
+  <title>Fixture video: testing a common piece of advice &amp; what happened</title>
+  <published>2026-10-22T14:00:00+00:00</published>
+ </entry>
+ <entry>
+  <id>yt:video:bad</id>
+  <yt:videoId>not-a-valid-id</yt:videoId>
+  <title>Invalid ID, dropped</title>
+  <published>2026-10-27T14:00:00+00:00</published>
+ </entry>
+ <entry>
+  <id>yt:video:AAAAAAAAAA3</id>
+  <yt:videoId>AAAAAAAAAA3</yt:videoId>
+  <title>Older fixture video</title>
+  <published>2026-09-01T14:00:00+00:00</published>
+ </entry>
+</feed>

@@ -1,0 +1,113 @@
+---
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { DEMO_CREDITS, SITE_CREDITS, TOOL_CREDITS, type Credit } from '../data/credits.ts';
+
+/** The version actually installed for this build. */
+function installedVersion(pkg?: string): string | null {
+  if (!pkg) return null;
+  try {
+    const manifest = JSON.parse(
+      readFileSync(join(process.cwd(), 'node_modules', pkg, 'package.json'), 'utf8'),
+    ) as { version?: string };
+    return manifest.version ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const groups: Array<{ id: string; title: string; intro: string; credits: Credit[] }> = [
+  {
+    id: 'credits-site',
+    title: 'Code and fonts in this site',
+    intro: 'These build the pages or reach your browser.',
+    credits: SITE_CREDITS,
+  },
+  {
+    id: 'credits-tools',
+    title: 'Tools that check the site',
+    intro: 'Used in development and in the build checks; none of it reaches your browser.',
+    credits: TOOL_CREDITS,
+  },
+  {
+    id: 'credits-demo',
+    title: 'Loaded by the CS-UDT demo',
+    intro: 'The demo files load these from public services.',
+    credits: DEMO_CREDITS,
+  },
+];
+---
+
+<BaseLayout
+  title="Credits"
+  description="Open-source software and fonts used on this site, with licenses, and how the site was built."
+>
+  <h1>Credits</h1>
+  <p class="lede">
+    This site is built from open-source work. Thank you to everyone who maintains it.
+  </p>
+
+  {groups.map((group) => (
+    <section aria-labelledby={group.id}>
+      <h2 id={group.id}>{group.title}</h2>
+      <p class="muted">{group.intro}</p>
+      <ul class="section-list credit-list">
+        {group.credits.map((credit) => {
+          const version = installedVersion(credit.pkg);
+          return (
+            <li>
+              <a href={credit.url}>{credit.name}</a>
+              {version && <span class="mono small"> {version}</span>}
+              <span class="muted"> · {credit.license}</span>
+              <br />
+              <span class="small">{credit.use}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  ))}
+
+  <section aria-labelledby="how-built">
+    <h2 id="how-built">How this site was built</h2>
+    <div class="prose">
+      <p>A short account for now; it will grow as the interactive parts arrive.</p>
+      <ul>
+        <li>
+          <strong>One source of truth.</strong> Every number, date, title and coauthor on these
+          pages comes from a single facts file in the repository. Anything not yet confirmed stays
+          off the site.
+        </li>
+        <li>
+          <strong>Every change is reviewed.</strong> Changes arrive as pull requests with
+          screenshots; I read each one and merge it, and merging publishes the site.
+        </li>
+        <li>
+          <strong>Built with Claude Code.</strong> Anthropic’s Claude Code wrote the code in cloud
+          sessions, working from written instructions and a decision log in the repository.
+        </li>
+        <li>
+          <strong>Checked automatically.</strong> Before each deploy, GitHub Actions runs type
+          checks, linting, unit and content tests, and a privacy scan of the repository and the
+          built pages.
+        </li>
+        <li>
+          <strong>Open source first.</strong> Components come from maintained open-source projects
+          where one fits, credited above with their licenses.
+        </li>
+      </ul>
+      <p>
+        The source is public:{' '}
+        <a href="https://github.com/nanjierao/nanjierao.github.io">nanjierao/nanjierao.github.io</a>
+        .
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .credit-list li {
+    margin-bottom: var(--space-3);
+  }
+</style>

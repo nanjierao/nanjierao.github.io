@@ -1,0 +1,52 @@
+---
+// Elsewhere links (facts.md §13, D50): Google Scholar, GitHub, YouTube, Zhihu.
+import { ELSEWHERE } from '../data/site.ts';
+
+interface Props {
+  /** "row" for the intro strip and footer, "list" with descriptions for /about. */
+  variant?: 'row' | 'list';
+  label?: string;
+}
+
+const { variant = 'row', label = 'Elsewhere' } = Astro.props;
+---
+
+{variant === 'row' ? (
+  <ul class="elsewhere-row" aria-label={label}>
+    {ELSEWHERE.map((link) => (
+      <li>
+        <a href={link.href} title={link.description}>
+          {link.label}
+        </a>
+      </li>
+    ))}
+  </ul>
+) : (
+  <ul class="elsewhere-list">
+    {ELSEWHERE.map((link) => (
+      <li>
+        <a href={link.href}>{link.label}</a>: {link.description}
+      </li>
+    ))}
+  </ul>
+)}
+
+<style>
+  .elsewhere-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .elsewhere-row li {
+    margin: 0;
+  }
+
+  .elsewhere-row a {
+    display: inline-block;
+    padding-block: var(--space-2);
+  }
+</style>

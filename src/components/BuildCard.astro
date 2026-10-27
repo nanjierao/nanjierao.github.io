@@ -1,0 +1,38 @@
+---
+import type { Build } from '../lib/content.ts';
+
+interface Props {
+  build: Build;
+  headingLevel?: 'h2' | 'h3';
+}
+
+const { build, headingLevel = 'h3' } = Astro.props;
+const Heading = headingLevel;
+const { title, when, summary, tags } = build.data;
+---
+
+<article class="card build-card">
+  <Heading class="build-card__title">
+    <a href={`/builds/${build.id}/`}>{title}</a>
+  </Heading>
+  {when && <p class="build-card__when small muted">{when}</p>}
+  <p>{summary}</p>
+  {tags.length > 0 && (
+    <ul class="tag-list" aria-label="Tags">
+      {tags.map((tag) => (
+        <li>{tag}</li>
+      ))}
+    </ul>
+  )}
+</article>
+
+<style>
+  .build-card__title {
+    margin-top: 0;
+    font-size: 1.15rem;
+  }
+
+  .build-card__when {
+    margin: calc(-1 * var(--space-1)) 0 var(--space-2);
+  }
+</style>

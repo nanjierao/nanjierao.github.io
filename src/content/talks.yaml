@@ -1,0 +1,29 @@
+# Talks — content/facts.md §11. Dated talks carry startDate/endDate (YYYY-MM-DD, in timeZone)
+# and D26 wording; pages pick the tense at build time and the browser re-checks it.
+
+# First-author presentations (facts.md §11), by venue and year.
+- { id: icalt-2026, event: IEEE ICALT, year: 2026, kind: first-author-presentation }
+- { id: icalt-2023, event: IEEE ICALT, year: 2023, kind: first-author-presentation }
+- { id: icalt-2021, event: IEEE ICALT, year: 2021, kind: first-author-presentation }
+- { id: hcii-2022, event: HCI International, year: 2022, kind: first-author-presentation }
+- { id: hcii-2021, event: HCI International, year: 2021, kind: first-author-presentation }
+- { id: ieeevr-2020, event: IEEE VR, year: 2020, kind: first-author-presentation }
+- { id: icids-2019, event: ICIDS, year: 2019, kind: first-author-presentation }
+
+# DTRUE 2026 (facts.md §5.3, §11; D26, D46). The talk title and author list stay off the site
+# until Jimmy verifies them (facts.md §6 [10] VERIFY).
+- id: dtrue-2026
+  event: DTRUE 2026
+  year: 2026
+  kind: oral-presentation
+  location: UF Jacksonville campus
+  startDate: '2026-11-19'
+  endDate: '2026-11-20'
+  timeZone: America/New_York
+  wording:
+    upcoming: Upcoming oral presentation at DTRUE 2026
+    past: Presented at DTRUE 2026
+  link: /research/civic-digital-twins/
+
+# TODO(jimmy): ICIDS 2026 talk — date and location (facts.md §11). Add it here with
+# startDate/endDate and wording once known.

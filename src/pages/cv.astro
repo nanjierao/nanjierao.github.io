@@ -1,0 +1,168 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ElsewhereLinks from '../components/ElsewhereLinks.astro';
+import PublicationList from '../components/PublicationList.astro';
+import TalkList from '../components/TalkList.astro';
+import { PERSON } from '../data/site.ts';
+import {
+  EARLIER_TEACHING,
+  EDUCATION,
+  HONORS,
+  MENTORING,
+  SKILLS,
+  STATUS,
+  TEACHING_ASSISTANT,
+} from '../data/cv.ts';
+import { getPublications, getThemes } from '../lib/content.ts';
+import { CV_PDF_HREF, hasCvPdf } from '../lib/cv-pdf.ts';
+
+const publications = await getPublications();
+const conference = publications.filter((pub) => pub.type === 'conference');
+const extended = publications.filter((pub) => pub.type === 'extended-abstract');
+const themes = await getThemes();
+const cvPdf = hasCvPdf();
+// TODO(jimmy): upload the public CV PDF (no phone number or home address) to inbox/; it goes to
+// public/cv/Nanjie_Rao_CV.pdf and the download link appears automatically.
+---
+
+<BaseLayout
+  title="CV"
+  description="Curriculum vitae of Nanjie (Jimmy) Rao: education, research, publications, teaching, honors and skills."
+>
+  <header class="cv-header">
+    <h1>Curriculum vitae</h1>
+    <p class="lede">{PERSON.displayName}</p>
+    <p>
+      {STATUS.role}
+      <br />
+      {STATUS.department}
+      <br />
+      <a href={STATUS.labUrl}>Embodied Learning & Experience (ELX) Lab</a>, advised by{' '}
+      <a href={STATUS.advisorUrl}>Dr. Sharon Lynn Chu</a>
+      <br />
+      {STATUS.defense}
+    </p>
+    {cvPdf && (
+      <p>
+        <a class="button button--primary" href={CV_PDF_HREF}>
+          Download CV (PDF)
+        </a>
+      </p>
+    )}
+    <ElsewhereLinks label="Elsewhere" />
+  </header>
+
+  <section aria-labelledby="cv-education">
+    <h2 id="cv-education">Education</h2>
+    <ul class="section-list cv-list">
+      {EDUCATION.map((item) => (
+        <li>
+          <strong>{item.degree}</strong>, {item.school} <span class="muted">({item.when})</span>
+          {item.details && (
+            <ul>
+              {item.details.map((detail) => (
+                <li>{detail}</li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="cv-research">
+    <h2 id="cv-research">Research</h2>
+    <ul class="section-list">
+      {themes.map((theme) => (
+        <li>
+          <a href={`/research/${theme.id}/`}>{theme.data.title}</a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="cv-publications">
+    <h2 id="cv-publications">Publications</h2>
+    <h3>Refereed conference papers</h3>
+    <PublicationList publications={conference} compact />
+    <h3>Extended abstracts, posters, and workshop papers</h3>
+    <PublicationList publications={extended} compact />
+  </section>
+
+  <section aria-labelledby="cv-talks">
+    <h2 id="cv-talks">Talks</h2>
+    <TalkList />
+  </section>
+
+  <section aria-labelledby="cv-teaching">
+    <h2 id="cv-teaching">Teaching</h2>
+    <p>
+      <strong>{TEACHING_ASSISTANT.role}</strong>, {TEACHING_ASSISTANT.where}{' '}
+      <span class="muted">({TEACHING_ASSISTANT.when})</span>
+    </p>
+    <ul class="section-list">
+      {TEACHING_ASSISTANT.items.map((item) => (
+        <li>
+          {item.course}: {item.details}
+        </li>
+      ))}
+      {EARLIER_TEACHING.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="cv-mentoring">
+    <h2 id="cv-mentoring">Mentoring and leadership</h2>
+    <ul class="section-list">
+      {MENTORING.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="cv-honors">
+    <h2 id="cv-honors">Honors</h2>
+    <ul class="section-list">
+      {HONORS.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="cv-skills">
+    <h2 id="cv-skills">Skills</h2>
+    <dl class="section-list cv-skills">
+      {SKILLS.map((group) => (
+        <>
+          <dt>{group.area}</dt>
+          <dd>{group.items}</dd>
+        </>
+      ))}
+    </dl>
+  </section>
+</BaseLayout>
+
+<style>
+  .cv-header {
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .cv-header .lede {
+    margin-bottom: var(--space-2);
+  }
+
+  .cv-list ul {
+    margin-top: var(--space-2);
+  }
+
+  .cv-skills dt {
+    font-weight: 600;
+    margin-top: var(--space-3);
+  }
+
+  .cv-skills dd {
+    margin: 0;
+  }
+</style>

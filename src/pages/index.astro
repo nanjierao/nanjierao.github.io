@@ -1,0 +1,205 @@
+---
+// Temporary homepage until S3 (D21 intro strip first). The word cloud, portals and easter egg
+// arrive with the chosen design (S2, S3).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ElsewhereLinks from '../components/ElsewhereLinks.astro';
+import GitHubActivity from '../components/GitHubActivity.astro';
+import LatestVideo from '../components/LatestVideo.astro';
+import TimeAware from '../components/TimeAware.astro';
+import { PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
+import { CONTEXT_LABELS } from '../content/schemas.ts';
+import { getNews, getPosts, getThemesByContext } from '../lib/content.ts';
+import { getExternalData } from '../lib/external.ts';
+import { formatDay, formatPartialDate, isoDay } from '../lib/format.ts';
+import { CV_PDF_HREF, hasCvPdf } from '../lib/cv-pdf.ts';
+import { personJsonLd } from '../lib/seo.ts';
+
+const contexts = await getThemesByContext();
+const news = await getNews(3);
+const [latestPost] = await getPosts();
+const external = getExternalData();
+const cvPdf = hasCvPdf();
+// Status line (D21): none until Jimmy approves one in facts.md §2. TODO(jimmy)
+---
+
+<BaseLayout description={POSITIONING} jsonLd={personJsonLd()} ogType="profile">
+  <section class="intro" aria-labelledby="intro-name">
+    <h1 id="intro-name">{PERSON.displayName}</h1>
+    <p class="intro__line">{POSITIONING}</p>
+    <ul class="intro__actions" aria-label="Quick links">
+      <li>
+        <a class="button button--primary" href={cvPdf ? CV_PDF_HREF : '/cv/'}>
+          {cvPdf ? 'CV (PDF)' : 'CV'}
+        </a>
+      </li>
+      <li>
+        <a class="button" href="/publications/">
+          Publications
+        </a>
+      </li>
+      {PERSON.email && (
+        <li>
+          <a class="button" href={`mailto:${PERSON.email}`}>
+            Email
+          </a>
+        </li>
+      )}
+    </ul>
+    <ElsewhereLinks label="Elsewhere" />
+  </section>
+
+  <section aria-labelledby="research-heading">
+    <h2 id="research-heading">Research</h2>
+    <p class="prose">{UMBRELLA}</p>
+    <div class="contexts">
+      {contexts.map(({ context, themes }) => (
+        <section class="context" aria-labelledby={`context-${context}`}>
+          <h3 id={`context-${context}`}>{CONTEXT_LABELS[context]}</h3>
+          <ul class="plain-list">
+            {themes.map((theme) => (
+              <li>
+                <a href={`/research/${theme.id}/`}>{theme.data.title}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+    <p>
+      <a href="/research/">Research overview</a>
+    </p>
+  </section>
+
+  <section aria-labelledby="recent-heading">
+    <h2 id="recent-heading">Recent</h2>
+    <ol class="news plain-list">
+      {news.map((item) => (
+        <li class="news__item">
+          <span class="news__date muted small">
+            <time datetime={item.date}>{formatPartialDate(item.date)}</time>
+          </span>{' '}
+          <span class="news__text">
+            {item.event ? (
+              <TimeAware
+                start={item.event.start}
+                end={item.event.end}
+                timeZone={item.event.timeZone}
+                upcoming={item.event.upcoming}
+                ongoing={item.event.ongoing}
+                past={item.event.past}
+              />
+            ) : (
+              item.text
+            )}
+            {item.link && (
+              <>
+                {' '}
+                <a href={item.link.href}>{item.link.label}</a>
+              </>
+            )}
+          </span>
+        </li>
+      ))}
+    </ol>
+
+    <div class="recent-grid">
+      {latestPost && (
+        <section class="card" aria-labelledby="latest-post">
+          <h3 id="latest-post">Latest blog post</h3>
+          <p>
+            <a href={`/blog/${latestPost.id}/`}>{latestPost.data.title_en}</a>
+            <span class="muted small">
+              {' '}
+              ·{' '}
+              <time datetime={isoDay(latestPost.data.date)}>{formatDay(latestPost.data.date)}</time>
+            </span>
+          </p>
+          <p class="small">{latestPost.data.summary_en}</p>
+        </section>
+      )}
+      {external.youtube && (
+        <section class="card" aria-labelledby="latest-video">
+          <h3 id="latest-video">Latest video</h3>
+          <LatestVideo youtube={external.youtube} />
+        </section>
+      )}
+      <section class="card" aria-labelledby="github-activity">
+        <h3 id="github-activity">On GitHub</h3>
+        <GitHubActivity activity={external.github?.activity ?? []} />
+      </section>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .intro {
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .intro h1 {
+    margin-bottom: var(--space-3);
+  }
+
+  .intro__line {
+    font-size: var(--text-lg);
+    max-width: 42rem;
+    margin-bottom: var(--space-5);
+  }
+
+  .intro__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    list-style: none;
+  }
+
+  .intro__actions li {
+    margin: 0;
+  }
+
+  .contexts {
+    display: grid;
+    gap: var(--space-2) var(--space-6);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  }
+
+  .context h3 {
+    margin-top: var(--space-4);
+  }
+
+  .news {
+    max-width: var(--measure);
+  }
+
+  .news__item {
+    display: grid;
+    grid-template-columns: 8.5rem 1fr;
+    gap: var(--space-4);
+    margin: 0 0 var(--space-4);
+  }
+
+  .news__date {
+    padding-top: 0.2em;
+  }
+
+  @media (max-width: 36rem) {
+    .news__item {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  }
+
+  .recent-grid {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    margin-top: var(--space-5);
+  }
+
+  .recent-grid h3 {
+    margin-top: 0;
+  }
+</style>

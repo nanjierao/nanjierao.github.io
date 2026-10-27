@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Page not found" description="This page doesn’t exist." noindex>
+  <h1>Page not found</h1>
+  <div class="prose">
+    <p class="lede">
+      There’s no page at this address. It may have moved when this site replaced the old one.
+    </p>
+    <ul>
+      <li>
+        <a href="/">Home</a>
+      </li>
+      <li>
+        <a href="/research/">Research</a>
+      </li>
+      <li>
+        <a href="/publications/">Publications</a>
+      </li>
+      <li>
+        <a href="/builds/">Builds</a>
+      </li>
+      <li>
+        <a href="/cv/">CV</a>
+      </li>
+    </ul>
+  </div>
+</BaseLayout>

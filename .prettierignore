@@ -1,0 +1,19 @@
+# Hand-written planning docs, content drafts and source material: keep their formatting.
+CLAUDE.md
+README.md
+docs/
+content/
+source/
+migration/
+inbox/
+.claude/
+src/content/**/*.md
+
+# Self-contained demo files (don't modify) and build or test output.
+public/demos/
+dist/
+.astro/
+src/generated/
+playwright-report/
+test-results/
+package-lock.json

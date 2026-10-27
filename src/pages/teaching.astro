@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { EARLIER_TEACHING, TEACHING_ASSISTANT, TEACHING_INTERESTS } from '../data/cv.ts';
+---
+
+<BaseLayout
+  title="Teaching"
+  description="Teaching by Nanjie (Jimmy) Rao at the University of Florida: data structures discussion sections, co-taught graduate HCI and research methods, and earlier tutoring."
+>
+  <h1>Teaching</h1>
+  <p class="lede">
+    {TEACHING_ASSISTANT.role}, {TEACHING_ASSISTANT.where}, {TEACHING_ASSISTANT.when}.
+  </p>
+
+  <section aria-labelledby="uf-heading">
+    <h2 id="uf-heading">University of Florida</h2>
+    <ul class="section-list">
+      {TEACHING_ASSISTANT.items.map((item) => (
+        <li>
+          <strong>{item.course}.</strong> {item.details}
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="earlier-heading">
+    <h2 id="earlier-heading">Before UF</h2>
+    <ul class="section-list">
+      {EARLIER_TEACHING.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="interests-heading">
+    <h2 id="interests-heading">Teaching interests</h2>
+    <ul class="section-list">
+      {TEACHING_INTERESTS.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>

@@ -1,0 +1,73 @@
+---
+// QR target for DTRUE 2026 (D46): https://nanjierao.github.io/demos/csudt/
+// Links the two self-contained demo files in public/demos/csudt/, which are not modified here.
+// S4 turns this into the full explainer.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="CS-UDT demo"
+  description="CS-UDT, a crowd-sourced urban digital twin for hurricane flooding in Jacksonville: a planner dashboard and a zero-install citizen client, running on simulated data."
+>
+  <p class="breadcrumb">
+    <a href="/research/civic-digital-twins/">Civic digital twins</a>
+  </p>
+  <h1>CS-UDT flood digital twin</h1>
+  <div class="prose">
+    <p class="lede">
+      A crowd-sourced urban digital twin for hurricane flooding in Jacksonville. Everything in the
+      demo is simulated: the replay is modeled on Hurricane Irma (Sep 10–12, 2017), and the
+      community content is synthetic.
+    </p>
+
+    <ul class="demo-links plain-list">
+      <li>
+        <a class="button button--primary" href="/demos/csudt/csudt_dashboard.html">
+          Planner dashboard
+        </a>
+        <p class="small">
+          The twin’s map view. Press Play to run the simulated replay and watch reports converge
+          into confirmed events. Best on a large screen.
+        </p>
+      </li>
+      <li>
+        <a class="button" href="/demos/csudt/csudt_mobile.html">
+          Citizen client
+        </a>
+        <p class="small">
+          The zero-install client residents would use: report, take quests, verify. Best on a phone.
+        </p>
+      </li>
+    </ul>
+
+    <h2>What the demo loads and asks for</h2>
+    <ul>
+      <li>
+        The dashboard loads MapLibre GL JS from unpkg.com and map tiles from OpenStreetMap (©
+        OpenStreetMap contributors).
+      </li>
+      <li>The citizen client loads qrcode.js from cdnjs.cloudflare.com.</li>
+      <li>
+        The citizen client can ask for your location and motion sensors, only when you tap the
+        button that uses them. Your demo reports stay in your browser (localStorage); the demo sends
+        nothing to this site.
+      </li>
+    </ul>
+
+    <p>
+      Background:{' '}
+      <a href="/research/civic-digital-twins/">Civic AI: crowd-sourced urban digital twins</a> ·{' '}
+      <a href="/builds/cs-udt/">CS-UDT build</a>.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .demo-links li {
+    margin-bottom: var(--space-4);
+  }
+
+  .demo-links p {
+    margin: var(--space-2) 0 0;
+  }
+</style>

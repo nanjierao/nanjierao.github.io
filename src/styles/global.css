@@ -1,0 +1,320 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading);
+  text-rendering: optimizeLegibility;
+}
+
+/* Chinese text uses the system CJK fonts; Latin characters inside it keep the sans. */
+:lang(zh) {
+  font-family: 'Inter Variable', Inter, var(--font-cjk);
+  line-height: 1.8;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--text-2xl);
+  margin: 0 0 var(--space-4);
+}
+
+h2 {
+  font-size: var(--text-xl);
+  margin: var(--space-7) 0 var(--space-3);
+}
+
+h3 {
+  font-size: var(--text-lg);
+  margin: var(--space-5) 0 var(--space-2);
+}
+
+p,
+ul,
+ol,
+dl {
+  margin: 0 0 var(--space-4);
+}
+
+li + li {
+  margin-top: var(--space-2);
+}
+
+a {
+  color: var(--color-link);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  color: var(--color-link-hover);
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+code,
+kbd,
+samp {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  margin: var(--space-6) 0;
+}
+
+/* ---------------------------------------------------------------- layout helpers */
+
+.container {
+  width: 100%;
+  max-width: var(--page-width);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.prose {
+  max-width: var(--measure);
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.lede {
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  max-width: var(--measure);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.small {
+  font-size: var(--text-sm);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.plain-list {
+  list-style: none;
+  padding: 0;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.eyebrow {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.card-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  padding: 0;
+  list-style: none;
+}
+
+.card-grid > li {
+  margin: 0;
+}
+
+.card {
+  height: 100%;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: var(--space-4) var(--space-5);
+}
+
+.card h3 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+.card p:last-child {
+  margin-bottom: 0;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-3) 0 0;
+  list-style: none;
+}
+
+.tag-list li {
+  margin: 0;
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  padding: 0 var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-link);
+  border-radius: var(--radius);
+  color: var(--color-link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.button:hover {
+  background: var(--color-surface);
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+.button--primary {
+  background: var(--color-link);
+  color: var(--color-bg);
+}
+
+.button--primary:hover {
+  background: var(--color-link-hover);
+  color: var(--color-bg);
+}
+
+.datasheet {
+  display: grid;
+  grid-template-columns: minmax(7rem, max-content) 1fr;
+  gap: var(--space-2) var(--space-5);
+  max-width: var(--measure);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.datasheet dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  padding-top: 0.15em;
+}
+
+.datasheet dd {
+  margin: 0;
+}
+
+@media (max-width: 36rem) {
+  .datasheet {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .datasheet dd + dt {
+    margin-top: var(--space-3);
+  }
+}
+
+.breadcrumb {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-3);
+}
+
+.section-list {
+  max-width: var(--measure);
+}
+
+/* ---------------------------------------------------------------- annotations (D30)
+ * Grounded vs. inferred always uses line style + label + color, never color alone. */
+
+.mark {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.22em;
+}
+
+.mark--grounded {
+  text-decoration-style: solid;
+  text-decoration-color: var(--color-grounded);
+}
+
+.mark--inferred {
+  text-decoration-style: dotted;
+  text-decoration-color: var(--color-inferred);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .site-header nav,
+  .theme-toggle,
+  .skip-link,
+  .site-footer {
+    display: none !important;
+  }
+
+  a {
+    color: inherit;
+  }
+}

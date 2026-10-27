@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BuildCard from '../../components/BuildCard.astro';
+import RepoList from '../../components/RepoList.astro';
+import { getBuilds } from '../../lib/content.ts';
+import { getExternalData } from '../../lib/external.ts';
+
+const builds = await getBuilds();
+const external = getExternalData();
+---
+
+<BaseLayout
+  title="Builds"
+  description="Systems Nanjie (Jimmy) Rao has built across software and hardware: LLM pipelines, study platforms, a puppet system, AR glasses apps, and a humanoid telepresence robot."
+>
+  <h1>Builds</h1>
+  <p class="lede">
+    Systems I have built across software and hardware, from study platforms and LLM pipelines to
+    puppets, AR glasses apps and a humanoid robot.
+  </p>
+
+  <section aria-labelledby="builds-heading">
+    <h2 id="builds-heading" class="visually-hidden">
+      Projects
+    </h2>
+    <ul class="card-grid">
+      {builds.map((build) => (
+        <li>
+          <BuildCard build={build} />
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="github-heading">
+    <h2 id="github-heading">On GitHub</h2>
+    <RepoList repos={external.github?.repos ?? null} />
+  </section>
+</BaseLayout>

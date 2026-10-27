@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ELSEWHERE } from '../../data/site.ts';
+import { getPosts } from '../../lib/content.ts';
+import { formatDay, isoDay } from '../../lib/format.ts';
+
+const posts = await getPosts();
+const zhihu = ELSEWHERE.find((link) => link.id === 'zhihu')!;
+---
+
+<BaseLayout
+  title="Blog"
+  description="Nanjie (Jimmy) Rao’s answers on Zhihu, in Chinese, each with an English title and summary."
+>
+  <h1>Blog</h1>
+  <p class="lede">
+    My answers on <a href={zhihu.href}>Zhihu</a>, in Chinese. Each post has an English title and a
+    short English summary, so you can see what it is about without reading Chinese. Discussion stays
+    on Zhihu. <a href="/rss.xml">RSS feed</a>.
+  </p>
+
+  {posts.length === 0 ? (
+    <p>No posts yet.</p>
+  ) : (
+    <ol class="post-list plain-list">
+      {posts.map((post) => (
+        <li class="post-item">
+          <article>
+            <h2 class="post-item__title">
+              <a href={`/blog/${post.id}/`}>{post.data.title_en}</a>
+            </h2>
+            <p class="post-item__meta muted small">
+              <time datetime={isoDay(post.data.date)}>{formatDay(post.data.date)}</time>
+              {' · '}
+              <span lang="zh-CN">{post.data.title}</span>
+            </p>
+            <p>{post.data.summary_en}</p>
+          </article>
+        </li>
+      ))}
+    </ol>
+  )}
+</BaseLayout>
+
+<style>
+  .post-list {
+    max-width: var(--measure);
+  }
+
+  .post-item {
+    margin: 0 0 var(--space-6);
+  }
+
+  .post-item__title {
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-xl);
+  }
+
+  .post-item__meta {
+    margin-bottom: var(--space-2);
+  }
+</style>

@@ -1,0 +1,111 @@
+---
+// Recent public GitHub activity (D40): rendered at build time from src/generated/, then
+// refreshed in the browser from the public API (sessionStorage cache). On any error the
+// build-time list stays as it is.
+import { GITHUB_USER, type ActivityItem } from '../lib/github.ts';
+import { formatDay, isoDay } from '../lib/format.ts';
+
+interface Props {
+  activity: ActivityItem[];
+}
+
+const { activity } = Astro.props;
+const profile = `https://github.com/${GITHUB_USER}`;
+---
+
+<div class="gh-activity" data-github-activity>
+  <ul class="gh-activity__list plain-list" data-list hidden={activity.length === 0}>
+    {activity.map((item) => (
+      <li>
+        {item.action} <a href={item.repoUrl}>{item.repo}</a>{' '}
+        <span class="muted small">
+          · <time datetime={isoDay(item.date)}>{formatDay(item.date)}</time>
+        </span>
+      </li>
+    ))}
+  </ul>
+  <p class="small">
+    More on <a href={profile}>github.com/{GITHUB_USER}</a>.
+  </p>
+</div>
+
+<script>
+  import {
+    EVENTS_URL,
+    sanitizeActivity,
+    summarizeEvents,
+    type ActivityItem,
+  } from '../lib/github.ts';
+  import { formatDay, isoDay } from '../lib/format.ts';
+
+  const CACHE_KEY = 'github-activity-v1';
+  const MAX_AGE_MS = 30 * 60 * 1000;
+
+  function readCache(): ActivityItem[] | null {
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const cached = JSON.parse(raw) as { savedAt?: unknown; items?: unknown };
+      if (typeof cached.savedAt !== 'number' || Date.now() - cached.savedAt > MAX_AGE_MS)
+        return null;
+      return sanitizeActivity(cached.items);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeCache(items: ActivityItem[]): void {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), items }));
+    } catch {
+      // Storage full or blocked: skip the cache.
+    }
+  }
+
+  // Build list items with DOM methods only: API text is untrusted and never parsed as HTML.
+  function render(list: HTMLElement, items: ActivityItem[]): void {
+    const fragment = document.createDocumentFragment();
+    for (const item of items) {
+      const li = document.createElement('li');
+      li.append(`${item.action} `);
+      const link = document.createElement('a');
+      link.href = item.repoUrl;
+      link.textContent = item.repo;
+      li.append(link);
+      const meta = document.createElement('span');
+      meta.className = 'muted small';
+      const time = document.createElement('time');
+      time.dateTime = isoDay(item.date);
+      time.textContent = formatDay(item.date);
+      meta.append('· ', time);
+      li.append(' ', meta);
+      fragment.append(li);
+    }
+    list.replaceChildren(fragment);
+    list.hidden = items.length === 0;
+  }
+
+  async function refresh(): Promise<void> {
+    const list = document.querySelector<HTMLElement>('[data-github-activity] [data-list]');
+    if (!list) return;
+    const cached = readCache();
+    if (cached) {
+      if (cached.length > 0) render(list, cached);
+      return;
+    }
+    try {
+      const response = await fetch(EVENTS_URL, {
+        headers: { Accept: 'application/vnd.github+json' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) return;
+      const items = summarizeEvents(await response.json());
+      writeCache(items);
+      if (items.length > 0) render(list, items);
+    } catch {
+      // Offline, rate-limited or blocked: keep the build-time list quietly.
+    }
+  }
+
+  void refresh();
+</script>

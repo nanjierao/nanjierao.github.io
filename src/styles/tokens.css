@@ -1,0 +1,86 @@
+/*
+ * Design tokens: the neutral baseline (SITE_PLAN §8) until docs/DESIGN.md exists (S2).
+ * Light and dark themes come from the same token names. Contrast on --color-bg (WCAG 2.2):
+ *   light: text 16.5, muted 7.3, link 8.1, grounded 6.3, inferred 6.4, border 3.5
+ *   dark:  text 15.3, muted 8.5, link 9.0, grounded 9.6, inferred 9.8, border 4.2
+ */
+:root {
+  color-scheme: light;
+
+  --color-bg: #fbfaf7;
+  --color-surface: #f1efe9;
+  --color-text: #1c1b18;
+  --color-text-muted: #57534b;
+  --color-border: #8a857a;
+  --color-rule: #d9d5cc;
+  --color-link: #1f4d8c;
+  --color-link-hover: #12345f;
+  --color-focus: #1f4d8c;
+  --color-grounded: #1d6a47;
+  --color-inferred: #8f4a0b;
+
+  --font-serif: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-sans:
+    'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-cjk:
+    'PingFang SC', 'Hiragino Sans GB', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei',
+    sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-sm: 0.875rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.35rem, 1.2rem + 0.6vw, 1.6rem);
+  --text-2xl: clamp(1.75rem, 1.45rem + 1.4vw, 2.5rem);
+  --leading: 1.6;
+  --leading-tight: 1.25;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+
+  --measure: 68ch;
+  --page-width: 72rem;
+  --gutter: clamp(1rem, 4vw, 2rem);
+  --radius: 6px;
+  --focus-ring: 3px solid var(--color-focus);
+}
+
+/* Dark theme: follow the system unless the visitor picked light with the toggle. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --color-bg: #151513;
+    --color-surface: #1f1e1b;
+    --color-text: #ecebe6;
+    --color-text-muted: #b5b0a6;
+    --color-border: #7d786e;
+    --color-rule: #3b3934;
+    --color-link: #93b8ec;
+    --color-link-hover: #c3d8f5;
+    --color-focus: #93b8ec;
+    --color-grounded: #7fcca4;
+    --color-inferred: #f0b26b;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #151513;
+  --color-surface: #1f1e1b;
+  --color-text: #ecebe6;
+  --color-text-muted: #b5b0a6;
+  --color-border: #7d786e;
+  --color-rule: #3b3934;
+  --color-link: #93b8ec;
+  --color-link-hover: #c3d8f5;
+  --color-focus: #93b8ec;
+  --color-grounded: #7fcca4;
+  --color-inferred: #f0b26b;
+}

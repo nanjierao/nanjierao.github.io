@@ -1,0 +1,106 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import YouTubeFacade from '../../components/YouTubeFacade.astro';
+import { getBuilds, getThemes, type Build } from '../../lib/content.ts';
+
+export const getStaticPaths = (async () => {
+  const builds = await getBuilds();
+  return builds.map((build) => ({ params: { slug: build.id }, props: { build } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  build: Build;
+}
+
+const { build } = Astro.props;
+const { title, when, summary, datasheet, video, images, hardestBug, links } = build.data;
+const { Content } = await render(build);
+const themes = (await getThemes()).filter((theme) => build.data.themes.includes(theme.id));
+---
+
+<BaseLayout title={title} description={summary}>
+  <p class="breadcrumb">
+    <a href="/builds/">Builds</a>
+  </p>
+  <h1>{title}</h1>
+  {when && <p class="muted">{when}</p>}
+  <p class="lede">{summary}</p>
+
+  {images.map((image) => (
+    <figure class="build-figure">
+      <Image
+        src={image.src}
+        alt={image.alt}
+        widths={[640, 1280, 1920]}
+        sizes="(min-width: 72rem) 68rem, 100vw"
+      />
+    </figure>
+  ))}
+
+  <section aria-labelledby="datasheet-heading">
+    <h2 id="datasheet-heading">Datasheet</h2>
+    <dl class="datasheet">
+      {datasheet.map((row) => (
+        <>
+          <dt>{row.label}</dt>
+          <dd>{row.value}</dd>
+        </>
+      ))}
+    </dl>
+  </section>
+
+  <div class="prose">
+    <Content />
+  </div>
+
+  {video && (
+    <section aria-labelledby="video-heading">
+      <h2 id="video-heading">Video</h2>
+      <YouTubeFacade
+        id={video.id}
+        title={video.title}
+        start={video.start}
+        channel={video.channel}
+      />
+    </section>
+  )}
+
+  {hardestBug && (
+    <section aria-labelledby="bug-heading">
+      <h2 id="bug-heading">Hardest bug & fix</h2>
+      <p class="prose">{hardestBug}</p>
+    </section>
+  )}
+
+  {(links.length > 0 || themes.length > 0) && (
+    <section aria-labelledby="related-heading">
+      <h2 id="related-heading">Related</h2>
+      <ul class="section-list">
+        {links.map((link) => (
+          <li>
+            <a href={link.href}>{link.label}</a>
+          </li>
+        ))}
+        {themes.map((theme) => (
+          <li>
+            Research: <a href={`/research/${theme.id}/`}>{theme.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+</BaseLayout>
+
+<style>
+  .build-figure {
+    margin: 0 0 var(--space-5);
+  }
+
+  .build-figure :global(img) {
+    border-radius: var(--radius);
+    border: 1px solid var(--color-rule);
+  }
+</style>

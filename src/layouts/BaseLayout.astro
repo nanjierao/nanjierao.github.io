@@ -1,0 +1,58 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>;
+  ogType?: 'website' | 'article' | 'profile';
+}
+
+const props = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead {...props} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">
+      Skip to content
+    </a>
+    <Header />
+    <main id="main" tabindex="-1" class="container">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .skip-link {
+    position: absolute;
+    left: var(--space-3);
+    top: -100px;
+    z-index: 10;
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-bg);
+    color: var(--color-link);
+    border: 2px solid var(--color-focus);
+    border-radius: var(--radius);
+  }
+
+  .skip-link:focus {
+    top: var(--space-3);
+  }
+
+  main {
+    padding-top: var(--space-6);
+  }
+
+  main:focus {
+    outline: none;
+  }
+</style>

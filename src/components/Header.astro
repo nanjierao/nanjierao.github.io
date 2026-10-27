@@ -1,0 +1,100 @@
+---
+import { NAV, PERSON } from '../data/site.ts';
+import ThemeToggle from './ThemeToggle.astro';
+
+const path = Astro.url.pathname;
+const isCurrent = (href: string) => path === href || path.startsWith(href);
+---
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a class="site-header__name" href="/" aria-current={path === '/' ? 'page' : undefined}>
+      {PERSON.displayName}
+    </a>
+    <nav aria-label="Main">
+      <ul class="site-nav">
+        {NAV.map((item) => (
+          <li>
+            <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <ThemeToggle />
+  </div>
+</header>
+
+<style>
+  .site-header {
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .site-header__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-5);
+    padding-block: var(--space-3);
+  }
+
+  .site-header__name {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 1.15rem;
+    color: var(--color-text);
+    text-decoration: none;
+    margin-right: auto;
+  }
+
+  .site-header__name:hover {
+    text-decoration: underline;
+  }
+
+  .site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-nav li {
+    margin: 0;
+  }
+
+  .site-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--space-2);
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: var(--text-sm);
+  }
+
+  .site-nav a:hover {
+    text-decoration: underline;
+  }
+
+  .site-nav a[aria-current='page'] {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.35em;
+    font-weight: 600;
+  }
+
+  @media (max-width: 40rem) {
+    .site-header__inner {
+      gap: 0 var(--space-3);
+    }
+
+    nav {
+      order: 3;
+      width: 100%;
+      margin-inline: calc(-1 * var(--space-2));
+    }
+  }
+</style>

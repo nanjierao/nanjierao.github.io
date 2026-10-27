@@ -1,0 +1,48 @@
+---
+// "On GitHub" (D40): public repositories of JimmyRaoUF and the nanjierao organization,
+// fetched at build time. Without data, a link to the profile stands in.
+import { GITHUB_USER, type RepoItem } from '../lib/github.ts';
+import { formatDay, isoDay } from '../lib/format.ts';
+
+interface Props {
+  repos: RepoItem[] | null;
+  limit?: number;
+}
+
+const { repos, limit = 12 } = Astro.props;
+const shown = (repos ?? []).slice(0, limit);
+const profile = `https://github.com/${GITHUB_USER}`;
+---
+
+{shown.length > 0 ? (
+  <ul class="card-grid repo-list">
+    {shown.map((repo) => (
+      <li>
+        <article class="card">
+          <h3>
+            <a href={repo.url}>{repo.fullName}</a>
+          </h3>
+          {repo.description && <p>{repo.description}</p>}
+          <p class="small muted">
+            {[repo.language, repo.archived ? 'archived' : null].filter(Boolean).join(' · ')}
+            {repo.language || repo.archived ? ' · ' : ''}
+            updated <time datetime={isoDay(repo.pushedAt)}>{formatDay(repo.pushedAt)}</time>
+          </p>
+        </article>
+      </li>
+    ))}
+  </ul>
+) : null}
+<p>
+  All public repositories: <a href={profile}>github.com/{GITHUB_USER}</a> and{' '}
+  <a href="https://github.com/nanjierao">github.com/nanjierao</a>.
+</p>
+
+<style>
+  .repo-list h3 {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+</style>

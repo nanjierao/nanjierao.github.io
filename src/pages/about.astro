@@ -1,0 +1,88 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ElsewhereLinks from '../components/ElsewhereLinks.astro';
+import TalkList from '../components/TalkList.astro';
+import { PERSON, UMBRELLA } from '../data/site.ts';
+import { STATUS } from '../data/cv.ts';
+import { personJsonLd } from '../lib/seo.ts';
+import headshot from '../assets/images/nanjie-rao-headshot.jpg';
+// TODO(jimmy): approve a short and a long bio (facts.md §3 drafts) for copy buttons here (S3),
+// and pick the public email (facts.md §1).
+---
+
+<BaseLayout
+  title="About"
+  description="About Nanjie (Jimmy) Rao, Ph.D. candidate in Human-Centered Computing at the University of Florida."
+  jsonLd={personJsonLd()}
+  ogType="profile"
+>
+  <h1>About</h1>
+  <div class="about">
+    <Image
+      class="about__photo"
+      src={headshot}
+      alt="Nanjie (Jimmy) Rao, smiling, in a dark suit jacket, leaning on a railing beside a tall window."
+      width={240}
+      height={240}
+      loading="eager"
+    />
+    <div class="prose">
+      <p>
+        I’m {PERSON.displayName}; my papers use {PERSON.scholarlyName}. I’m a Ph.D. candidate in
+        Human-Centered Computing at the University of Florida, in the {STATUS.department}. I work in
+        the <a href={STATUS.labUrl}>Embodied Learning & Experience (ELX) Lab</a>, advised by{' '}
+        <a href={STATUS.advisorUrl}>Dr. Sharon Lynn Chu</a>. I passed my oral defense in October
+        2026, and the Ph.D. is to be conferred in December 2026.
+      </p>
+      <p>{UMBRELLA}</p>
+      <p>
+        Before human-centered computing, I did doctoral coursework in electrical engineering at the
+        University of Houston and Texas A&M University, after my undergraduate studies at Huazhong
+        University of Science and Technology (HUST) in China. I build hardware as well as software;
+        see <a href="/builds/">Builds</a>.
+      </p>
+      <p>Pronouns: he/him.</p>
+    </div>
+  </div>
+
+  <section aria-labelledby="about-talks">
+    <h2 id="about-talks">Talks</h2>
+    <TalkList />
+  </section>
+
+  <section aria-labelledby="about-elsewhere">
+    <h2 id="about-elsewhere">Elsewhere</h2>
+    <ElsewhereLinks variant="list" />
+  </section>
+
+  <section aria-labelledby="about-outside">
+    <h2 id="about-outside">Outside research</h2>
+    <p class="prose">
+      I’m a certified rank-2 master in Go (weiqi). I also enjoy ballroom dancing, soccer, and soccer
+      esports games.
+    </p>
+  </section>
+</BaseLayout>
+
+<style>
+  .about {
+    display: grid;
+    gap: var(--space-5);
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  @media (min-width: 48rem) {
+    .about {
+      grid-template-columns: 240px 1fr;
+    }
+  }
+
+  .about :global(.about__photo) {
+    border-radius: var(--radius);
+    width: 240px;
+    max-width: 60vw;
+    height: auto;
+  }
+</style>

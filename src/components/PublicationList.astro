@@ -1,0 +1,71 @@
+---
+import { approvedTldr, type Publication } from '../lib/content.ts';
+import { authorParts, isSelf } from '../lib/format.ts';
+
+interface Props {
+  publications: Publication[];
+  /** Hide TL;DR lines (e.g. on the compact CV list). */
+  compact?: boolean;
+}
+
+const { publications, compact = false } = Astro.props;
+---
+
+<ol class="pub-list">
+  {publications.map((pub) => {
+    const tldr = compact ? null : approvedTldr(pub);
+    return (
+      <li class="pub" id={pub.id}>
+        <span class="pub__authors">
+          {authorParts(pub.authors).map(({ before, name }) => (
+            <>
+              {before}
+              {isSelf(name) ? <strong>{name}</strong> : name}
+            </>
+          ))}
+        </span>{' '}
+        {pub.year && <span class="pub__year">({pub.year}).</span>}{' '}
+        <cite class="pub__title">{pub.title}.</cite>{' '}
+        <span class="pub__venue">
+          {pub.venue}
+          {pub.details && `, ${pub.details}`}.
+        </span>
+        {pub.notes.length > 0 && <span class="pub__notes"> {pub.notes.join('. ')}.</span>}
+        {pub.url && (
+          <>
+            {' '}
+            <a href={pub.url}>Paper</a>
+          </>
+        )}
+        {tldr && <p class="pub__tldr">TL;DR: {tldr}</p>}
+      </li>
+    );
+  })}
+</ol>
+
+<style>
+  .pub-list {
+    list-style: none;
+    padding: 0;
+    max-width: var(--measure);
+  }
+
+  .pub {
+    margin: 0 0 var(--space-4);
+    padding-left: var(--space-4);
+    border-left: 3px solid var(--color-rule);
+  }
+
+  .pub__title {
+    font-style: italic;
+  }
+
+  .pub__notes {
+    color: var(--color-text-muted);
+  }
+
+  .pub__tldr {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+  }
+</style>

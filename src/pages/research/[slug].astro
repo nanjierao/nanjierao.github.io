@@ -1,0 +1,54 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BuildCard from '../../components/BuildCard.astro';
+import PublicationList from '../../components/PublicationList.astro';
+import { CONTEXT_LABELS } from '../../content/schemas.ts';
+import { getBuildsByIds, getPublicationsByIds, getThemes, type Theme } from '../../lib/content.ts';
+
+export const getStaticPaths = (async () => {
+  const themes = await getThemes();
+  return themes.map((theme) => ({ params: { slug: theme.id }, props: { theme } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  theme: Theme;
+}
+
+const { theme } = Astro.props;
+const { Content } = await render(theme);
+const publications = await getPublicationsByIds(theme.data.publications);
+const builds = await getBuildsByIds(theme.data.builds);
+---
+
+<BaseLayout title={theme.data.title} description={theme.data.summary}>
+  <p class="breadcrumb">
+    <a href="/research/">Research</a> · {CONTEXT_LABELS[theme.data.context]}
+  </p>
+  <h1>{theme.data.title}</h1>
+  <p class="lede">{theme.data.summary}</p>
+  <div class="prose">
+    <Content />
+  </div>
+
+  {publications.length > 0 && (
+    <section aria-labelledby="theme-publications">
+      <h2 id="theme-publications">Publications</h2>
+      <PublicationList publications={publications} />
+    </section>
+  )}
+
+  {builds.length > 0 && (
+    <section aria-labelledby="theme-builds">
+      <h2 id="theme-builds">Builds</h2>
+      <ul class="card-grid">
+        {builds.map((build) => (
+          <li>
+            <BuildCard build={build} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+</BaseLayout>
