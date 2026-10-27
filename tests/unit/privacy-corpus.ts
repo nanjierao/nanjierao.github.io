@@ -1,10 +1,10 @@
 // Every sentence in this file is a fictional test input for scripts/lib/privacy-rules.ts. None of
 // them describes Jimmy: the people, phone numbers (555-01xx style, 138-0013-8000, 010-12345678),
-// streets, handles and amounts are made up, and phrases such as "Jimmy's wife" are bare samples
-// for the owner-name rule, not statements. Most entries come from the October 2026 probes of the
-// rules (English and Chinese false positives and false negatives, code and build output) and from
-// tests/unit/privacy-rules.test.ts. This file is excluded from the repository scan (SELF in
-// scripts/check-privacy.ts).
+// streets, handles and amounts are made up. The owner-name samples are assembled at run time
+// (OWNER below), so this file never pairs his name with a family or salary word. Most entries
+// come from the October 2026 probes of the rules (English and Chinese false positives and false
+// negatives, code and build output) and from tests/unit/privacy-rules.test.ts. This file is
+// excluded from the repository scan (SELF in scripts/check-privacy.ts).
 
 /** Which function a family's `flag` entries must trip. */
 export type CorpusFunction = 'phones' | 'emails' | 'addresses' | 'terms' | 'videoTitle' | 'code';
@@ -30,6 +30,9 @@ export interface KnownLimit {
   expected: 'flag' | 'pass';
   reason: string;
 }
+
+/** The names the owner-name rule knows, for samples built at run time. */
+const OWNER = ['Jim' + 'my', 'Nan' + 'jie'] as const;
 
 const phones: CorpusFamily = {
   name: 'phone numbers',
@@ -912,8 +915,8 @@ const family: CorpusFamily = {
     'father of two',
     'mom of three',
     'As a parent of a toddler, I',
-    "Jimmy's wife",
-    'Nanjie’s son',
+    `${OWNER[0]}'s wife`,
+    `${OWNER[1]}’s son`,
     'my girls',
     'my boys',
     'my little guy',
@@ -1320,7 +1323,7 @@ const compensation: CorpusFamily = {
     '| Compensation: | $95,000 |',
     '- Compensation: $95,000',
     'Compensation — $120k',
-    "Jimmy's salary",
+    `${OWNER[0]}'s salary`,
     '我的年薪是 30 万。',
     '我的年薪',
     '年薪 30w',
