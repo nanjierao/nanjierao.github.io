@@ -234,20 +234,21 @@ export function unscannableKind(bytes: Uint8Array): string | null {
 }
 
 /**
- * Base64 images embedded in HTML, CSS, JS or SVG text. The payload must start right after the
- * comma and has no spaces, so prose that mentions "data:image/png;base64," isn't read as one.
- * Parameters such as ";name=photo.jpg" are allowed.
+ * Base64 images embedded in HTML, CSS, JS or SVG text. The payload starts right after the comma
+ * (or on the next line) with at least 16 base64 characters, so prose that mentions
+ * "data:image/png;base64," isn't read as one; MIME-style line wrapping (also as &#10; or &#13;)
+ * is joined back together. Parameters such as ";name=photo.jpg" are allowed.
  */
 export function findDataUriImages(
   text: string,
 ): Array<{ type: string; bytes: Uint8Array; index: number }> {
   const found: Array<{ type: string; bytes: Uint8Array; index: number }> = [];
   for (const m of text.matchAll(
-    /data:image\/([a-z0-9.+-]+)(?:;[^;,\s"')]+)*;base64,([A-Za-z0-9+/]{16,}={0,2})/gi,
+    /data:image\/([a-z0-9.+-]+)(?:;[^;,\s"')]+)*;base64,(?:\r?\n[ \t]*)?([A-Za-z0-9+/]{16}(?:[A-Za-z0-9+/=]|\r?\n[ \t]*|&#(?:10|13|x0?[aAdD]);)*)/gi,
   )) {
     found.push({
       type: m[1]!.toLowerCase(),
-      bytes: Buffer.from(m[2]!, 'base64'),
+      bytes: Buffer.from(m[2]!.replace(/\s+|&#(?:10|13|x0?[aAdD]);/g, ''), 'base64'),
       index: m.index ?? 0,
     });
   }

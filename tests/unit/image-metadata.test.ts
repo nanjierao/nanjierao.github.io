@@ -149,6 +149,9 @@ describe('findDataUriImages and imageSignature', () => {
     const prose =
       'Images embedded as data:image/png;base64, data URIs are checked.\nA data URI starts with data:image/jpeg;base64,\nfollowed by the bytes.';
     expect(findDataUriImages(prose)).toEqual([]);
+    const wrapped = png.replace(/.{1,76}/g, (line) => `${line}\n`);
+    const [joined] = findDataUriImages(`<img src="data:image/png;base64,\n${wrapped}">`);
+    expect(joined && Buffer.from(joined.bytes).toString('base64')).toBe(png);
     expect(imageSignature(Buffer.from('ABCDEFGHIJKLMNOP'))).toBeNull();
   });
 });
