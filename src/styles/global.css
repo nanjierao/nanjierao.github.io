@@ -329,4 +329,12 @@ hr {
   a {
     color: inherit;
   }
+
+  /* Browsers drop backgrounds when printing: outline buttons instead of white-on-nothing. */
+  .button,
+  .button--primary {
+    background: none;
+    color: #000;
+    border-color: #000;
+  }
 }

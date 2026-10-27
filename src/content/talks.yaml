@@ -22,6 +22,7 @@
   timeZone: America/New_York
   wording:
     upcoming: Upcoming oral presentation at DTRUE 2026
+    ongoing: Oral presentation at DTRUE 2026
     past: Presented at DTRUE 2026
   link: /research/civic-digital-twins/
 # TODO(jimmy): ICIDS 2026 talk — date and location (facts.md §11). Add it here with

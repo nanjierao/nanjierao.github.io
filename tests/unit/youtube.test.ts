@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { isPublishableText } from '../../scripts/lib/privacy-rules.ts';
+import { isPublishableVideoTitle } from '../../scripts/lib/privacy-rules.ts';
 import {
   YOUTUBE_FEED_URL,
   isVideoId,
@@ -35,7 +35,7 @@ describe('YouTube feed (D50)', () => {
   });
 
   it('skips titles in a facts.md §15 category, as the build script does', () => {
-    const latest = parseFeed(feed).find((video) => isPublishableText(video.title));
+    const latest = parseFeed(feed).find((video) => isPublishableVideoTitle(video.title));
     expect(latest?.id).toBe('AAAAAAAAAA2');
   });
 

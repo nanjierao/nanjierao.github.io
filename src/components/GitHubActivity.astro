@@ -1,19 +1,26 @@
 ---
 // Recent public GitHub activity (D40): rendered at build time from src/generated/, then
 // refreshed in the browser from the public API (sessionStorage cache). On any error the
-// build-time list stays as it is.
+// build-time list stays as it is. The browser shows only repositories the build approved
+// (its privacy filter can't ship to the browser), so new repositories appear after a rebuild.
 import { GITHUB_USER, type ActivityItem } from '../lib/github.ts';
 import { formatDay, isoDay } from '../lib/format.ts';
 
 interface Props {
   activity: ActivityItem[];
+  /** Repositories that passed the build's filter; null when the build had no GitHub data. */
+  allowedRepos: string[] | null;
 }
 
-const { activity } = Astro.props;
+const { activity, allowedRepos } = Astro.props;
 const profile = `https://github.com/${GITHUB_USER}`;
 ---
 
-<div class="gh-activity" data-github-activity>
+<div
+  class="gh-activity"
+  data-github-activity
+  data-allowed-repos={allowedRepos ? JSON.stringify(allowedRepos) : undefined}
+>
   <ul class="gh-activity__list plain-list" data-list hidden={activity.length === 0}>
     {activity.map((item) => (
       <li>
@@ -87,12 +94,30 @@ const profile = `https://github.com/${GITHUB_USER}`;
     list.hidden = items.length === 0;
   }
 
+  const LIMIT = 5;
+
+  /** Keep only repositories the build approved, when it had data to approve them from. */
+  function approved(root: HTMLElement, items: ActivityItem[]): ActivityItem[] {
+    let allowed: Set<string> | null = null;
+    try {
+      const raw = root.dataset.allowedRepos;
+      if (raw) allowed = new Set((JSON.parse(raw) as string[]).map((r) => r.toLowerCase()));
+    } catch {
+      allowed = new Set();
+    }
+    const set = allowed;
+    const kept = set ? items.filter((item) => set.has(item.repo.toLowerCase())) : items;
+    return kept.slice(0, LIMIT);
+  }
+
   async function refresh(): Promise<void> {
-    const list = document.querySelector<HTMLElement>('[data-github-activity] [data-list]');
-    if (!list) return;
+    const root = document.querySelector<HTMLElement>('[data-github-activity]');
+    const list = root?.querySelector<HTMLElement>('[data-list]');
+    if (!root || !list) return;
     const cached = readCache();
     if (cached) {
-      if (cached.length > 0) render(list, cached);
+      const items = approved(root, cached);
+      if (items.length > 0) render(list, items);
       return;
     }
     try {
@@ -101,8 +126,9 @@ const profile = `https://github.com/${GITHUB_USER}`;
         signal: AbortSignal.timeout(8000),
       });
       if (!response.ok) return;
-      const items = summarizeEvents(await response.json());
-      writeCache(items);
+      const all = summarizeEvents(await response.json(), 50);
+      writeCache(all);
+      const items = approved(root, all);
       if (items.length > 0) render(list, items);
     } catch {
       // Offline, rate-limited or blocked: keep the build-time list quietly.

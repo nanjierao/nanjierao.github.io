@@ -2,7 +2,7 @@
 title: Embodied and creative learning
 context: embodied
 order: 4
-summary: Hand enactment, puppets, avatars and AR glasses in storytelling and everyday learning, and the hardware and software I built to study them.
+summary: Hand enactment, puppets, avatars and AR glasses in storytelling and everyday learning, and the systems I built or helped build along the way.
 facts: ['5.4', '7']
 publications:
   [

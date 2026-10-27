@@ -25,7 +25,7 @@ export function getExternalData(): ExternalData {
       data.github && Array.isArray(data.github.repos)
         ? { activity: sanitizeActivity(data.github.activity), repos: data.github.repos }
         : null,
-    youtube: data.youtube?.latest ? data.youtube : null,
+    youtube: data.youtube?.latest?.id ? data.youtube : null,
   };
 }
 

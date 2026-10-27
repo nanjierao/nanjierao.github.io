@@ -28,5 +28,6 @@ truth.
 
 ## The same convention on this site
 
-Pages here use the same idea for annotations: a solid underline marks something shown in the
-source, and a dotted underline marks an inference. The legend sits at the bottom of every page.
+The legend at the bottom of every page uses the same idea: a solid underline for something shown
+in the source, a dotted underline for an inference. The planned Ask and Life & You pages will mark
+their claims this way.

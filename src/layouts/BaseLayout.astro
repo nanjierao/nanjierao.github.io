@@ -9,6 +9,7 @@ interface Props {
   noindex?: boolean;
   jsonLd?: Record<string, unknown>;
   ogType?: 'website' | 'article' | 'profile';
+  canonical?: boolean;
 }
 
 const props = Astro.props;

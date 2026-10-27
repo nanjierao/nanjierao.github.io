@@ -1,7 +1,7 @@
 // Content checks (CLAUDE.md: "every publication has year, venue, authors") plus the rules that
 // keep unconfirmed facts off the site. Files are read directly and validated with the same Zod
 // schemas the collections use.
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'astro/zod';
 import { describe, expect, it } from 'vitest';
@@ -275,18 +275,28 @@ describe('visible text', () => {
   });
 });
 
-describe('blog images (CLAUDE.md: alt text for every meaningful image)', () => {
+describe('blog posts (CLAUDE.md: alt text for every meaningful image; one h1)', () => {
   const blogDir = join(CONTENT, 'blog');
+  const postFile = (dir: string) =>
+    ['index.md', 'index.mdx'].map((name) => join(dir, name)).find((path) => existsSync(path));
   const posts = readdirSync(blogDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => join(blogDir, entry.name, 'index.md'));
+    .map((entry) => postFile(join(blogDir, entry.name)))
+    .filter((path): path is string => Boolean(path));
   const fixture = join(ROOT, 'tests', 'fixtures', 'blog', '2026-10-01-fixture-post', 'index.md');
+  const bodies = [...posts, fixture].map((path) => ({
+    path,
+    body: readMarkdown(path).body,
+  }));
 
-  it('gives every Markdown and HTML image in a post alt text', () => {
-    for (const path of [...posts, fixture]) {
-      const body = readFileSync(path, 'utf8');
-      expect(body, path).not.toMatch(/!\[\s*\]\(/);
-      expect(body, path).not.toMatch(/<img(?![^>]*\balt="[^"]+")[^>]*>/i);
+  it('gives every Markdown and HTML image alt text', () => {
+    for (const { path, body } of bodies) {
+      expect(body, path).not.toMatch(/!\[[\s\p{P}]*\]\s*[([]/u); // ![](x), ![ ][ref], ![.](x)
+      expect(body, path).not.toMatch(/<img\b(?![^>]*\balt\s*=\s*"[^"]*[^\s"][^"]*")[^>]*>/i);
     }
+  });
+
+  it('keeps the page h1 for the English title (no "# " headings in the body)', () => {
+    for (const { path, body } of bodies) expect(body, path).not.toMatch(/^#\s/m);
   });
 });

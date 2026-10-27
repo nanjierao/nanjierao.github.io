@@ -285,3 +285,36 @@ test('the nav marks the current page and the current section differently', async
   await expect(builds).toHaveAttribute('aria-current', 'true');
   await expect(page.locator('.site-nav a[aria-current="page"]')).toHaveCount(0);
 });
+
+test('mouse users get no focus ring around the player', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium');
+  await isolate(page);
+  await page.goto('/builds/xprize-avatar-robot/');
+  await page.getByRole('link', { name: /Play video/ }).click();
+  await expect(page.locator('yt-facade iframe')).toHaveCount(1);
+  expect(await page.locator('yt-facade').evaluate((el) => getComputedStyle(el).outlineStyle)).toBe(
+    'none',
+  );
+});
+
+test('the browser refresh shows only repositories the build approved', async ({ page }) => {
+  const events = JSON.parse(githubEvents) as Array<Record<string, unknown>>;
+  events.unshift({
+    id: '99',
+    type: 'PushEvent',
+    created_at: '2026-10-27T10:00:00Z',
+    repo: { name: 'JimmyRaoUF/not-approved-by-the-build' },
+    payload: {},
+  });
+  await page.route('https://api.github.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(events) }),
+  );
+  await page.goto('/');
+  const root = page.locator('[data-github-activity]');
+  test.skip(
+    (await root.getAttribute('data-allowed-repos')) === null,
+    'Build with EXTERNAL_DATA=fixtures to test the approved-repository filter',
+  );
+  await expect(root.locator('li').first()).toBeVisible();
+  await expect(root).not.toContainText('not-approved-by-the-build');
+});

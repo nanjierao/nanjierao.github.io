@@ -63,6 +63,8 @@ const meta = ['YouTube', channel ? `${channel} channel` : null, startLabel]
         // Let modified clicks open YouTube in a new tab as usual.
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
+        // Keyboard activation reports detail 0: keep the focus ring on the player only then.
+        this.toggleAttribute('data-kbd', event.detail === 0);
         const params = new URLSearchParams({ autoplay: '1', rel: '0' });
         const start = Number(this.dataset.start);
         if (Number.isInteger(start) && start > 0) params.set('start', String(start));
@@ -135,8 +137,10 @@ const meta = ['YouTube', channel ? `${channel} channel` : null, startLabel]
   }
 
   /* The poster covers the link's own outline and overflow: hidden clips the iframe's, so the
-     focus ring goes on the container: for the link, and for the player after it loads. */
-  .yt-facade:focus-within {
+     focus ring goes on the container: for the keyboard-focused link, and for the player when it
+     was opened from the keyboard. Mouse and touch users get no ring, as elsewhere. */
+  .yt-facade:has(.yt-facade__link:focus-visible),
+  .yt-facade[data-kbd]:focus-within {
     outline: var(--focus-ring);
     outline-offset: 2px;
   }

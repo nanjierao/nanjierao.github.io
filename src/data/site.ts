@@ -94,4 +94,11 @@ export const FLAGS = {
    * TODO(jimmy): decide whether thumbnails from your channel may appear on the site.
    */
   showLatestVideoThumbnail: false,
+  /**
+   * D54 again: titles on a family-life channel often name or describe children (facts.md §15
+   * "Family members"), and no word filter catches every form. Until Jimmy turns this on, the
+   * latest-video card shows a plain label, the date and the click-to-load player. When on, only
+   * titles that pass the strict family filter appear. TODO(jimmy): decide.
+   */
+  showLatestVideoTitle: false,
 } as const;

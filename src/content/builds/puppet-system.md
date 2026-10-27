@@ -12,6 +12,7 @@ datasheet:
   - { label: Deployment, value: 'Supported on site with elementary-school teachers' }
 tags: [Unity, computer vision, IMU, 3D printing]
 video: { id: OX2zRUeDojg, title: Unity puppet storytelling system }
+# TODO(jimmy): confirm whose hands hold the puppets in this photo (D31, D53).
 images:
   - src: ../../assets/images/puppet-system-beach-scene.jpg
     alt: 'Left: two hands hold 3D-printed puppets, a yellow block and a green figure, in front of a monitor showing a cartoon beach. Right: the same beach scene in Unity, titled “Act out your scene: beach”, with a wooden chest and a small cartoon character on the sand.'

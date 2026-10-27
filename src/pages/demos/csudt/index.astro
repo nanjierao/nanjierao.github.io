@@ -53,8 +53,13 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
         motion sensors, each only when you tap the control that uses it.
       </li>
       <li>
-        Your demo reports, including any photo or location you attach, stay in this browser
-        (localStorage) until you clear the site’s data. The demo sends nothing to this site.
+        Your demo reports stay in this browser (localStorage) until you clear the site’s data, with
+        any location you attach. A report with a large photo may not save. The demo sends nothing to
+        this site.
+      </li>
+      <li>
+        If you show a report’s relay QR code, anyone who scans it receives the report’s text and
+        location (not the photo).
       </li>
     </ul>
 

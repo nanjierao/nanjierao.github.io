@@ -125,7 +125,17 @@ const cvPdf = hasCvPdf();
       )}
       <section class="card" aria-labelledby="github-activity">
         <h3 id="github-activity">On GitHub</h3>
-        <GitHubActivity activity={external.github?.activity ?? []} />
+        <GitHubActivity
+          activity={external.github?.activity ?? []}
+          allowedRepos={
+            external.github
+              ? [
+                  ...external.github.activity.map((item) => item.repo),
+                  ...external.github.repos.map((repo) => repo.fullName),
+                ]
+              : null
+          }
+        />
       </section>
     </div>
   </section>

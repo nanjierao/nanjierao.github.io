@@ -19,13 +19,22 @@ import { PERSON } from '../src/data/site.ts';
 import {
   type Finding,
   describeImageMetadata,
+  exifHasGps,
   findAddresses,
   findEmails,
   findPhones,
   findSection15Terms,
   lineOf,
   mask,
+  stripLicenseComments,
+  xmpHasLocation,
 } from './lib/privacy-rules.ts';
+import {
+  findDataUriImages,
+  isFontFile,
+  readImageMetadata,
+  unscannableKind,
+} from './lib/image-metadata.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -130,7 +139,11 @@ function distFiles(dir = DIST): string[] {
   return files;
 }
 
-function scanText(file: string, text: string, scope: 'repo' | 'dist'): Result[] {
+const CODE_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.css']);
+
+function scanText(file: string, raw: string, scope: 'repo' | 'dist'): Result[] {
+  const code = CODE_EXTENSIONS.has(extname(file).toLowerCase());
+  const text = code ? stripLicenseComments(raw) : raw;
   const results: Result[] = [];
   const allowedEmails = PERSON.email ? [PERSON.email] : [];
   const push = (findings: Finding[], severity: Result['severity']) => {
@@ -148,51 +161,149 @@ function scanText(file: string, text: string, scope: 'repo' | 'dist'): Result[] 
   push(findEmails(text, allowedEmails), 'error');
   push(findAddresses(text), 'error');
   if (scope === 'dist') {
-    push(findSection15Terms(text), 'error');
+    push(findSection15Terms(text, { code }), 'error');
   } else if (!startsWithAny(file, TERM_SCAN_EXEMPT)) {
-    push(findSection15Terms(text), startsWithAny(file, TERM_SCAN_WARN_ONLY) ? 'warning' : 'error');
+    push(
+      findSection15Terms(text, { code }),
+      startsWithAny(file, TERM_SCAN_WARN_ONLY) ? 'warning' : 'error',
+    );
   }
   return results;
 }
 
-async function scanImage(file: string, scope: 'repo' | 'dist'): Promise<Result[]> {
+/** Image formats this check can't fully read: convert them before committing. */
+const CONVERT_FIRST = new Set(['.tif', '.tiff', '.heic', '.heif']);
+/** Extensions treated as unscannable even when their bytes look like text. */
+const UNSCANNABLE_EXTENSIONS = new Set([
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.ppt',
+  '.pptx',
+  '.odt',
+  '.ods',
+  '.odp',
+  '.key',
+  '.pages',
+  '.numbers',
+  '.zip',
+  '.gz',
+  '.tgz',
+  '.7z',
+  '.rar',
+  '.tar',
+  '.mp4',
+  '.mov',
+  '.m4v',
+  '.webm',
+  '.avi',
+  '.mkv',
+  '.mp3',
+  '.m4a',
+  '.wav',
+  '.ogg',
+  '.flac',
+  '.aac',
+  '.ico',
+  '.psd',
+  '.ai',
+  '.eps',
+  '.sketch',
+  '.fig',
+  '.bin',
+  '.db',
+  '.sqlite',
+]);
+
+function sha(bytes: Uint8Array): string {
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+/** Any metadata block in an image is an error (D31, facts.md §15); comments are scanned as text. */
+async function checkImageBytes(
+  file: string,
+  bytes: Uint8Array,
+  scope: 'repo' | 'dist',
+  where = '',
+): Promise<Result[]> {
+  const results: Result[] = [];
+  const raw = readImageMetadata(bytes);
+  let sharpReport: ReturnType<typeof describeImageMetadata> | null = null;
   try {
-    const meta = await sharp(join(ROOT, file)).metadata();
-    const report = describeImageMetadata(meta);
-    if (!report.hasLocation && !report.hasMetadata) return [];
-    // D31 and facts.md §15 bar photo metadata from every public file. In dist/ any metadata
-    // means an image bypassed Astro's pipeline; in the repository, strip it before committing
-    // (npm run strip-images -- <files>).
-    return [
-      {
-        file,
-        line: 0,
-        category: report.hasLocation
-          ? 'image location metadata'
-          : scope === 'dist'
-            ? 'image metadata in build output'
-            : 'image metadata in repository',
-        match: report.details.join(', '),
-        severity: 'error',
-      },
-    ];
+    sharpReport = describeImageMetadata(await sharp(bytes).metadata());
   } catch {
+    if (!where) {
+      return [
+        {
+          file,
+          line: 0,
+          category: 'unreadable image (metadata not checked)',
+          match: `sha256:${sha(bytes)}`,
+          severity: 'error',
+        },
+      ];
+    }
+  }
+  const blocks = new Set([...raw.blocks, ...(sharpReport?.details ?? [])]);
+  const location =
+    raw.exif.some((exif) => exifHasGps(exif)) ||
+    raw.xmp.some((xmp) => xmpHasLocation(xmp)) ||
+    Boolean(sharpReport?.hasLocation);
+  if (blocks.size > 0 || location) {
+    const kind = location
+      ? 'image location metadata'
+      : scope === 'dist'
+        ? 'image metadata in build output'
+        : 'image metadata in repository (npm run strip-images)';
+    results.push({
+      file,
+      line: 0,
+      category: `${kind}${where}: ${[...blocks].join(', ')}`,
+      match: `sha256:${sha(bytes)}`,
+      severity: 'error',
+    });
+  }
+  for (const text of raw.texts) {
+    for (const finding of scanText(file, text, scope)) {
+      results.push({ ...finding, line: 0, category: `image comment${where}: ${finding.category}` });
+    }
+  }
+  return results;
+}
+
+async function scanImage(
+  file: string,
+  bytes: Uint8Array,
+  scope: 'repo' | 'dist',
+): Promise<Result[]> {
+  if (CONVERT_FIRST.has(extname(file).toLowerCase())) {
     return [
       {
         file,
         line: 0,
-        category: 'unreadable image (metadata not checked)',
-        match: `sha256:${fileHash(file)}`,
+        category: 'convert to JPEG, PNG or WebP before committing (metadata not fully checkable)',
+        match: `sha256:${sha(bytes)}`,
         severity: 'error',
       },
     ];
   }
+  return checkImageBytes(file, bytes, scope);
 }
 
-function fileHash(file: string): string {
-  return createHash('sha256')
-    .update(readFileSync(join(ROOT, file)))
-    .digest('hex');
+/** Images embedded as base64 data URIs in text files go through the same check. */
+async function scanDataUris(file: string, text: string, scope: 'repo' | 'dist'): Promise<Result[]> {
+  const results: Result[] = [];
+  for (const embedded of findDataUriImages(text)) {
+    const where = ` (data URI at line ${lineOf(text, embedded.index)})`;
+    if (embedded.type === 'svg+xml') {
+      results.push(...scanText(file, Buffer.from(embedded.bytes).toString('utf8'), scope));
+    } else {
+      results.push(...(await checkImageBytes(file, embedded.bytes, scope, where)));
+    }
+  }
+  return results;
 }
 
 async function scan(
@@ -204,24 +315,30 @@ async function scan(
   for (const file of files) {
     if (SELF.includes(file)) continue;
     const ext = extname(file).toLowerCase();
-    counted++;
-    if (IMAGE_EXTENSIONS.has(ext)) {
-      results.push(...(await scanImage(file, scope)));
-      continue;
-    }
-    if (FONT_EXTENSIONS.has(ext)) continue;
     const bytes = readFileSync(join(ROOT, file));
-    if (bytes.subarray(0, 8192).includes(0)) {
-      results.push({
-        file,
-        line: 0,
-        category: `unscannable ${ext || 'binary'} file (review by hand, then allowlist)`,
-        match: `sha256:${fileHash(file)}`,
-        severity: 'error',
-      });
-      continue;
+    counted++;
+    const unscannable = (kind: string): Result => ({
+      file,
+      line: 0,
+      category: `can't look inside ${kind} (review the file by hand, then allowlist it)`,
+      match: `sha256:${sha(bytes)}`,
+      severity: 'error',
+    });
+    if (IMAGE_EXTENSIONS.has(ext) || CONVERT_FIRST.has(ext)) {
+      results.push(...(await scanImage(file, bytes, scope)));
+    } else if (FONT_EXTENSIONS.has(ext)) {
+      if (!isFontFile(bytes)) results.push(unscannable(`a ${ext} file that is not a font`));
+    } else {
+      const kind = unscannableKind(bytes) ?? (UNSCANNABLE_EXTENSIONS.has(ext) ? ext : null);
+      if (kind) results.push(unscannable(kind));
+      else if (bytes.subarray(0, 8192).includes(0))
+        results.push(unscannable(`${ext || 'a'} binary file`));
+      else {
+        const text = bytes.toString('utf8');
+        results.push(...scanText(file, text, scope));
+        results.push(...(await scanDataUris(file, text, scope)));
+      }
     }
-    results.push(...scanText(file, bytes.toString('utf8'), scope));
   }
   return { results, counted };
 }

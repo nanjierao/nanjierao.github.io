@@ -25,7 +25,7 @@ import {
 import { YOUTUBE_FEED_URL, parseFeed, thumbnailUrl } from '../src/lib/youtube.ts';
 import type { ExternalData } from '../src/lib/external-types.ts';
 import { FLAGS } from '../src/data/site.ts';
-import { isPublishableFetchedText } from './lib/privacy-rules.ts';
+import { isPublishableVideoTitle } from './lib/privacy-rules.ts';
 import { filterGitHub } from './lib/filter-external.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -85,10 +85,9 @@ async function loadGitHub(): Promise<ExternalData['github']> {
               return (await response.json()) as unknown;
             }),
           );
-    const { activity, repos, dropped } = filterGitHub(
-      summarizeEvents(events),
-      summarizeRepos(userRepos, orgRepos),
-    );
+    const filtered = filterGitHub(summarizeEvents(events, 50), summarizeRepos(userRepos, orgRepos));
+    const { repos, dropped } = filtered;
+    const activity = filtered.activity.slice(0, 5);
     log(`GitHub: ${activity.length} activity items, ${repos.length} repositories`);
     if (dropped > 0)
       log(`GitHub: held back ${dropped} name(s) or description(s) by the §15 filter`);
@@ -106,19 +105,23 @@ async function loadYouTube(): Promise<ExternalData['youtube']> {
         ? await readFixture('youtube-feed.xml')
         : await (await get(YOUTUBE_FEED_URL, 'application/atom+xml')).text();
     const videos = parseFeed(xml);
-    // Never surface a title that touches a facts.md §15 category or names family (D54); take the
-    // newest one that doesn't.
-    const latest = videos.find((video) => isPublishableFetchedText(video.title)) ?? null;
+    // D54: titles stay off the site unless Jimmy turns them on; then only titles that pass the
+    // §15 rules and the strict family rule, newest first. Without titles, the newest video.
+    const latest = FLAGS.showLatestVideoTitle
+      ? (videos.find((video) => isPublishableVideoTitle(video.title)) ?? null)
+      : (videos[0] ?? null);
     const skipped = latest ? videos.indexOf(latest) : videos.length;
-    if (skipped > 0) log(`YouTube: skipped ${skipped} newer video(s) by the §15 title filter`);
+    if (skipped > 0) log(`YouTube: skipped ${skipped} newer video(s) by the title filter`);
     if (!latest) {
       log('YouTube: no publishable video in the feed; the card stays hidden');
       return null;
     }
+    // Keep a title out of the build data entirely while titles are off.
+    const video = FLAGS.showLatestVideoTitle ? latest : { ...latest, title: '' };
     let thumbnail: string | null = null;
     if (FLAGS.showLatestVideoThumbnail) thumbnail = await saveThumbnail(latest.id);
     log(`YouTube: latest video found${thumbnail ? ' with thumbnail' : ''}`);
-    return { latest, thumbnail };
+    return { latest: video, thumbnail };
   } catch (error) {
     log(`YouTube: feed not available (${reason(error)}); the card stays hidden`);
     return null;

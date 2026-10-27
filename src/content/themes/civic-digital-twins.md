@@ -9,6 +9,9 @@ builds: [cs-udt]
 # This work is coauthored (D46). The author list, order and title stay off the site until Jimmy
 # checks them against the v2 extended abstract (facts.md §5.3, §6 [10] VERIFY).
 # TODO(jimmy): verify, then name the coauthor here.
+# facts.md §5.3 says "Everything in the demo is labeled SIMULATED", but the demo labels its
+# station locations and the phone's sensors as real; the page uses the narrower wording.
+# TODO(jimmy): correct that sentence in facts.md §5.3.
 ---
 
 Our design framework for crowd-sourced urban digital twins, and a prototype for hurricane flooding
@@ -39,7 +42,7 @@ self-determination theory.
 
 In a simulated replay modeled on Hurricane Irma (Sep 10–12, 2017), the first three-channel
 confirmation came 10.8 hours into a 30-hour replay. At the storm’s peak there were four confirmed
-cells and three open quests. Everything in the demo is labeled SIMULATED.
+cells and three open quests. The replay is simulated and all community content is synthetic.
 
 [Open the CS-UDT demo](/demos/csudt/) (simulated data).
 

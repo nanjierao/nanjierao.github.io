@@ -9,7 +9,7 @@ datasheet:
   - { label: Verification, value: 'Three-channel convergence rule: official sensor anomaly + citizen report + social post in the same map cell' }
   - { label: Engagement, value: 'When two channels agree, nearby residents get a one-tap verification quest' }
   - { label: Replay, value: 'Simulated replay modeled on Hurricane Irma (Sep 10–12, 2017): first three-channel confirmation 10.8 hours into a 30-hour replay; four confirmed cells and three open quests at the peak' }
-  - { label: Data, value: 'Everything in the demo is labeled SIMULATED' }
+  - { label: Data, value: 'Simulated replay and synthetic community content' }
   - { label: Paper, value: 'Coauthored extended abstract, DTRUE 2026 (oral presentation)' }
 tags: [LLM pipeline, digital twin, web]
 links:

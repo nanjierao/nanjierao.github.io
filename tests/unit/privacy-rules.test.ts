@@ -9,10 +9,11 @@ import {
   findEmails,
   findPhones,
   findSection15Terms,
-  isPublishableFetchedText,
+  isPublishableVideoTitle,
   isPublishableText,
   lineOf,
   mask,
+  stripLicenseComments,
 } from '../../scripts/lib/privacy-rules.ts';
 
 describe('phone numbers', () => {
@@ -194,12 +195,12 @@ describe('fetched text (D54)', () => {
       '我家宝宝的第一个机器人',
       '女儿的睡前规则',
     ];
-    for (const title of titles) expect(isPublishableFetchedText(title), title).toBe(false);
+    for (const title of titles) expect(isPublishableVideoTitle(title), title).toBe(false);
   });
 
   it('shows titles about the advice itself', () => {
-    expect(isPublishableFetchedText('Testing a common parenting tip at home')).toBe(true);
-    expect(isPublishableFetchedText('Does white noise really help sleep?')).toBe(true);
+    expect(isPublishableVideoTitle('Testing a common parenting tip at home')).toBe(true);
+    expect(isPublishableVideoTitle('Does white noise really help sleep?')).toBe(true);
   });
 });
 
@@ -216,5 +217,100 @@ describe('PNG raw metadata profiles', () => {
 
   it('masks matches on one line', () => {
     expect(mask('tel:+1 212 555 2368\n')).not.toContain('\n');
+  });
+});
+
+describe('second review: real cases and false positives', () => {
+  it('catches job-search, availability and family phrasing that matters', () => {
+    const cases = [
+      'I will require sponsorship to work in the US.',
+      'I can relocate for the right role.',
+      'I am relocating to Seattle next spring.',
+      'Start date: June 2027',
+      'I had an on-site interview at the University of Washington.',
+      'Interviewed with the search committee at Georgia Tech',
+      'Expected compensation: negotiable',
+      'We are expecting our second child.',
+      '我们家的周末',
+    ];
+    for (const text of cases) expect(findSection15Terms(text), text).not.toHaveLength(0);
+  });
+
+  it('catches dashes, dots and full-width digits in phone numbers', () => {
+    for (const text of [
+      'Call 212–555–2368',
+      '212‑555‑2368',
+      '138.0013.8000',
+      '１３８００１３８０００',
+      '(010) 6275 1234',
+    ]) {
+      expect(findPhones(text), text).not.toHaveLength(0);
+    }
+  });
+
+  it('leaves minified code, counts and IDs alone', () => {
+    const text = [
+      '(16777215&e)+6777216*(n=',
+      '(b^-1)+2147483631',
+      'STACK_SIZE="+65536+"',
+      '+23.45 points',
+      'Context window grew +4096 tokens',
+      '知乎 +3000 赞同',
+      'UTC +8 2026-11-19 20:00',
+      'https://www.zhihu.com/question/1234567890/answer/9876543210',
+      'The corpus has 15000000000 tokens',
+      '16 GiB = 17179869184 bytes',
+      '/actions/runs/17345678901',
+      '这部手机2019-2023年一直在用',
+      '我用的是微信 3.9.12.51（Windows 版）',
+    ].join('\n');
+    expect(findPhones(text)).toEqual([]);
+  });
+
+  it('leaves Chinese school and everyday wording alone', () => {
+    const text =
+      '人教版三年级上册第4单元的生字；我写了第3单元测试；实验室在5号楼；电路2号板；这条路19号就通车了；在中山路2号出口见；我家乡的中学';
+    expect([...findAddresses(text), ...findSection15Terms(text)]).toEqual([]);
+    expect(findAddresses('5号楼302室')).toHaveLength(1);
+    expect(findAddresses('北京市海淀区中关村大街27号')).toHaveLength(1);
+  });
+
+  it('leaves research and product language alone', () => {
+    const text = [
+      'I redesigned our baby thermometer’s enclosure.',
+      'Our partner agency shared flood reports.',
+      'We ran interviews with Jacksonville residents.',
+      'The dataset will be available starting in December 2026.',
+      'Each answer lists up to 3 citations to pages on this site.',
+      'Participant identities were removed.',
+      'Error diagnosis for LLM agents; OPT-175B; continued pre-training (CPT).',
+      'Payments go through Visa.',
+      'Since 2016 Google Drive has been my lab notebook. Unit 3: Usability testing. IRB ID 20231.',
+    ].join(' ');
+    expect([...findSection15Terms(text), ...findAddresses(text)]).toEqual([]);
+  });
+
+  it('ignores library authors in license comments of bundled code', () => {
+    const code =
+      '/*! lib v1 | (c) Jane Doe <jane.doe@university.edu> */\n// Copyright 2020 by A. Person (a.person@university.edu)\nvar x=1;';
+    expect(findEmails(stripLicenseComments(code))).toEqual([]);
+    expect(findEmails('var contact="jane.doe@university.edu";')).toHaveLength(1);
+  });
+
+  it('holds back video titles that mention children in any common form', () => {
+    for (const title of [
+      'Teaching my 5yo to ride a bike',
+      'Our 18mo learns sign language',
+      'Big sister helps',
+      '大宝第一天上幼儿园',
+      '带小朋友去海边',
+    ]) {
+      expect(isPublishableVideoTitle(title), title).toBe(false);
+    }
+  });
+
+  it('keeps research repositories (repository names use the page-text rules only)', () => {
+    expect(isPublishableText('JimmyRaoUF/urban-digital-twins')).toBe(true);
+    expect(isPublishableText('Child process pool for the LLM pipeline')).toBe(true);
   });
 });
