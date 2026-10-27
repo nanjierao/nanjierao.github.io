@@ -54,8 +54,9 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
       </li>
       <li>
         Your demo reports stay in this browser (localStorage) until you clear the site’s data, with
-        any location you attach. A report with a large photo may not save. The demo sends nothing to
-        this site.
+        any location you attach. A photo is shrunk in the browser before it is stored, which also
+        removes its camera data (such as where it was taken). If storage still fills up, photos stay
+        only until you close the page. The demo sends nothing to this site.
       </li>
       <li>
         If you show a report’s relay QR code, anyone who scans it receives the report’s text and

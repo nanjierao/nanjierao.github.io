@@ -188,7 +188,25 @@ const DEF = {pts:120, streak:3, badges:["First Responder"], reports:[], kudos:{}
 let S;
 try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem("csudt")||"{}")); }
 catch(e){ S = {...DEF}; }
-const save = () => localStorage.setItem("csudt", JSON.stringify(S));
+// Saved state is data, not trusted markup: keep only the expected shapes.
+if(!Array.isArray(S.reports)) S.reports=[];
+if(!Array.isArray(S.badges)) S.badges=[...DEF.badges];
+if(!S.kudos || typeof S.kudos!=="object") S.kudos={};
+if(!S.quests || typeof S.quests!=="object") S.quests={};
+if(!Number.isFinite(S.pts)) S.pts=DEF.pts;
+if(!Number.isFinite(S.streak)) S.streak=DEF.streak;
+
+// Storage can fill up (photos are large). Then keep photos only until the page closes and save
+// the rest; if even that fails, keep everything in memory. Returns a warning for the toast.
+function save(){
+  try { localStorage.setItem("csudt", JSON.stringify(S)); return ""; } catch(e){}
+  try {
+    localStorage.setItem("csudt", JSON.stringify({...S, reports:S.reports.map(({photo, ...r})=>r)}));
+    return "Storage is full: photos stay until you close this page";
+  } catch(e){
+    return "Couldn't save in this browser: reports stay until you close this page";
+  }
+}
 
 /* ---------- mock LLM parse (same rules as dashboard) ---------- */
 function llmParse(txt, sev){
@@ -221,13 +239,16 @@ const QUESTS = [
 
 /* ---------- tiny helpers ---------- */
 const $ = id => document.getElementById(id);
+// Report fields come from people (typed notes, relayed QR links, saved state): always text.
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+const isPhoto = v => typeof v==="string" && /^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v);
 const toast = (msg) => { const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); };
 const sevColor = s => s>=5?"#ff2e2e":s>=4?"#ff5d5d":s>=3?"#ffb347":"#43d17c";
 const stChip = st => st===3?'<span class="statechip st3">▲ CONFIRMED · 3 ch</span>':st===2?'<span class="statechip st2">2/3 · quest open</span>':'<span class="statechip st1">1/3 unverified</span>';
 
 /* ---------- header / badges ---------- */
 function paintHeader(){ $("hpts").textContent=S.pts; $("hstreak").textContent="🔥"+S.streak; $("lbpts").textContent=S.pts;
-  $("badges").innerHTML = S.badges.map(b=>`<span class="badge">🏅 ${b}</span>`).join("") + '<span class="badge" style="opacity:.4">🔒 Neighborhood Sentinel</span>';
+  $("badges").innerHTML = S.badges.map(b=>`<span class="badge">🏅 ${esc(b)}</span>`).join("") + '<span class="badge" style="opacity:.4">🔒 Neighborhood Sentinel</span>';
 }
 
 /* ---------- tabs ---------- */
@@ -286,11 +307,30 @@ function paintSev(){ $("sevRow").innerHTML=[1,2,3,4,5].map(n=>`<button class="se
   $("sevLabel").textContent=sev+"/5"+(sev>=4?" · +30 bonus":"");
   document.querySelectorAll(".sev").forEach(b=>b.addEventListener("click",()=>{sev=+b.dataset.n; paintSev();}));
 }
-$("photoIn").addEventListener("change", e=>{
+// Phone photos are several MB; shrink them before they are stored. Redrawing on a canvas also
+// drops the camera's metadata (including GPS).
+const MAX_PHOTO_SIDE=1024;
+function shrinkPhoto(file){
+  return new Promise((resolve, reject)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{
+      const scale=Math.min(1, MAX_PHOTO_SIDE/Math.max(img.naturalWidth, img.naturalHeight));
+      const c=document.createElement("canvas");
+      c.width=Math.max(1, Math.round(img.naturalWidth*scale)); c.height=Math.max(1, Math.round(img.naturalHeight*scale));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); resolve(c.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error("unreadable image")); };
+    img.src=url;
+  });
+}
+$("photoIn").addEventListener("change", async e=>{
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{ photoData=r.result; $("photoBox").innerHTML=`<img class="photo" src="${photoData}"/>`; };
-  r.readAsDataURL(f);
+  try {
+    photoData=await shrinkPhoto(f);
+    const img=document.createElement("img"); img.className="photo"; img.src=photoData;
+    $("photoBox").replaceChildren(img);
+  } catch(err){ photoData=null; toast("Couldn't read that photo — try a JPEG or PNG"); }
 });
 $("submitBtn").addEventListener("click", ()=>{
   if(!type){ toast("Pick a hazard type first"); return; }
@@ -301,8 +341,8 @@ $("submitBtn").addEventListener("click", ()=>{
   const mine = S.reports.length+1;
   if(mine>=3 && !S.badges.includes("Storm Chaser")){ S.badges.push("Storm Chaser"); toast("🏅 Badge unlocked: Storm Chaser"); }
   S.reports.unshift({id:"u"+Date.now(), user:"You", time:"now", type, sev, txt:note||"(photo report)", photo:photoData, state:1, k:0, pts:50+bonus, parse, hood, coords:coords?[coords.latitude,coords.longitude]:null});
-  save(); paintHeader(); paintFeed();
-  toast(`+${50+bonus} pts! Shared with the community ✓`);
+  const warning=save(); paintHeader(); paintFeed();
+  toast(warning || `+${50+bonus} pts! Shared with the community ✓`);
   type=null; sev=3; photoData=null; $("note").value="";
   document.querySelectorAll("#typeChips .chip").forEach(x=>x.classList.remove("on"));
   $("photoBox").innerHTML='📷 Tap to add a photo<br/><span class="muted">ground truth beats rumors — camera opens directly, no install</span>';
@@ -331,33 +371,35 @@ function paintQuests(){
   }).join("");
   document.querySelectorAll(".qb").forEach(b=>b.addEventListener("click",()=>{
     const {q,a}=b.dataset;
-    S.quests[q]=a; S.pts+=10; save(); paintHeader(); paintQuests();
-    toast(a==="yes"?"▲ CONFIRMED — 3 channels converged (+10)":"Thanks — logged (+10)");
+    S.quests[q]=a; S.pts+=10; const warning=save(); paintHeader(); paintQuests();
+    toast(warning || (a==="yes"?"▲ CONFIRMED — 3 channels converged (+10)":"Thanks — logged (+10)"));
   }));
 }
 
 /* ---------- FEED ---------- */
 function paintFeed(){
   const items=[...S.reports, ...SEED];
-  $("feedList").innerHTML = items.map(f=>`
+  $("feedList").innerHTML = items.map(f=>{
+    const parse=(f.parse && typeof f.parse==="object") ? f.parse : llmParse(f.txt,f.sev);
+    return `
     <div class="card feeditem">
-      <div class="fhead"><span class="fuser">@${f.user}</span><span class="ftime">${f.time}</span>
-        <span class="pill" style="background:${sevColor(f.sev)}">${f.type} · ${f.sev}/5</span></div>
-      ${f.photo?`<img class="photo" src="${f.photo}"/>`:""}
-      <div class="ftxt">“${f.txt}”</div>
+      <div class="fhead"><span class="fuser">@${esc(f.user)}</span><span class="ftime">${esc(f.time)}</span>
+        <span class="pill" style="background:${sevColor(f.sev)}">${esc(f.type)} · ${esc(f.sev)}/5</span></div>
+      ${isPhoto(f.photo)?`<img class="photo" src="${f.photo}"/>`:""}
+      <div class="ftxt">“${esc(f.txt)}”</div>
       <div class="frow">
-        <span class="llm">🤖 ${(f.parse||llmParse(f.txt,f.sev)).hazard} · conf ${(f.parse||llmParse(f.txt,f.sev)).confidence}</span>
+        <span class="llm">🤖 ${esc(parse.hazard)} · conf ${esc(parse.confidence)}</span>
         ${stChip(f.state)}
-        <span class="pts">+${f.pts}</span>
-        ${f.user==="You"?`<button class="kudos" data-r="${f.id}">📡 QR</button>`:""}
-        <button class="kudos" data-k="${f.id}">👏 ${f.k + (S.kudos[f.id]?1:0)}</button>
+        <span class="pts">+${esc(f.pts)}</span>
+        ${f.user==="You"?`<button class="kudos" data-r="${esc(f.id)}">📡 QR</button>`:""}
+        <button class="kudos" data-k="${esc(f.id)}">👏 ${esc((+f.k||0) + (S.kudos[f.id]?1:0))}</button>
       </div>
-    </div>`).join("");
+    </div>`;}).join("");
   document.querySelectorAll(".kudos[data-k]").forEach(b=>b.addEventListener("click",()=>{
     const id=b.dataset.k;
     if(S.kudos[id]) return;
-    S.kudos[id]=1; S.pts+=2; save(); paintHeader(); paintFeed();
-    toast("👏 Kudos = lightweight verification (+2)");
+    S.kudos[id]=1; S.pts+=2; const warning=save(); paintHeader(); paintFeed();
+    toast(warning || "👏 Kudos = lightweight verification (+2)");
   }));
   document.querySelectorAll(".kudos[data-r]").forEach(b=>b.addEventListener("click",()=>{
     const rep=S.reports.find(x=>x.id===b.dataset.r); if(rep) showRelayQR(rep);
@@ -377,21 +419,36 @@ function showRelayQR(rep){
   if(typeof QRCode!=="undefined"){
     new QRCode(box,{text:url,width:220,height:220,correctLevel:QRCode.CorrectLevel.M});
   } else {
-    box.innerHTML='<div class="muted" style="color:#333">QR library offline — copy the link instead:<br/>'+url.slice(0,90)+'…</div>';
+    box.innerHTML='<div class="muted" style="color:#333">QR library offline — copy the link instead:<br/>'+esc(url.slice(0,90))+'…</div>';
   }
   $("qrmodal").style.display="flex";
 }
+// A relay link can come from anyone: accept only the shape showRelayQR writes, with known
+// hazard types, a 1–5 severity, real coordinates and short strings.
+const clip = (v, n) => typeof v==="string" ? v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,n) : "";
+function validRelay(j){
+  if(!j || typeof j!=="object" || j.v!==1) return null;
+  if(typeof j.id!=="string" || !/^[\w-]{1,40}$/.test(j.id)) return null;
+  if(!TYPES.includes(j.type) || !Number.isInteger(j.sev) || j.sev<1 || j.sev>5) return null;
+  let coords=null;
+  if(j.coords!=null){
+    const [lat, lon]=Array.isArray(j.coords)&&j.coords.length===2 ? j.coords : [];
+    if(!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat)>90 || Math.abs(lon)>180) return null;
+    coords=[lat, lon];
+  }
+  return {id:j.id, user:clip(j.user,40)||"neighbor", type:j.type, sev:j.sev, txt:clip(j.txt,500), hood:clip(j.hood,60), coords};
+}
 (function importRelayedReport(){
-  if(!location.hash.startsWith("#relay=")) return;
+  if(!location.hash.startsWith("#relay=") || location.hash.length>8000) return;
   try{
-    const j=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(location.hash.slice(7))))));
-    if(!j || !j.type || S.reports.some(x=>x.id===j.id)) return;
+    const j=validRelay(JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(location.hash.slice(7)))))));
+    if(!j || S.reports.some(x=>x.id===j.id)) return;
     S.reports.unshift({id:j.id, user:j.user+" · relayed", time:"relayed", type:j.type,
       sev:j.sev, txt:j.txt, hood:j.hood, coords:j.coords, state:1, k:0, pts:0,
       parse:llmParse(j.txt||j.type, j.sev)});
-    S.pts+=5; save();
+    S.pts+=5; const warning=save();
     history.replaceState(null,"",location.pathname);
-    setTimeout(()=>toast("📡 Relayed report delivered — courier +5"),400);
+    setTimeout(()=>toast(warning || "📡 Relayed report delivered — courier +5"),400);
   }catch(e){ /* malformed relay payloads are ignored */ }
 })();
 
