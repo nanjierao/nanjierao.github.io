@@ -200,6 +200,10 @@ test.describe('GitHub activity in the browser (D40)', () => {
       route.fulfill({ status: 200, contentType: 'application/json', body: githubEvents }),
     );
     await page.goto('/');
+    test.skip(
+      (await page.locator('[data-github-activity]').getAttribute('data-allowed-repos')) === null,
+      'Build with EXTERNAL_DATA=fixtures to test the refresh',
+    );
     const list = page.locator('[data-github-activity] [data-list]');
     await expect(list).toBeVisible();
     await expect(list.locator('li')).toHaveCount(4);
@@ -207,6 +211,26 @@ test.describe('GitHub activity in the browser (D40)', () => {
     await expect(list.locator('script')).toHaveCount(0);
     const cached = await page.evaluate(() => sessionStorage.getItem('github-activity-v1'));
     expect(cached).toContain('fixture-study-tools');
+  });
+
+  test('does not refresh when the build had no GitHub data to approve repositories', async ({
+    page,
+  }) => {
+    let requests = 0;
+    await page.route('https://api.github.com/**', (route) => {
+      requests++;
+      return route.fulfill({ status: 200, contentType: 'application/json', body: githubEvents });
+    });
+    await page.goto('/');
+    const root = page.locator('[data-github-activity]');
+    test.skip(
+      (await root.getAttribute('data-allowed-repos')) !== null,
+      'Only a build without GitHub data (EXTERNAL_DATA=off) has nothing to approve',
+    );
+    await page.waitForLoadState('networkidle');
+    expect(requests).toBe(0);
+    await expect(root.locator('[data-list]')).toBeHidden();
+    await expect(root).toContainText('More on github.com/JimmyRaoUF');
   });
 
   test('keeps the build-time content when the API fails', async ({ page }) => {

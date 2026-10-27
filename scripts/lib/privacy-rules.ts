@@ -10,9 +10,15 @@ export interface Finding {
 
 // ---------------------------------------------------------------- phone numbers
 
-// ASCII hyphen plus Unicode hyphens, dashes and minus: people paste numbers from word processors.
-const DASH = String.raw`\-‐-―−`;
+// Separators inside a number: ASCII hyphen plus Unicode hyphens, dashes (U+2010 to U+2015) and
+// minus, because people paste numbers from word processors.
+const DASH = String.raw`\-\u2010-\u2015\u2212`;
 const SEP = String.raw`[\s.${DASH}]`;
+// Next to a number only hyphens and minus join it to something else ("ID-138…", "−212…"). An en
+// or em dash is punctuation: "Phone—352-…", "联系我——138…".
+const HYPHEN = String.raw`\-\u2010\u2011\u2212`;
+// After a number: not a letter, digit or hyphen, and not a decimal part ("312.512 1024.75").
+const END = String.raw`(?![\w${HYPHEN}]|\.\d)`;
 
 interface PhoneRule {
   pattern: RegExp;
@@ -26,7 +32,7 @@ const PHONE_RULES: PhoneRule[] = [
   {
     // North American: (352) 555-0123, (352)555-0123, 352-555-0123, 352/555-0123, +1 352.555.0123
     pattern: new RegExp(
-      String.raw`(?<![\w.+/${DASH}])(?:\+?1${SEP}?)?(?:\(\d{3}\)\s?|[2-9]\d{2}[\s./${DASH}])\d{3}${SEP}\d{4}(?![\w${DASH}])`,
+      String.raw`(?<![\w.+/${HYPHEN}])(?:\+?1${SEP}?)?(?:\(\d{3}\)\s?|[2-9]\d{2}[\s./${DASH}])\d{3}${SEP}\d{4}${END}`,
       'g',
     ),
   },
@@ -34,7 +40,7 @@ const PHONE_RULES: PhoneRule[] = [
     // International with a leading plus: +44 7700 900123, +86-13800138000, +33 1 23 45 67 89.
     // Not after ")" or "]" (minified code such as "(x)+6777216") or after "UTC"/"GMT".
     pattern: new RegExp(
-      String.raw`(?<![\w+)\]])(?<!(?:UTC|GMT)\s?)\+[2-9]\d{0,2}[\s${DASH}]?\(?\d{1,4}\)?(?:[\s.${DASH}]?\d{2,8}){1,4}(?![\w${DASH}])`,
+      String.raw`(?<![\w+)\]])(?<!(?:UTC|GMT)\s?)\+[2-9]\d{0,2}[\s${DASH}]?\(?\d{1,4}\)?(?:[\s.${DASH}]?\d{2,8}){1,4}${END}`,
       'g',
     ),
     accept: (m) => digitCount(m) >= 8 && !/^\+\d{1,3}\./.test(m),
@@ -45,9 +51,10 @@ const PHONE_RULES: PhoneRule[] = [
   },
   {
     // Mainland China mobiles, plain or grouped 3-4-4 with one kind of separator, with an
-    // optional +86 / 0086 / (+86) prefix. Not inside URL paths or after a dot.
+    // optional +86 / 0086 / (+86) prefix. Not after a dot or inside a URL path ("…/runs/1734…"),
+    // but "手机/138…" counts.
     pattern: new RegExp(
-      String.raw`(?<![\d+./${DASH}])(?:(?:\+|00)86[\s${DASH}]?|\(\+86\)\s?)?1[3-9]\d([\s.${DASH}]?)\d{4}\1\d{4}(?![\d${DASH}])(?!\s*(?:bytes?|tokens?|parameters?|params|ms|seconds?|字节|个))`,
+      String.raw`(?<![\d+.${HYPHEN}])(?<![\w.~%${HYPHEN}]/)(?:(?:\+|00)86[\s${DASH}]?|\(\+86\)\s?)?1[3-9]\d([\s.${DASH}]?)\d{4}\1\d{4}(?![\d${HYPHEN}]|\.\d)(?!\s*(?:bytes?|tokens?|parameters?|params|ms|seconds?|字节|个))`,
       'g',
     ),
     // Large round numbers (token counts, bytes) are not phone numbers.
@@ -56,7 +63,7 @@ const PHONE_RULES: PhoneRule[] = [
   {
     // Mainland China landlines: 010-12345678, 0571-8888888, (010) 6275 1234
     pattern: new RegExp(
-      String.raw`(?<![\d${DASH}])(?:0\d{2,3}[${DASH}]\d{7,8}|\(0\d{2,3}\)\s?\d{3,4}\s?\d{4})(?![\d${DASH}])`,
+      String.raw`(?<![\w.${HYPHEN}])(?:0\d{2,3}[${DASH}]\d{7,8}|\(0\d{2,3}\)\s?\d{3,4}\s?\d{4})${END}`,
       'g',
     ),
   },
@@ -140,22 +147,37 @@ export function findEmails(input: string, allowed: readonly string[] = []): Find
 
 const STREET_TYPES =
   'Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Court|Ct|Way|Terrace|Ter|Place|Pl|Circle|Cir|Parkway|Pkwy|Highway|Hwy|Trail|Trl';
-const US_STATES =
-  'AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC|Florida';
+// Codes that are also everyday words or abbreviations ("Study ID 20231", "Status OK 20000") need
+// a comma before them to count as a state.
+const WORD_LIKE_STATES = 'ID|IN|OR|ME|OK|HI|DE';
+const US_STATES = `AL|AK|AZ|AR|CA|CO|CT|FL|GA|IL|IA|KS|KY|LA|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC|Florida`;
+const DIRECTIONAL = String.raw`(?:[NSEW]{1,2}|North|South|East|West|Northeast|Northwest|Southeast|Southwest)\.?`;
+const ORDINAL = String.raw`\d{1,3}(?:st|nd|rd|th)`;
+// A house number: two or more digits, or one digit before a directional ("5 SW Main St"). A
+// year-like number counts only before a directional, an ordinal street or a plain street name,
+// so "Since 2016 Google Drive" and "Hackathon 2024 Second Place" stay out.
+const HOUSE_NUMBER = String.raw`(?:(?!(?:19|20)\d{2}\b)\d{2,6}|\d(?=\s+${DIRECTIONAL}\s)|(?:19|20)\d{2}(?=\s+(?:${DIRECTIONAL}\s|${ORDINAL}\s|(?:[A-Z][a-z]+\s+){1,3}(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln)\b)))`;
+// Title-case phrases that end in a street word but aren't streets.
+const NOT_A_STREET = String.raw`(?!(?:One|Two|Three|Four|Five|N)[- ]Way\b|(?:[A-Z][a-z]+\s+){0,2}(?:Supreme|District|Circuit|Federal|Appeals|County|Family|High|Food|Tennis|Basketball) Court\b|(?:First|Second|Third|Fourth|Fifth|Last|Top|Second-to-Last) Place\b)`;
 
 const ADDRESS_PATTERNS: RegExp[] = [
-  // A house number (not a year) and a street: 1234 NW Example Street, 12 Oak Ln.
+  // A house number and a street: 1234 NW Example Street, 12 Oak Ln, 2015 SW 16th Ave.
   new RegExp(
-    String.raw`\b(?!(?:19|20)\d{2}\b)\d{1,6}\s+(?:[NSEW]{1,2}\.?\s+)?(?:\d{1,3}(?:st|nd|rd|th)\s+|[A-Z][a-z]+\s+){1,3}(?:${STREET_TYPES})\b\.?`,
+    String.raw`\b${HOUSE_NUMBER}\s+(?:${DIRECTIONAL}\s+)?${NOT_A_STREET}(?:${ORDINAL}\s+|[A-Z][a-z]+\s+){1,3}(?:${STREET_TYPES})\b\.?`,
     'g',
   ),
   // P.O. Box 12, Apt 4B; Suite and Unit only in an address line ("Suite 210, …").
   /\b(?:P\.?\s?O\.?\s?Box|Apt\.?|Apartment)\s*#?\s*\d+[A-Z]?\b|\b(?:Suite|Unit)\s*#?\s*\d+[A-Z]?(?=,)/g,
-  // City, state and ZIP code: "Gainesville, FL 32601", ", Florida 32611-1234"
-  new RegExp(String.raw`,\s*(?:${US_STATES})\s+\d{5}(?:-\d{4})?\b`, 'g'),
+  // City, state and ZIP code: "Gainesville, FL 32601", ", Florida 32611-1234", "Gainesville FL
+  // 32611". Without the comma, only after a capitalized city name and not for word-like codes.
+  new RegExp(
+    String.raw`,\s*(?:${US_STATES}|${WORD_LIKE_STATES})\s+\d{5}(?:-\d{4})?\b|\b[A-Z][a-z]+\s+(?:${US_STATES})\s+\d{5}(?:-\d{4})?\b`,
+    'g',
+  ),
   // Chinese addresses need an address shape, not just "路" and "号": a city or district before
-  // the road ("…市…区…路1037号"), an address label, or a building with a room number.
-  /[一-龥]{1,10}(?:省|市|区|县|镇)[一-龥]{0,12}?(?:路|街|大道|巷|弄|胡同)\s?\d{1,5}\s?号|(?:地址|住址|家住|寄到|收货地址)\s*[:：]?\s*[^\n]{0,30}?\d{1,5}\s?号|\d{1,4}\s?(?:号楼|栋|幢)\s?(?:\d{1,3}\s?单元)?\s?\d{2,5}\s?室|\d{1,3}\s?单元\s?\d{2,5}\s?室/g,
+  // the road ("…市…区…路1037号"), an address label, or a building with a room number. A label
+  // for a link ("原文地址", "直播地址") or a date ("10月27号") isn't an address.
+  /[一-龥]{1,10}(?:省|市|区|县|镇)[一-龥]{0,12}?(?:路|街|大道|巷|弄|胡同)\s?\d{1,5}\s?号|(?<!原文|直播|项目|网站|网页|下载|视频|仓库|代码|论文|主页|博客|会议|活动|报名|链接|源码|官网)(?:地址|住址|家住|寄到|收货地址)\s*[:：]?\s*[^\n]{0,30}?(?<![\d月日])\d{1,5}\s?号|\d{1,4}\s?(?:号楼|栋|幢)\s?(?:\d{1,3}\s?单元)?\s?\d{2,5}\s?室|\d{1,3}\s?单元\s?\d{2,5}\s?室/g,
 ];
 
 export function findAddresses(input: string): Finding[] {
@@ -176,39 +198,46 @@ interface TermRule {
   pattern: RegExp;
 }
 
-// Family nouns for page text. "partner", "girls" and "boys" are left out: "our partner
-// agency", "our Girls Who Code club".
+// Family nouns for page text. "partner", "girls" and "boys" are left out after "our": "our
+// partner agency", "our Girls Who Code club".
 const FAMILY_NOUNS =
   'wife|husband|spouse|sons?|daughters?|kids?|child|children|bab(?:y|ies)|toddlers?|infants?|newborns?|parents|mother|father|mom|mum|dad|in-laws|family|twins|little ones?';
 // Words after a family noun that make it something else: "our baby thermometer".
 const NOT_FAMILY_AFTER =
-  'thermometers?|monitors?|agenc(?:y|ies)|organi[sz]ations?|schools?|hospitals?|labs?|sites?|institutions?|friendly|participants?|stud(?:y|ies)|users?|data|products?|projects?';
+  'thermometers?|monitors?|agenc(?:y|ies)|organi[sz]ations?|schools?|hospitals?|labs?|sites?|institutions?|friendly|participants?|stud(?:y|ies)|users?|data|products?|projects?|teachers?|universit(?:y|ies)|compan(?:y|ies)';
+const MONTH_OR_SEASON =
+  'January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|Spring|Summer|Fall|Autumn|Winter';
+// Companies whose name after "interviews with/at" means a job interview, not a study.
+const EMPLOYERS =
+  'Google|Meta|Facebook|Microsoft|Amazon|Apple|Adobe|IBM|Intel|NVIDIA|Nvidia|Netflix|Uber|Airbnb|OpenAI|Anthropic|Salesforce|LinkedIn|Duolingo|Snap|ByteDance|TikTok|Tencent|Alibaba|Baidu|Huawei|Samsung|Oracle|Qualcomm|Bloomberg|Spotify|Pinterest|Coursera|Pearson';
 
 const FAMILY = 'family members';
 const IMMIGRATION = 'immigration or work authorization';
 const JOB_SEARCH = 'job-search activity';
 const AVAILABILITY = 'location or availability';
+const COMPENSATION = 'compensation';
 
 /** Words that signal a facts.md §15 category, plus the retired framing from facts.md §5.1. */
 export const SECTION_15_TERMS: readonly TermRule[] = [
-  { category: '§15 grades', pattern: /\bGPA\b|\bgrade point average\b/gi },
+  { category: '§15 grades', pattern: /\bGPAs?(?![A-Za-z])|\bgrade point average\b|绩点/gi },
   {
     category: `§15 ${IMMIGRATION}`,
     pattern:
-      /\bimmigration\b|\bwork[- ]authori[sz]ation\b|\bH-?1B\b|\bgreen card\b|\bpermanent resident\b|\bSEVIS\b|\bI-20\b|\b(?:require[sd]?|need(?:s|ed)?|without)\s+(?:\w+\s+)?sponsorship\b|\b(?:visa|employer|employment|work) sponsorship\b/gi,
+      /\bimmigration\b|\bwork[- ]authori[sz]ation\b|\bH-?1-?B\b|\bgreen card\b|\bpermanent resident\b|\bSEVIS\b|\bI-20\b|\bI-(?:129|140|485|765|797)\b|\bNIW\b|\bEB-?[123][A-C]?\b|\b(?:require[sd]?|need(?:s|ed)?|without)\s+(?:\w+\s+)?sponsorship\b|\b(?:visa|employer|employment|work) sponsorship\b|签证|绿卡|工签|(?<!数字)移民/gi,
   },
   // Case-sensitive: "visa" and status names, but not the card network or ML acronyms
   // ("Payments go through Visa", "OPT-175B", "continued pre-training (CPT)").
   {
     category: `§15 ${IMMIGRATION}`,
     pattern:
-      /\bvisas?\b|\b(?:[Ss]tudent|[Ww]ork|[Tt]ourist|H-?1B|F-1|J-1|O-1) [Vv]isa\b|\bVisa (?:status|application|interview|sponsorship|issues?|appointment)\b|\bF-1 (?:visa|status|student)\b|\bon (?:an |my )?F-1\b|\b(?:on|my|STEM|apply for|applied for) (?:OPT|CPT)\b|\b(?:OPT|CPT) (?:status|authorization|extension|application|period)\b|\bmy EAD\b|\bEAD card\b/g,
+      /\bvisas?\b|\b(?:[Ss]tudent|[Ww]ork|[Tt]ourist|H-?1-?B|F-1|J-1|O-1) [Vv]isa\b|\bVisa (?:status|application|interview|sponsorship|issues?|appointment|delays?|processing|renewal|denial|refusal|stamping|wait)\b|\bF-1 (?:visa|status|student)\b|\bon (?:an |my )?F-1\b|\b(?:on|my|STEM|apply for|applied for) (?:OPT|CPT)\b(?![-\w])|\b(?:OPT|CPT) (?:status|authorization|extension|application|period)\b|\bmy EAD\b|\bEAD card\b/g,
   },
   {
-    // First-person possessives only: "their parents" is ordinary research language.
+    // First-person possessives only: "their parents" is ordinary research language. In Chinese,
+    // not "我爱人工智能" (I love AI), "我的妈呀" (an exclamation) or "我先生成…" (I first generate).
     category: `§15 ${FAMILY}`,
     pattern: new RegExp(
-      String.raw`\b(?:my|our)\s+(?:(?:little|older|younger|eldest|oldest|youngest|baby|toddler|teenage|first|second|third|new|\d+[- ]year[- ]old)\s+)?(?:${FAMILY_NOUNS})\b(?![- ](?:${NOT_FAMILY_AFTER})\b)|我(?:的)?(?:儿子|女儿|老婆|妻子|丈夫|老公|孩子|宝宝|父母|闺女)|我(?:们)?家(?!乡)`,
+      String.raw`\b(?:my|our)\s+(?:(?:little|older|younger|eldest|oldest|youngest|baby|toddler|teenage|first|second|third|new|\d+[- ]year[- ]old)\s+)?(?:${FAMILY_NOUNS})\b(?![- ](?:${NOT_FAMILY_AFTER})\b)|\bmy\s+(?:partner|girlfriend|boyfriend|fianc[eé]e?)\b(?![- ](?:${NOT_FAMILY_AFTER})\b)|我(?:的)?(?:儿子|女儿|老婆|妻子|丈夫|老公|孩子|宝宝|父母|闺女|太太|媳妇|母亲|父亲|爸爸|妈妈|岳父|岳母|公公|婆婆)|我(?:的)?爱人(?![工类民])|我(?:的)?先生(?![成产效存长动])|我(?:的)?(?:妈|爸)(?![呀啊耶])|我(?:们)?家(?!乡)`,
       'gi',
     ),
   },
@@ -218,39 +247,54 @@ export const SECTION_15_TERMS: readonly TermRule[] = [
       /\bdiagnosed with\b|\b(?:my|I was|I've been|I have been) diagnos(?:ed|is)\b|\bmedical (?:leave|condition|history)\b|\bpregnan(?:t|cy)\b/gi,
   },
   {
-    category: '§15 compensation',
+    // "Participants received compensation: $20" is study wording, so a bare "compensation:"
+    // counts only at the start of a line (a CV field).
+    category: `§15 ${COMPENSATION}`,
     pattern:
-      /\bsalary\b|\b(?:expected|desired|current) (?:compensation|pay)\b|\bcompensation\s*[:：]|\bcompensation (?:package|expectations?)\b|\bmy (?:pay|stipend|compensation)\b/gi,
+      /\bsalar(?:y|ies)\s*[:：]|\bsalary of\s*[$¥€£\d]|\b(?:my|expected|desired|current|starting|annual|base|asking)\s+(?:salary|salaries|compensation|pay|wages?)\b|\bsalary (?:expectations?|requirements?|range|negotiations?|history)\b|\bcompensation (?:package|expectations?)\b|^[ \t]*(?:[-*•][ \t]*)?compensation\s*[:：]|\bmy (?:stipend|wages?)\b|我的(?:年薪|月薪|工资|薪资|薪水|收入)|期望(?:薪资|年薪|月薪|工资)|(?:年薪|月薪)\s*[:：]?\s*\d/gim,
   },
+  {
+    // Job interviews, not research interviews: "semi-structured phone interviews" and "Faculty
+    // interviews revealed" are study wording.
+    category: `§15 ${JOB_SEARCH}`,
+    pattern: new RegExp(
+      String.raw`\bjob[- ](?:search|hunt|hunting|application|applications|offer|offers|talk)\b|\boffer letter\b|\bon the (?:academic |faculty |industry )?job market\b|\b(?:job|final[- ]round|faculty job|academic job) interviews?\b|\b(?:my|an?|the)\s+(?:on-?site|on-?campus|campus|phone|first[- ]round|second[- ]round|final[- ]round|faculty|job|zoom|virtual)\s+(?:interview|visit)s?\s+(?:at|with|for)\s+(?:the\s+)?[A-Z]|\bmy (?:on-?site|on-?campus|campus|first[- ]round|second[- ]round|final[- ]round|faculty|job) (?:interview|visit)s?\b|\bcampus visits?\b|\bsearch committee\b|\binterview(?:s|ed|ing)?\s+(?:with|at)\s+(?:${EMPLOYERS})\b|\b(?:seeking|applying (?:for|to))\s+(?:(?:a|an|the)\s+)?(?:[\w-]+\s+){0,3}?(?:positions?|roles?|jobs?|employment)\b(?!\s+of\b)|\bopen to (?:new |full[- ]time |part[- ]time |faculty |industry |research )?(?:roles?|positions?|opportunities|jobs?)\b|求职|找工作|秋招|春招|投简历|(?:拿到|收到|拿了)\s*offer`,
+      'gi',
+    ),
+  },
+  // Case-sensitive on purpose: "I interviewed at Google", not "we interviewed at three schools".
   {
     category: `§15 ${JOB_SEARCH}`,
     pattern:
-      /\bjob[- ](?:search|hunt|hunting|application|applications|offer|offers)\b|\boffer letter\b|\bon the (?:academic )?job market\b|\b(?:job|on-?site|phone|campus|final[- ]round|faculty|screening) interviews?\b|\bsearch committee\b/gi,
+      /\bI(?:'ve| have| had)?\s+(?:also\s+|recently\s+|just\s+)?interview(?:ed|ing)\s+(?:with|at|for)\s+(?:the |a |an )?[A-Z]/g,
   },
-  // Case-sensitive on purpose: "interviewed at Google", not "interviews with older adults".
   {
-    category: `§15 ${JOB_SEARCH}`,
-    pattern: /\b[Ii]nterview(?:ed|ing)? (?:for|at) (?:the |a |an )?[A-Z]/g,
+    // Availability for a job or a move: "I'll be available at the poster session" and "Data
+    // availability:" are ordinary.
+    category: `§15 ${AVAILABILITY}`,
+    pattern: new RegExp(
+      String.raw`\b(?:I am|I'm|I will be|I'll be|I'd be|I would be|I become|I'll become|I will become)\s+(?:\w+\s+)?available\s+(?:to (?:start|join|begin|work)|for (?:full[- ]time|part[- ]time|employment|work|hire|positions?|roles?|interviews?|a (?:position|role|job))|starting|from|beginning|as of|after|immediately|in (?:${MONTH_OR_SEASON}|\d{4}))|\b(?:I am|I'm|I will be|I'll be|I'd be|I would be)\s+(?:\w+\s+)?relocating\b|\bI (?:can|could|will|would|plan to|intend to)\s+relocate\b|\b(?:willing|able|open|happy) to (?:move|relocate)\b|\brelocation (?:assistance|package|support)\b|\bavailable to start\b|(?:^|[.;:!?—–(][ \t]*)(?:[-*•][ \t]*)?available\s+(?:immediately|(?:from|starting|beginning)(?: in| on)?\s+(?:${MONTH_OR_SEASON}|\d{4}))|^[ \t]*(?:[-*•][ \t]*)?(?:availability|start date)\s*[:：]|\b(?:my|earliest|possible|preferred|expected|available) start date\b|\bnotice period\b`,
+      'gim',
+    ),
   },
+  // A CV-style fragment anywhere: "Available from January 2027" (capital A; "the data are
+  // available from 2024" is ordinary text).
   {
     category: `§15 ${AVAILABILITY}`,
-    pattern:
-      /\b(?:I am|I'm|I will be|I'll be|I'd be|I would be)\s+(?:\w+\s+)?(?:available|relocating)\b|\bI (?:can|could|will|would|plan to|intend to)\s+relocate\b|\b(?:willing|able|open|happy) to (?:move|relocate)\b|\brelocation (?:assistance|package|support)\b|\bavailab(?:le to start|ility\s*[:：])|\b(?:my|earliest|possible|preferred|expected) start date\b|\bstart date\s*[:：]|\bnotice period\b/gi,
-  },
-  // A CV-style fragment: "Available from January 2027" (capital A; "the data are available
-  // from 2024" is ordinary text).
-  {
-    category: `§15 ${AVAILABILITY}`,
-    pattern:
-      /\bAvailable (?:from|starting)(?: in| on)? (?:January|February|March|April|May|June|July|August|September|October|November|December|Spring|Summer|Fall|Autumn|Winter|\d{4})\b/g,
+    pattern: new RegExp(
+      String.raw`\bAvailable (?:from|starting)(?: in| on)? (?:${MONTH_OR_SEASON}|\d{4})\b`,
+      'g',
+    ),
   },
   {
     category: '§15 participant data',
     pattern: /\b[Pp]articipant (?:ID\b|#)\s*:?\s*\w+|\bP\d{1,3}\s*[:：]\s*["“]/g,
   },
   {
+    // Counts, not "up to 3 citations to pages on this site".
     category: '§15 citation counts',
-    pattern: /\bcited by \d+|\bcitations?\s*[:：]\s*\d|\bh-index\b|\bi10-index\b/gi,
+    pattern:
+      /\bcited by \d+|\bcitations?\s*[:：]\s*\d|\bh-index\b|\bi10-index\b|\b\d{1,3}(?:,\d{3})+\+?\s+citations\b|\b\d+\+\s+citations\b|\b\d{3,}\s+citations\b|被引(?:用)?(?:次数)?\s*[:：]?\s*\d|引用(?:次数|量)\s*[:：]?\s*\d/gi,
   },
   {
     category: 'retired framing (facts.md §5.1)',
@@ -259,13 +303,13 @@ export const SECTION_15_TERMS: readonly TermRule[] = [
 ];
 
 /**
- * Stricter family rule for fetched YouTube titles only (D54): the channel is about family life,
- * so any mention of a child, partner or relative keeps a title off the site. Far too broad for
- * page text or repository names ("baby thermometer", "urban digital twins").
+ * Stricter family rule for fetched YouTube titles only (D54): any mention of a child, partner
+ * or relative keeps a title off the site. Far too broad for page text or repository names
+ * ("baby thermometer", "urban digital twins").
  */
 const TITLE_FAMILY_NOUNS = `${FAMILY_NOUNS}|partner|boys?|girls?|kiddos?|preschoolers?|firstborn|eldest|youngest|oldest|teen(?:ager)?s?|siblings?|sisters?|brothers?|grand(?:ma|pa|mother|father|parents?|kids?|children)|nephews?|nieces?|little (?:guy|girl|boy|man|lady)`;
 const TITLE_FAMILY = new RegExp(
-  String.raw`\b(?:my|our|his|her|their)\s+(?:\w+\s+)?(?:${TITLE_FAMILY_NOUNS})\b|\b(?:sons?|daughters?|toddlers?|newborns?|infants?|twins|wife|husband|kids?|kiddos?|bab(?:y|ies)|child|children|preschoolers?|firstborn|grand(?:ma|pa|mother|father|parents?)|mom|mommy|mum|dad|daddy|kindergarten|daycare|preschool|(?:big|little) (?:sister|brother))\b|\b\d+[\s-]?(?:yo|y\/o|yrs?|years?|mos?|months?)(?:[- ]olds?)?\b|\blittle ones?\b|儿子|女儿|宝宝|宝贝|孩子|小孩|小朋友|儿童|亲子|老婆|老公|媳妇|闺女|娃|老大|老二|大宝|二宝|小宝|爸爸|妈妈|老爸|老妈|姐姐|弟弟|哥哥|妹妹|我家|我们家|全家|一家`,
+  String.raw`\b(?:my|our|his|her|their)\s+(?:\w+\s+)?(?:${TITLE_FAMILY_NOUNS})\b|\b(?:sons?|daughters?|toddlers?|newborns?|infants?|twins|wife|husband|kids?|kiddos?|bab(?:y|ies)|child|children|preschoolers?|firstborn|grand(?:ma|pa|mother|father|parents?)|mom|mommy|mum|dad|daddy|famil(?:y|ies)|kindergarten|daycare|preschool|(?:big|little) (?:sister|brother))\b|\b\d+[\s-]?(?:yo|y\/o|yrs?|years?|mos?|months?)(?:[- ]olds?)?\b|\bage[sd]?\s*\d{1,2}\b|\blittle ones?\b|儿子|女儿|宝宝|宝贝|孩子|小孩|小朋友|儿童|亲子|老婆|老公|太太|媳妇|闺女|娃|老大|老二|大宝|二宝|小宝|奶爸|宝妈|育儿|爸爸|妈妈|老爸|老妈|姐姐|弟弟|哥哥|妹妹|我家|我们家|全家|一家|家庭`,
   'i',
 );
 

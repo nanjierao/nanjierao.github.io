@@ -26,10 +26,12 @@ import {
   findSection15Terms,
   lineOf,
   mask,
+  normalizeForScan,
   stripLicenseComments,
   xmpHasLocation,
 } from './lib/privacy-rules.ts';
 import {
+  convertFirstKind,
   findDataUriImages,
   isFontFile,
   readImageMetadata,
@@ -143,7 +145,8 @@ const CODE_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.css']);
 
 function scanText(file: string, raw: string, scope: 'repo' | 'dist'): Result[] {
   const code = CODE_EXTENSIONS.has(extname(file).toLowerCase());
-  const text = code ? stripLicenseComments(raw) : raw;
+  // The rules normalize too; doing it here keeps their match positions and lineOf in step.
+  const text = normalizeForScan(code ? stripLicenseComments(raw) : raw);
   const results: Result[] = [];
   const allowedEmails = PERSON.email ? [PERSON.email] : [];
   const push = (findings: Finding[], severity: Result['severity']) => {
@@ -229,28 +232,38 @@ async function checkImageBytes(
   where = '',
 ): Promise<Result[]> {
   const results: Result[] = [];
+  const convert = convertFirstKind(bytes);
+  if (convert) {
+    return [
+      {
+        file,
+        line: 0,
+        category: `${convert}${where}: convert to JPEG, PNG or WebP (metadata not fully checkable)`,
+        match: `sha256:${sha(bytes)}`,
+        severity: 'error',
+      },
+    ];
+  }
   const raw = readImageMetadata(bytes);
-  let sharpReport: ReturnType<typeof describeImageMetadata> | null = null;
+  let sharpReport: ReturnType<typeof describeImageMetadata>;
   try {
     sharpReport = describeImageMetadata(await sharp(bytes).metadata());
   } catch {
-    if (!where) {
-      return [
-        {
-          file,
-          line: 0,
-          category: 'unreadable image (metadata not checked)',
-          match: `sha256:${sha(bytes)}`,
-          severity: 'error',
-        },
-      ];
-    }
+    return [
+      {
+        file,
+        line: 0,
+        category: `unreadable image${where} (metadata not checked)`,
+        match: `sha256:${sha(bytes)}`,
+        severity: 'error',
+      },
+    ];
   }
-  const blocks = new Set([...raw.blocks, ...(sharpReport?.details ?? [])]);
+  const blocks = new Set([...raw.blocks, ...sharpReport.details]);
   const location =
     raw.exif.some((exif) => exifHasGps(exif)) ||
     raw.xmp.some((xmp) => xmpHasLocation(xmp)) ||
-    Boolean(sharpReport?.hasLocation);
+    sharpReport.hasLocation;
   if (blocks.size > 0 || location) {
     const kind = location
       ? 'image location metadata'

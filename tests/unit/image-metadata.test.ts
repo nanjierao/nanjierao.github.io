@@ -3,6 +3,7 @@ import { crc32 } from 'node:zlib';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import {
+  convertFirstKind,
   findDataUriImages,
   isFontFile,
   readImageMetadata,
@@ -123,5 +124,17 @@ describe('file types', () => {
     const [found] = findDataUriImages(`.x{background:url(data:image/jpeg;base64,${b64})}`);
     expect(found?.type).toBe('jpeg');
     expect(readImageMetadata(found!.bytes).blocks).toContain('EXIF');
+  });
+});
+
+describe('convertFirstKind', () => {
+  it('flags TIFF and HEIC data whatever the file is called, and leaves AVIF to sharp', async () => {
+    const tiff = await blank().withExif(gpsExif).tiff().toBuffer();
+    expect(convertFirstKind(tiff)).toBe('TIFF data');
+    const heic = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypheic', 'latin1')]);
+    expect(convertFirstKind(heic)).toBe('HEIF/HEIC data');
+    const avif = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypavif', 'latin1')]);
+    expect(convertFirstKind(avif)).toBeNull();
+    expect(convertFirstKind(await blank().jpeg().toBuffer())).toBeNull();
   });
 });

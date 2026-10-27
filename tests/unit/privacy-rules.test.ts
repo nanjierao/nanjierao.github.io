@@ -13,6 +13,7 @@ import {
   isPublishableText,
   lineOf,
   mask,
+  normalizeForScan,
   stripLicenseComments,
 } from '../../scripts/lib/privacy-rules.ts';
 
@@ -312,5 +313,135 @@ describe('second review: real cases and false positives', () => {
   it('keeps research repositories (repository names use the page-text rules only)', () => {
     expect(isPublishableText('JimmyRaoUF/urban-digital-twins')).toBe(true);
     expect(isPublishableText('Child process pool for the LLM pipeline')).toBe(true);
+  });
+});
+
+describe('third review: regressions and gaps', () => {
+  const all = (text: string) => [
+    ...findPhones(text),
+    ...findAddresses(text),
+    ...findSection15Terms(text),
+  ];
+
+  it('finds numbers after en or em dashes and a slash label', () => {
+    for (const text of ['联系我——13800138000', 'Phone—212-555-2368', '手机/13800138000']) {
+      expect(findPhones(text), text).not.toHaveLength(0);
+    }
+  });
+
+  it('finds street lines with year-like house numbers and state + ZIP without a comma', () => {
+    for (const text of [
+      '2015 SW 16th Ave',
+      '2000 SW Archer Rd',
+      '1950 Oak Street',
+      '5 SW Main St',
+      'Gainesville FL 32611',
+      '地址：某某小区5号楼',
+    ]) {
+      expect(findAddresses(text), text).not.toHaveLength(0);
+    }
+  });
+
+  it('finds §15 phrasing in English and Chinese', () => {
+    for (const text of [
+      'Available immediately',
+      'I am available starting in June 2027',
+      'Status: available from June 2027',
+      'Availability: immediately',
+      'I interviewed with Google',
+      'interviews with Meta',
+      '1,234 citations',
+      '500+ citations',
+      'I live with my partner',
+      'Compensation: negotiable',
+      'a salary of $90,000',
+      'GPA3.9',
+      'H1-B',
+      'NIW',
+      'I-140',
+      'Visa delays',
+      'seeking faculty positions starting Fall 2027',
+      'Open to full-time roles from Summer 2027',
+      '我太太',
+      '我爱人',
+      '我先生',
+      '我媳妇',
+      '我妈',
+      '我爸',
+      '签证',
+      '绿卡',
+      '年薪30万',
+      '期望薪资',
+      '求职',
+      '找工作',
+      '秋招',
+    ]) {
+      expect(findSection15Terms(text), text).not.toHaveLength(0);
+    }
+  });
+
+  it('leaves research, talk and Chinese everyday wording alone', () => {
+    for (const text of [
+      'semi-structured phone interviews',
+      'Faculty interviews revealed three themes.',
+      'Participants were interviewed at the Alachua County Library.',
+      'We evaluated on OPT-175B.',
+      'Data availability: the data are on OSF.',
+      "I'll be available at the poster session.",
+      'Study start date: March 2024',
+      'Participants received compensation: $20',
+      'The dataset will be available from June 2027.',
+      'We interviewed at three schools.',
+      'Interviews with Older Adults',
+      'my interview study with teachers',
+      'my partner school',
+      'up to 3 citations',
+      'looking for the positions of the landmarks',
+      'seeking the positions of the hands',
+      '原文地址：知乎，2024年10月27号发布',
+      '直播地址：B站，11月3号',
+      '我爱人工智能',
+      '我的妈呀',
+      '我先生成一个列表',
+      '数字移民',
+    ]) {
+      expect(all(text), text).toEqual([]);
+    }
+  });
+
+  it('leaves decimals, coordinates and title-case phrases alone', () => {
+    for (const text of [
+      'range 0.001-1000000',
+      'C 100.5 200.25 312.512 1024.75',
+      'translate(256.000 1024.5)',
+      'Table 2 One Way ANOVA',
+      'Table 12 One Way ANOVA',
+      'the 2 Supreme Court cases',
+      'Team 1 First Place',
+      'We won 12 First Place ribbons',
+      'UF Hackathon 2024 Second Place',
+      'Study ID 20231',
+    ]) {
+      expect(all(text), text).toEqual([]);
+    }
+  });
+
+  it('holds back more family titles', () => {
+    for (const title of [
+      '奶爸带娃',
+      '宝妈日常',
+      '育儿技巧',
+      'Family vlog',
+      'Lily (age 3) learns to swim',
+    ]) {
+      expect(isPublishableVideoTitle(title), title).toBe(false);
+    }
+  });
+
+  it('reports positions that match the normalized text, so line numbers stay right', () => {
+    const text = `${'他说……我想……然后……\n'.repeat(60)}\n\nCall 212 555 2368`;
+    const normalized = normalizeForScan(text);
+    const [phone] = findPhones(normalized);
+    expect(phone && lineOf(normalized, phone.index)).toBe(63);
   });
 });

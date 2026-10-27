@@ -2,7 +2,8 @@
 // Recent public GitHub activity (D40): rendered at build time from src/generated/, then
 // refreshed in the browser from the public API (sessionStorage cache). On any error the
 // build-time list stays as it is. The browser shows only repositories the build approved
-// (its privacy filter can't ship to the browser), so new repositories appear after a rebuild.
+// (its privacy filter can't ship to the browser), so new repositories appear after a rebuild,
+// and a build without GitHub data doesn't refresh at all.
 import { GITHUB_USER, type ActivityItem } from '../lib/github.ts';
 import { formatDay, isoDay } from '../lib/format.ts';
 
@@ -96,27 +97,32 @@ const profile = `https://github.com/${GITHUB_USER}`;
 
   const LIMIT = 5;
 
-  /** Keep only repositories the build approved, when it had data to approve them from. */
-  function approved(root: HTMLElement, items: ActivityItem[]): ActivityItem[] {
-    let allowed: Set<string> | null = null;
+  /** Repositories the build approved, or null when it had no GitHub data to approve them from. */
+  function allowedRepos(root: HTMLElement): Set<string> | null {
+    const raw = root.dataset.allowedRepos;
+    if (!raw) return null;
     try {
-      const raw = root.dataset.allowedRepos;
-      if (raw) allowed = new Set((JSON.parse(raw) as string[]).map((r) => r.toLowerCase()));
+      return new Set((JSON.parse(raw) as string[]).map((r) => r.toLowerCase()));
     } catch {
-      allowed = new Set();
+      return null;
     }
-    const set = allowed;
-    const kept = set ? items.filter((item) => set.has(item.repo.toLowerCase())) : items;
-    return kept.slice(0, LIMIT);
+  }
+
+  function approved(allowed: Set<string>, items: ActivityItem[]): ActivityItem[] {
+    return items.filter((item) => allowed.has(item.repo.toLowerCase())).slice(0, LIMIT);
   }
 
   async function refresh(): Promise<void> {
     const root = document.querySelector<HTMLElement>('[data-github-activity]');
     const list = root?.querySelector<HTMLElement>('[data-list]');
     if (!root || !list) return;
+    // Nothing to check fresh data against: keep the build-time content (the profile link)
+    // rather than show repositories the privacy filter never saw.
+    const allowed = allowedRepos(root);
+    if (!allowed) return;
     const cached = readCache();
     if (cached) {
-      const items = approved(root, cached);
+      const items = approved(allowed, cached);
       if (items.length > 0) render(list, items);
       return;
     }
@@ -128,7 +134,7 @@ const profile = `https://github.com/${GITHUB_USER}`;
       if (!response.ok) return;
       const all = summarizeEvents(await response.json(), 50);
       writeCache(all);
-      const items = approved(root, all);
+      const items = approved(allowed, all);
       if (items.length > 0) render(list, items);
     } catch {
       // Offline, rate-limited or blocked: keep the build-time list quietly.

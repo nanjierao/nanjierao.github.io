@@ -204,6 +204,18 @@ export function isFontFile(bytes: Uint8Array): boolean {
   );
 }
 
+/**
+ * TIFF and HEIF data, whatever the file is called: their metadata can sit where this check
+ * doesn't walk, so they must be converted to JPEG, PNG or WebP first. AVIF (also an ISO media
+ * file) is left to sharp, which reads its EXIF and XMP.
+ */
+export function convertFirstKind(bytes: Uint8Array): string | null {
+  const head = ascii(bytes, 0, 12);
+  if (head.startsWith('II*\0') || head.startsWith('MM\0*')) return 'TIFF data';
+  if (head.slice(4, 8) === 'ftyp' && !/^avi[fs]$/.test(head.slice(8, 12))) return 'HEIF/HEIC data';
+  return null;
+}
+
 /** Binary containers this check can't look inside. */
 export function unscannableKind(bytes: Uint8Array): string | null {
   const head = ascii(bytes, 0, 12);
