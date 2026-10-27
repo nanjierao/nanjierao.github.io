@@ -66,6 +66,8 @@ const SELF = [
   'scripts/lib/filter-external.ts',
   'scripts/privacy-allowlist.json',
   'tests/unit/privacy-rules.test.ts',
+  'tests/unit/privacy-corpus.ts',
+  'tests/unit/privacy-corpus.test.ts',
 ];
 
 // Files that define the §15 categories or discuss them as rules. They are scanned for phone
