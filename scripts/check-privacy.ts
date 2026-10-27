@@ -33,6 +33,7 @@ import {
 import {
   convertFirstKind,
   findDataUriImages,
+  imageSignature,
   isFontFile,
   readImageMetadata,
   unscannableKind,
@@ -230,6 +231,7 @@ async function checkImageBytes(
   bytes: Uint8Array,
   scope: 'repo' | 'dist',
   where = '',
+  depth = 0,
 ): Promise<Result[]> {
   const results: Result[] = [];
   const convert = convertFirstKind(bytes);
@@ -245,25 +247,41 @@ async function checkImageBytes(
     ];
   }
   const raw = readImageMetadata(bytes);
-  let sharpReport: ReturnType<typeof describeImageMetadata>;
+  let sharpReport: ReturnType<typeof describeImageMetadata> | null = null;
   try {
-    sharpReport = describeImageMetadata(await sharp(bytes).metadata());
+    const meta = await sharp(bytes).metadata();
+    // SVG text under an image name (or in a data URI): scan it as text, embedded images too.
+    if (meta.format === 'svg') {
+      const svg = Buffer.from(bytes).toString('utf8');
+      return [
+        ...scanText(file, svg, scope),
+        ...(await scanDataUris(file, svg, scope, depth + 1)),
+      ].map((r) => ({ ...r, line: 0, category: `${r.category}${where || ' (SVG content)'}` }));
+    }
+    sharpReport = describeImageMetadata(meta);
   } catch {
-    return [
-      {
-        file,
-        line: 0,
-        category: `unreadable image${where} (metadata not checked)`,
-        match: `sha256:${sha(bytes)}`,
-        severity: 'error',
-      },
-    ];
+    // A file that should be an image fails closed. A data URI whose bytes announce no image
+    // format isn't one a browser would show; one with a JPEG, PNG, GIF or WebP signature that
+    // sharp can't decode (truncated) still gets the byte-level walk below.
+    const signature = imageSignature(bytes);
+    if (where && !signature) return [];
+    if (!where || !['jpeg', 'png', 'gif', 'webp'].includes(signature ?? '')) {
+      return [
+        {
+          file,
+          line: 0,
+          category: `unreadable image${where} (metadata not checked)`,
+          match: `sha256:${sha(bytes)}`,
+          severity: 'error',
+        },
+      ];
+    }
   }
-  const blocks = new Set([...raw.blocks, ...sharpReport.details]);
+  const blocks = new Set([...raw.blocks, ...(sharpReport?.details ?? [])]);
   const location =
     raw.exif.some((exif) => exifHasGps(exif)) ||
     raw.xmp.some((xmp) => xmpHasLocation(xmp)) ||
-    sharpReport.hasLocation;
+    Boolean(sharpReport?.hasLocation);
   if (blocks.size > 0 || location) {
     const kind = location
       ? 'image location metadata'
@@ -305,15 +323,29 @@ async function scanImage(
   return checkImageBytes(file, bytes, scope);
 }
 
-/** Images embedded as base64 data URIs in text files go through the same check. */
-async function scanDataUris(file: string, text: string, scope: 'repo' | 'dist'): Promise<Result[]> {
+/**
+ * Images embedded as base64 data URIs in text files go through the same check. A data URI SVG
+ * is scanned as text and for its own data URIs, two levels deep.
+ */
+async function scanDataUris(
+  file: string,
+  text: string,
+  scope: 'repo' | 'dist',
+  depth = 0,
+): Promise<Result[]> {
+  if (depth > 2) return [];
   const results: Result[] = [];
   for (const embedded of findDataUriImages(text)) {
     const where = ` (data URI at line ${lineOf(text, embedded.index)})`;
     if (embedded.type === 'svg+xml') {
-      results.push(...scanText(file, Buffer.from(embedded.bytes).toString('utf8'), scope));
+      const svg = Buffer.from(embedded.bytes).toString('utf8');
+      const found = [
+        ...scanText(file, svg, scope),
+        ...(await scanDataUris(file, svg, scope, depth + 1)),
+      ];
+      results.push(...found.map((r) => ({ ...r, line: 0, category: `${r.category}${where}` })));
     } else {
-      results.push(...(await checkImageBytes(file, embedded.bytes, scope, where)));
+      results.push(...(await checkImageBytes(file, embedded.bytes, scope, where, depth)));
     }
   }
   return results;

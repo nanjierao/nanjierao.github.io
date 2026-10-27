@@ -233,19 +233,35 @@ export function unscannableKind(bytes: Uint8Array): string | null {
   return null;
 }
 
-/** Base64 images embedded in HTML, CSS, JS or SVG text. */
+/**
+ * Base64 images embedded in HTML, CSS, JS or SVG text. The payload must start right after the
+ * comma and has no spaces, so prose that mentions "data:image/png;base64," isn't read as one.
+ * Parameters such as ";name=photo.jpg" are allowed.
+ */
 export function findDataUriImages(
   text: string,
 ): Array<{ type: string; bytes: Uint8Array; index: number }> {
   const found: Array<{ type: string; bytes: Uint8Array; index: number }> = [];
   for (const m of text.matchAll(
-    /data:image\/([a-z0-9.+-]+)(?:;[a-z0-9=-]+)*;base64,([A-Za-z0-9+/=\s]{16,})/gi,
+    /data:image\/([a-z0-9.+-]+)(?:;[^;,\s"')]+)*;base64,([A-Za-z0-9+/]{16,}={0,2})/gi,
   )) {
     found.push({
       type: m[1]!.toLowerCase(),
-      bytes: Buffer.from(m[2]!.replace(/\s+/g, ''), 'base64'),
+      bytes: Buffer.from(m[2]!, 'base64'),
       index: m.index ?? 0,
     });
   }
   return found;
+}
+
+/** The image format a file's first bytes announce, or null when they announce none. */
+export function imageSignature(bytes: Uint8Array): string | null {
+  const head = ascii(bytes, 0, 12);
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) return 'jpeg';
+  if (head.startsWith('\x89PNG')) return 'png';
+  if (head.startsWith('GIF8')) return 'gif';
+  if (head.startsWith('RIFF') && head.slice(8, 12) === 'WEBP') return 'webp';
+  if (convertFirstKind(bytes)) return 'tiff/heif';
+  if (head.slice(4, 8) === 'ftyp') return 'avif';
+  return null;
 }

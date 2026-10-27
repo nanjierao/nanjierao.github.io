@@ -214,23 +214,39 @@ test.describe('GitHub activity in the browser (D40)', () => {
     expect(cached).toContain('fixture-study-tools');
   });
 
-  test('does not refresh when the build had no GitHub data to approve repositories', async ({
-    page,
-  }) => {
+  test("does not refresh without the build's list of approved repositories", async ({ page }) => {
+    const events = JSON.parse(githubEvents) as Array<Record<string, unknown>>;
+    events.unshift({
+      id: '98',
+      type: 'PushEvent',
+      created_at: '2026-10-27T11:00:00Z',
+      repo: { name: 'JimmyRaoUF/never-seen-by-the-build' },
+      payload: {},
+    });
     let requests = 0;
     await page.route('https://api.github.com/**', (route) => {
       requests++;
-      return route.fulfill({ status: 200, contentType: 'application/json', body: githubEvents });
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(events),
+      });
     });
+    // Serve the homepage the way a build without GitHub data writes it: no approved list.
+    await page.route(
+      (url) => url.pathname === '/',
+      async (route) => {
+        const response = await route.fetch();
+        const body = (await response.text()).replace(/ data-allowed-repos="[^"]*"/, '');
+        await route.fulfill({ response, body });
+      },
+    );
     await page.goto('/');
     const root = page.locator('[data-github-activity]');
-    test.skip(
-      (await root.getAttribute('data-allowed-repos')) !== null,
-      'Only a build without GitHub data (EXTERNAL_DATA=off) has nothing to approve',
-    );
+    expect(await root.getAttribute('data-allowed-repos')).toBeNull();
     await page.waitForLoadState('networkidle');
     expect(requests).toBe(0);
-    await expect(root.locator('[data-list]')).toBeHidden();
+    await expect(root).not.toContainText('never-seen-by-the-build');
     await expect(root).toContainText('More on github.com/JimmyRaoUF');
   });
 

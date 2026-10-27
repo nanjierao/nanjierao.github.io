@@ -14,6 +14,7 @@ export default defineConfig(
       'public/demos/',
       'source/',
       'migration/',
+      '.claude/worktrees/',
       'src/generated/',
       'playwright-report/',
       'test-results/',

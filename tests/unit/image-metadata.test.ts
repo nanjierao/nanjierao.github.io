@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   convertFirstKind,
   findDataUriImages,
+  imageSignature,
   isFontFile,
   readImageMetadata,
   unscannableKind,
@@ -136,5 +137,18 @@ describe('convertFirstKind', () => {
     const avif = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypavif', 'latin1')]);
     expect(convertFirstKind(avif)).toBeNull();
     expect(convertFirstKind(await blank().jpeg().toBuffer())).toBeNull();
+  });
+});
+
+describe('findDataUriImages and imageSignature', () => {
+  it('reads real data URIs, with parameters, and leaves prose about them alone', async () => {
+    const png = (await blank().png().toBuffer()).toString('base64');
+    const found = findDataUriImages(`<img src="data:image/png;name=a.png;base64,${png}">`);
+    expect(found).toHaveLength(1);
+    expect(imageSignature(found[0]!.bytes)).toBe('png');
+    const prose =
+      'Images embedded as data:image/png;base64, data URIs are checked.\nA data URI starts with data:image/jpeg;base64,\nfollowed by the bytes.';
+    expect(findDataUriImages(prose)).toEqual([]);
+    expect(imageSignature(Buffer.from('ABCDEFGHIJKLMNOP'))).toBeNull();
   });
 });

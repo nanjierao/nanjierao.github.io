@@ -24,3 +24,6 @@ lighthouse-*/
 Thumbs.db
 .vscode/
 .idea/
+
+# Git worktrees that Claude Code sessions create for parallel work
+.claude/worktrees/
