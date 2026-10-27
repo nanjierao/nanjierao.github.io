@@ -87,7 +87,7 @@ export const TEACHING_ASSISTANT = {
 
 /** facts.md §8: teaching before UF. */
 export const EARLIER_TEACHING: string[] = [
-  'English teacher (part-time) in an after-school program during my B.S.: a class of six elementary-school students for a year and a half.',
+  'English teacher (part-time) in an after-school program during my undergraduate studies: a class of six elementary-school students for a year and a half.',
   'Tutor in English, mathematics, and science for elementary, middle, and high school students (2012–2016).',
 ];
 

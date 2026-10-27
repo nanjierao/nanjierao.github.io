@@ -307,6 +307,18 @@ hr {
 }
 
 @media print {
+  :root,
+  :root[data-theme='dark'],
+  :root:not([data-theme='light']) {
+    color-scheme: light;
+    --color-bg: #fff;
+    --color-surface: #fff;
+    --color-text: #000;
+    --color-text-muted: #333;
+    --color-rule: #bbb;
+    --color-link: #000;
+  }
+
   .site-header nav,
   .theme-toggle,
   .skip-link,

@@ -40,26 +40,26 @@ export const PUBLICATION_TYPES = ['conference', 'extended-abstract', 'in-prepara
 /** Publications (facts.md §6). */
 export const publicationSchema = z
   .object({
-  id: z.string().regex(/^[a-z0-9-]+$/),
-  /** Item number in facts.md §6 (1–12); in-preparation items have none. */
-  factsNumber: z.number().int().min(1).max(12).optional(),
-  type: z.enum(PUBLICATION_TYPES),
-  authors: z.array(z.string().min(1)).min(1),
-  /** Required for published work; in-preparation manuscripts have no year yet. */
-  year: z.number().int().min(2000).max(2100).optional(),
-  title: z.string().min(1),
-  venue: z.string().min(1),
-  /** Publisher, pages and similar, as in facts.md. */
-  details: z.string().optional(),
-  /** Status notes from facts.md, e.g. "Full paper, accepted" or an award. */
-  notes: z.array(z.string()).default([]),
-  firstAuthor: z.boolean(),
-  /** D28: one-sentence TL;DR; hidden while `draft` is true. */
-  tldr: z.object({ text: z.string().min(1), draft: z.boolean() }).optional(),
-  /** facts.md VERIFY: hidden from the site until Jimmy confirms. */
-  verify: z.boolean().default(false),
-  url: z.url().optional(),
-  themes: z.array(z.string()).default([]),
+    id: z.string().regex(/^[a-z0-9-]+$/),
+    /** Item number in facts.md §6 (1–12); in-preparation items have none. */
+    factsNumber: z.number().int().min(1).max(12).optional(),
+    type: z.enum(PUBLICATION_TYPES),
+    authors: z.array(z.string().min(1)).min(1),
+    /** Required for published work; in-preparation manuscripts have no year yet. */
+    year: z.number().int().min(2000).max(2100).optional(),
+    title: z.string().min(1),
+    venue: z.string().min(1),
+    /** Publisher, pages and similar, as in facts.md. */
+    details: z.string().optional(),
+    /** Status notes from facts.md, e.g. "Full paper, accepted" or an award. */
+    notes: z.array(z.string()).default([]),
+    firstAuthor: z.boolean(),
+    /** D28: one-sentence TL;DR; hidden while `draft` is true. */
+    tldr: z.object({ text: z.string().min(1), draft: z.boolean() }).optional(),
+    /** facts.md VERIFY: hidden from the site until Jimmy confirms. */
+    verify: z.boolean().default(false),
+    url: z.url().optional(),
+    themes: z.array(z.string()).default([]),
   })
   .refine((pub) => pub.type === 'in-preparation' || pub.year !== undefined, {
     error: 'Published work needs a year',
@@ -112,7 +112,9 @@ export const talkSchema = z
     endDate: isoDay.optional(),
     timeZone: z.string().default('America/New_York'),
     /** D26 wording; required when the talk has dates. */
-    wording: z.object({ upcoming: z.string(), ongoing: z.string().optional(), past: z.string() }).optional(),
+    wording: z
+      .object({ upcoming: z.string(), ongoing: z.string().optional(), past: z.string() })
+      .optional(),
     link: z.string().optional(),
   })
   .refine((talk) => !talk.startDate || talk.wording, {
@@ -148,19 +150,15 @@ export const newsSchema = z
   });
 
 /** Blog posts (D41): Jimmy's Zhihu answers in Chinese, with English title and summary. */
-export const blogSchema = <T extends z.ZodType>(image: ImageValidator<T>) =>
-  z.object({
-    title: z.string().min(1),
-    title_en: z.string().min(1),
-    summary_en: z.string().min(40).max(600),
-    date: z.coerce.date(),
-    lang: z.enum(['zh-CN']).default('zh-CN'),
-    zhihu_url: z
-      .url()
-      .refine((url) => /^https:\/\/(?:www\.|zhuanlan\.)?zhihu\.com\//.test(url), {
-        error: 'zhihu_url must point to zhihu.com',
-      }),
-    tags: z.array(z.string()).min(1).max(5),
-    draft: z.boolean().default(false),
-    cover: z.object({ src: image(), alt: z.string().min(10) }).optional(),
-  });
+export const blogSchema = z.object({
+  title: z.string().min(1),
+  title_en: z.string().min(1),
+  summary_en: z.string().min(40).max(600),
+  date: z.coerce.date(),
+  lang: z.enum(['zh-CN']).default('zh-CN'),
+  zhihu_url: z.url().refine((url) => /^https:\/\/(?:www\.|zhuanlan\.)?zhihu\.com\//.test(url), {
+    error: 'zhihu_url must point to zhihu.com',
+  }),
+  tags: z.array(z.string()).min(1).max(5),
+  draft: z.boolean().default(false),
+});

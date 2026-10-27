@@ -76,6 +76,7 @@ export async function getTalks(): Promise<Talk[]> {
 export async function getNews(limit?: number): Promise<NewsItem[]> {
   const items = (await getCollection('news'))
     .map((entry) => entry.data)
-    .sort((a, b) => comparePartialDatesDesc(a.date, b.date));
+    // Newest first; items dated only as precisely (e.g. two "2026" items) keep a stable order.
+    .sort((a, b) => comparePartialDatesDesc(a.date, b.date) || a.id.localeCompare(b.id));
   return limit ? items.slice(0, limit) : items;
 }

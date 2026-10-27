@@ -134,8 +134,16 @@ const meta = ['YouTube', channel ? `${channel} channel` : null, startLabel]
     opacity: 1;
   }
 
-  .yt-facade__link:focus-visible {
-    outline-offset: -4px;
+  /* The poster covers the link's own outline and overflow: hidden clips the iframe's, so the
+     focus ring goes on the container: for the link, and for the player after it loads. */
+  .yt-facade:focus-within {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .yt-facade__link:focus-visible,
+  .yt-facade__frame:focus-visible {
+    outline: none;
   }
 
   .yt-facade__caption {

@@ -37,16 +37,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </li>
       <li>
         <strong>GitHub activity</strong> on the homepage is refreshed by your browser from GitHub’s
-        public API (api.github.com), so GitHub sees that request too. The result is kept in your
-        browser’s session storage for up to 30 minutes.
+        public API (api.github.com), so GitHub sees that request too. The result is cached in your
+        browser’s session storage: reused for up to 30 minutes and cleared when you close the tab.
       </li>
       <li>
         <strong>Videos</strong> load nothing from YouTube until you click play. Then the player
         loads from youtube-nocookie.com, and YouTube’s own policies apply.
       </li>
       <li>
-        <strong>The CS-UDT demo</strong> loads map software and map tiles from outside services; the{' '}
-        <a href="/demos/csudt/">demo page</a> lists them.
+        <strong>The CS-UDT demo</strong> loads map software (unpkg.com), map tiles (OpenStreetMap)
+        and a QR-code library (cdnjs.cloudflare.com). Its citizen client keeps your demo reports,
+        with any photo or location you attach, in this browser’s localStorage. The{' '}
+        <a href="/demos/csudt/">demo page</a> has the details.
       </li>
     </ul>
 

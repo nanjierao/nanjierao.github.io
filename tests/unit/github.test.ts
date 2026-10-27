@@ -100,3 +100,50 @@ describe('summarizeRepos', () => {
     expect(summarizeRepos(null, { message: 'Not Found' })).toEqual([]);
   });
 });
+
+describe('filterGitHub (fetched text must never fail a deploy)', () => {
+  it('drops repositories and activity whose names fail, and clears failing descriptions', async () => {
+    const { filterGitHub } = await import('../../scripts/lib/filter-external.ts');
+    const repos = summarizeRepos([
+      {
+        name: 'study-scripts',
+        full_name: 'JimmyRaoUF/study-scripts',
+        description: 'Scripts and notes from my job search',
+        pushed_at: '2026-10-01T00:00:00Z',
+      },
+      {
+        name: 'visa-helper',
+        full_name: 'JimmyRaoUF/visa-helper',
+        description: null,
+        pushed_at: '2026-10-02T00:00:00Z',
+      },
+      {
+        name: 'fine',
+        full_name: 'JimmyRaoUF/fine',
+        description: 'A plain description',
+        pushed_at: '2026-10-03T00:00:00Z',
+      },
+    ]);
+    const activity = [
+      {
+        action: 'Pushed commits to',
+        repo: 'JimmyRaoUF/visa-helper',
+        repoUrl: '',
+        date: '2026-10-02T00:00:00Z',
+      },
+      {
+        action: 'Pushed commits to',
+        repo: 'JimmyRaoUF/fine',
+        repoUrl: '',
+        date: '2026-10-03T00:00:00Z',
+      },
+    ];
+    const result = filterGitHub(activity, repos);
+    expect(result.repos.map((r) => [r.fullName, r.description])).toEqual([
+      ['JimmyRaoUF/fine', 'A plain description'],
+      ['JimmyRaoUF/study-scripts', null],
+    ]);
+    expect(result.activity.map((a) => a.repo)).toEqual(['JimmyRaoUF/fine']);
+    expect(result.dropped).toBe(3);
+  });
+});

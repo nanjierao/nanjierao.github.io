@@ -10,10 +10,12 @@ datasheet:
   - { label: Engagement, value: 'When two channels agree, nearby residents get a one-tap verification quest' }
   - { label: Replay, value: 'Simulated replay modeled on Hurricane Irma (Sep 10–12, 2017): first three-channel confirmation 10.8 hours into a 30-hour replay; four confirmed cells and three open quests at the peak' }
   - { label: Data, value: 'Everything in the demo is labeled SIMULATED' }
+  - { label: Paper, value: 'Coauthored extended abstract, DTRUE 2026 (oral presentation)' }
 tags: [LLM pipeline, digital twin, web]
 links:
   - { label: Open the demo, href: /demos/csudt/ }
 themes: [civic-digital-twins]
 facts: ['5.3', '7']
+# Coauthored (D46): name the coauthor here once facts.md §6 [10] is verified. TODO(jimmy)
 # TODO(jimmy): screenshots of the demo (facts.md §7 media); S4 adds the explainer and preview image.
 ---

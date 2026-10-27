@@ -9,6 +9,7 @@ import {
   findEmails,
   findPhones,
   findSection15Terms,
+  isPublishableFetchedText,
   isPublishableText,
   lineOf,
   mask,
@@ -134,5 +135,86 @@ describe('helpers', () => {
   it('finds line numbers and masks matches for public logs', () => {
     expect(lineOf('a\nb\nc', 4)).toBe(3);
     expect(mask('jane.doe@university.edu')).toBe('jane…du');
+  });
+});
+
+describe('formats found in review (fictional digits)', () => {
+  it('finds grouped and prefixed Chinese mobiles, landlines and compact international numbers', () => {
+    const cases = [
+      '138 0013 8000',
+      '138-0013-8000',
+      '手机：138-0013-8000',
+      '+8613800138000',
+      '+86-13800138000',
+      '(+86) 138 0013 8000',
+      '0086 138 0013 8000',
+      '010-12345678',
+      '(212)555-2368',
+      '212/555-2368',
+      '+44 7700 900123',
+      '+12125552368',
+      'phone: 2125552368',
+    ];
+    for (const text of cases) expect(findPhones(`x ${text} y`), text).not.toHaveLength(0);
+  });
+
+  it('finds Chinese street addresses', () => {
+    expect(findAddresses('地址：某某市某某区示例路100号')).toHaveLength(1);
+  });
+
+  it('does not flag ordinary research phrasing', () => {
+    const text = [
+      'We ran semi-structured interviews with older adults.',
+      'I conducted interviews with teachers.',
+      'The code is available from GitHub.',
+      'Participants received compensation for their time.',
+      'Students and their parents took part.',
+      'Our design framework and flood prototype.',
+      'Wearable baby thermometer',
+    ].join(' ');
+    expect(findSection15Terms(text)).toEqual([]);
+  });
+
+  it('still flags job-search and availability statements', () => {
+    expect(findSection15Terms('I interviewed at Google')).not.toHaveLength(0);
+    expect(findSection15Terms('Available from January 2027')).not.toHaveLength(0);
+    expect(findSection15Terms('willing to relocate')).not.toHaveLength(0);
+  });
+});
+
+describe('fetched text (D54)', () => {
+  it('holds back titles that mention a child or partner in any common form', () => {
+    const titles = [
+      'Testing the bedtime rule with our toddler',
+      'Our daughter vs. the screen-time rule',
+      'My 3-year-old tries the first-then trick',
+      'My little one and the marshmallow test',
+      'Dad tests a parenting tip on his son',
+      'Does white noise help a newborn sleep?',
+      '我家宝宝的第一个机器人',
+      '女儿的睡前规则',
+    ];
+    for (const title of titles) expect(isPublishableFetchedText(title), title).toBe(false);
+  });
+
+  it('shows titles about the advice itself', () => {
+    expect(isPublishableFetchedText('Testing a common parenting tip at home')).toBe(true);
+    expect(isPublishableFetchedText('Does white noise really help sleep?')).toBe(true);
+  });
+});
+
+describe('PNG raw metadata profiles', () => {
+  it('counts an ImageMagick-style "Raw profile type exif" text chunk as metadata', () => {
+    const report = describeImageMetadata({
+      comments: [{ keyword: 'Raw profile type exif', text: '\nexif\n 20\n45786966…\n' }],
+    });
+    expect(report.hasMetadata).toBe(true);
+    expect(
+      describeImageMetadata({ comments: [{ keyword: 'Comment', text: 'x' }] }).hasMetadata,
+    ).toBe(false);
+  });
+
+  it('masks matches on one line', () => {
+    expect(mask('tel:+1 212 555 2368\n')).not.toContain('\n');
   });
 });

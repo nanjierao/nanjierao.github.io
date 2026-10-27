@@ -63,6 +63,12 @@
 
   .theme-toggle[aria-pressed='true'] {
     background: var(--color-surface);
+    border-color: var(--color-text);
+  }
+
+  /* The moon fills in when the dark theme is on: a state cue that isn't color alone. */
+  .theme-toggle[aria-pressed='true'] path {
+    fill: currentColor;
   }
 
   .theme-toggle:hover {

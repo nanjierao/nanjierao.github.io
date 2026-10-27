@@ -43,7 +43,7 @@ const blog = defineCollection({
     pattern: '*/index.{md,mdx}',
     generateId: ({ entry }) => entry.replace(/\/index\.mdx?$/, ''),
   }),
-  schema: ({ image }) => blogSchema(image),
+  schema: blogSchema,
 });
 
 export const collections = { themes, builds, publications, talks, news, blog };

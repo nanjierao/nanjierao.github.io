@@ -191,7 +191,7 @@ describe('talks and news (D26)', () => {
 });
 
 describe('blog schema (D41)', () => {
-  const schema = blogSchema(imageStub);
+  const schema = blogSchema;
   const valid = {
     title: '中文标题',
     title_en: 'English title',
@@ -272,5 +272,21 @@ describe('visible text', () => {
 
   it('does not call the DTRUE work sole-authored (D46)', () => {
     for (const [id, text] of visibleStrings) expect(text, id).not.toMatch(/sole[- ]author/i);
+  });
+});
+
+describe('blog images (CLAUDE.md: alt text for every meaningful image)', () => {
+  const blogDir = join(CONTENT, 'blog');
+  const posts = readdirSync(blogDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(blogDir, entry.name, 'index.md'));
+  const fixture = join(ROOT, 'tests', 'fixtures', 'blog', '2026-10-01-fixture-post', 'index.md');
+
+  it('gives every Markdown and HTML image in a post alt text', () => {
+    for (const path of [...posts, fixture]) {
+      const body = readFileSync(path, 'utf8');
+      expect(body, path).not.toMatch(/!\[\s*\]\(/);
+      expect(body, path).not.toMatch(/<img(?![^>]*\balt="[^"]+")[^>]*>/i);
+    }
   });
 });

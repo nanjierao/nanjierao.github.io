@@ -8,7 +8,16 @@
 - id: icids-2026-hands-as-narrators
   factsNumber: 1
   type: conference
-  authors: ['Rao, N.', 'Lanzino, A.', 'Chenore, R.', 'Adhikari, I.', 'Brown, S. A.', 'Quek, F.', 'Chu, S. L.']
+  authors:
+    [
+      'Rao, N.',
+      'Lanzino, A.',
+      'Chenore, R.',
+      'Adhikari, I.',
+      'Brown, S. A.',
+      'Quek, F.',
+      'Chu, S. L.',
+    ]
   year: 2026
   title: 'Hands as Narrators: Characterizing Idea Reuptake from Hand Enactment in Story Writing'
   venue: 'ICIDS 2026'
@@ -146,7 +155,8 @@
 - id: ieeevr-2020-ar-smart-glasses
   factsNumber: 12
   type: extended-abstract
-  authors: ['Rao, N.', 'Zhang, L.', 'Chu, S. L.', 'Jurczyk, K.', 'Candelora, C.', 'Su, S.', 'Kozlin, C.']
+  authors:
+    ['Rao, N.', 'Zhang, L.', 'Chu, S. L.', 'Jurczyk, K.', 'Candelora, C.', 'Su, S.', 'Kozlin, C.']
   year: 2020
   title: 'Investigating the Necessity of Meaningful Context Anchoring in Augmented Reality Smart Glasses Interaction for Everyday Learning'
   venue: 'IEEE VR 2020'
@@ -173,6 +183,5 @@
   venue: 'Target: IEEE TLT'
   firstAuthor: true
   themes: [teacher-support]
-
 # Optional, not listed (facts.md §6): the 2019 Chinese-language paper in 中国数字医学.
 # TODO(jimmy): say whether to add it (D28).

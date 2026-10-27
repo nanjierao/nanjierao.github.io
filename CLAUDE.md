@@ -94,7 +94,10 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - `npm run check:privacy` — scans the repository and the build output for phone numbers,
   unexpected email addresses, street addresses, facts.md §15 terms, and image GPS/EXIF. Runs in CI.
   `--repo` or `--dist` limits the scope; known exceptions live in `scripts/privacy-allowlist.json`
-  as fingerprints with a reason, never as the values themselves.
+  as fingerprints with a reason, never as the values themselves. It fails closed: any image
+  metadata, unreadable images, and files it can't look inside (PDF, video, audio, office files)
+  are errors until someone reviews the exact file and allowlists its printed fingerprint.
+- `npm run strip-images -- <files>` — removes EXIF/XMP/IPTC from images before they are committed.
 
 ## Content rules (non-negotiable)
 

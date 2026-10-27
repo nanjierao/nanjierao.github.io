@@ -15,9 +15,10 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
   <h1>CS-UDT flood digital twin</h1>
   <div class="prose">
     <p class="lede">
-      A crowd-sourced urban digital twin for hurricane flooding in Jacksonville. Everything in the
-      demo is simulated: the replay is modeled on Hurricane Irma (Sep 10–12, 2017), and the
-      community content is synthetic.
+      A crowd-sourced urban digital twin for hurricane flooding in Jacksonville. The storm replay is
+      simulated, modeled on Hurricane Irma (Sep 10–12, 2017), and all community content is
+      synthetic. Official station locations are real but approximate, and the citizen client reads
+      your own phone’s sensors and location only if you allow it.
     </p>
 
     <ul class="demo-links plain-list">
@@ -48,9 +49,12 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
       </li>
       <li>The citizen client loads qrcode.js from cdnjs.cloudflare.com.</li>
       <li>
-        The citizen client can ask for your location and motion sensors, only when you tap the
-        button that uses them. Your demo reports stay in your browser (localStorage); the demo sends
-        nothing to this site.
+        The citizen client can ask for your camera (to attach a photo), your location and your
+        motion sensors, each only when you tap the control that uses it.
+      </li>
+      <li>
+        Your demo reports, including any photo or location you attach, stay in this browser
+        (localStorage) until you clear the site’s data. The demo sends nothing to this site.
       </li>
     </ul>
 

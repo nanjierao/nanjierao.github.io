@@ -262,3 +262,26 @@ test.describe('blog', () => {
     await expect(page.locator('.post__body img')).toHaveAttribute('src', /^\/_astro\//);
   });
 });
+
+test('keyboard focus on the YouTube facade is visible', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium');
+  await isolate(page);
+  await page.goto('/builds/xprize-avatar-robot/');
+  const facade = page.locator('yt-facade');
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press('Tab');
+    if (await facade.evaluate((el) => el.contains(document.activeElement))) break;
+  }
+  await expect(facade.locator('a')).toBeFocused();
+  expect(await facade.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe('solid');
+});
+
+test('the nav marks the current page and the current section differently', async ({ page }) => {
+  await isolate(page);
+  await page.goto('/builds/');
+  const builds = page.locator('.site-nav a[href="/builds/"]');
+  await expect(builds).toHaveAttribute('aria-current', 'page');
+  await page.goto('/builds/xprize-avatar-robot/');
+  await expect(builds).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator('.site-nav a[aria-current="page"]')).toHaveCount(0);
+});

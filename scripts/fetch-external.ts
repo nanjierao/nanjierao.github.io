@@ -25,7 +25,8 @@ import {
 import { YOUTUBE_FEED_URL, parseFeed, thumbnailUrl } from '../src/lib/youtube.ts';
 import type { ExternalData } from '../src/lib/external-types.ts';
 import { FLAGS } from '../src/data/site.ts';
-import { isPublishableText } from './lib/privacy-rules.ts';
+import { isPublishableFetchedText } from './lib/privacy-rules.ts';
+import { filterGitHub } from './lib/filter-external.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'src', 'generated');
@@ -84,9 +85,13 @@ async function loadGitHub(): Promise<ExternalData['github']> {
               return (await response.json()) as unknown;
             }),
           );
-    const activity = summarizeEvents(events);
-    const repos = summarizeRepos(userRepos, orgRepos);
+    const { activity, repos, dropped } = filterGitHub(
+      summarizeEvents(events),
+      summarizeRepos(userRepos, orgRepos),
+    );
     log(`GitHub: ${activity.length} activity items, ${repos.length} repositories`);
+    if (dropped > 0)
+      log(`GitHub: held back ${dropped} name(s) or description(s) by the §15 filter`);
     return { activity, repos };
   } catch (error) {
     log(`GitHub: not available (${reason(error)}); pages fall back to a profile link`);
@@ -101,8 +106,9 @@ async function loadYouTube(): Promise<ExternalData['youtube']> {
         ? await readFixture('youtube-feed.xml')
         : await (await get(YOUTUBE_FEED_URL, 'application/atom+xml')).text();
     const videos = parseFeed(xml);
-    // Never surface a title that touches a facts.md §15 category; take the newest one that doesn't.
-    const latest = videos.find((video) => isPublishableText(video.title)) ?? null;
+    // Never surface a title that touches a facts.md §15 category or names family (D54); take the
+    // newest one that doesn't.
+    const latest = videos.find((video) => isPublishableFetchedText(video.title)) ?? null;
     const skipped = latest ? videos.indexOf(latest) : videos.length;
     if (skipped > 0) log(`YouTube: skipped ${skipped} newer video(s) by the §15 title filter`);
     if (!latest) {

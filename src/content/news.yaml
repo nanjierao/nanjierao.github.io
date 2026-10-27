@@ -7,8 +7,8 @@
     start: '2026-11-19'
     end: '2026-11-20'
     timeZone: America/New_York
-    upcoming: 'Upcoming oral presentation at DTRUE 2026 (UF Jacksonville campus, Nov 19–20, 2026): our design framework and working prototype for crowd-sourced urban digital twins.'
-    past: 'Presented at DTRUE 2026 (UF Jacksonville campus, Nov 19–20, 2026): our design framework and working prototype for crowd-sourced urban digital twins.'
+    upcoming: 'Upcoming oral presentation at DTRUE 2026 (UF Jacksonville campus, Nov 19–20, 2026): our design framework and flood prototype for crowd-sourced urban digital twins.'
+    past: 'Presented at DTRUE 2026 (UF Jacksonville campus, Nov 19–20, 2026): our design framework and flood prototype for crowd-sourced urban digital twins.'
   link: { href: /research/civic-digital-twins/, label: Civic digital twins }
   facts: ['5.3', '11']
 

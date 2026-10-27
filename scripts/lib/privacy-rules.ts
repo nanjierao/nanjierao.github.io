@@ -11,14 +11,20 @@ export interface Finding {
 // ---------------------------------------------------------------- phone numbers
 
 const PHONE_PATTERNS: RegExp[] = [
-  // North American numbers with separators: (352) 555-0123, 352-555-0123, +1 352.555.0123
-  /(?<![\w.+-])(?:\+?1[\s.-]?)?\(?[2-9]\d{2}\)?[\s.-]\d{3}[\s.-]\d{4}(?![\w-])/g,
-  // International numbers written with a leading plus and separators.
-  /(?<![\w+])\+(?:[2-9]\d{0,2})[\s.-]\(?\d{1,4}\)?(?:[\s.-]\d{2,5}){2,4}(?![\w-])/g,
-  // Mainland China mobile numbers: 11 digits starting 13–19.
-  /(?<![\d.-])1[3-9]\d{9}(?![\d-])/g,
+  // North American numbers: (352) 555-0123, (352)555-0123, 352-555-0123, 352/555-0123, +1 352.555.0123
+  /(?<![\w.+/-])(?:\+?1[\s.-]?)?(?:\(\d{3}\)\s?|[2-9]\d{2}[\s./-])\d{3}[\s.-]\d{4}(?![\w-])/g,
+  // International numbers with a leading plus, with or without separators: +44 7700 900123
+  /(?<![\w+])\+[2-9]\d{0,2}[\s.-]?\(?\d{1,4}\)?(?:[\s.-]?\d{2,8}){1,4}(?![\w-])/g,
+  // E.164 written without separators: +12125550123
+  /(?<![\w+])\+\d{10,15}(?!\d)/g,
+  // Mainland China mobiles, plain or grouped 3-4-4, with an optional +86 / 0086 / (+86) prefix.
+  /(?<![\d+.-])(?:(?:\+|00)86[\s-]?|\(\+86\)\s?)?1[3-9]\d[\s-]?\d{4}[\s-]?\d{4}(?![\d-])/g,
+  // Mainland China landlines: 010-12345678, 0571-8888888
+  /(?<![\d-])0\d{2,3}-\d{7,8}(?![\d-])/g,
   // Telephone links.
-  /\btel:[+\d][\d\s().-]{5,}/gi,
+  /\btel:[+\d][\d ().-]{5,}/gi,
+  // Any long digit run labeled as a phone number.
+  /(?:\bphone|\btel(?:ephone)?|\bcell|\bmobile|手机|电话|微信)\s*(?:number|no\.?)?\s*[:：]?\s*\+?\d[\d\s().-]{6,}\d/gi,
 ];
 
 /** 555-0100 through 555-0199 are reserved for fiction in North America. */
@@ -28,10 +34,15 @@ function isFictionalPhone(match: string): boolean {
 
 export function findPhones(text: string): Finding[] {
   const findings: Finding[] = [];
+  const spans: Array<[number, number]> = [];
   for (const pattern of PHONE_PATTERNS) {
     for (const m of text.matchAll(pattern)) {
-      if (isFictionalPhone(m[0])) continue;
-      findings.push({ category: 'phone number', match: m[0], index: m.index ?? 0 });
+      const start = m.index ?? 0;
+      const end = start + m[0].length;
+      // Several patterns can match the same number; report it once.
+      if (isFictionalPhone(m[0]) || spans.some(([s, e]) => start < e && s < end)) continue;
+      spans.push([start, end]);
+      findings.push({ category: 'phone number', match: m[0], index: start });
     }
   }
   return findings;
@@ -77,6 +88,8 @@ const ADDRESS_PATTERNS: RegExp[] = [
   /\b(?:P\.?\s?O\.?\s?Box|Apt\.?|Apartment|Suite|Unit)\s*#?\s*\d+[A-Z]?\b/g,
   // State + ZIP code: FL 32611, Florida 32611-1234
   new RegExp(String.raw`\b(?:${US_STATES}|Florida)\s+\d{5}(?:-\d{4})?\b`, 'g'),
+  // Chinese street addresses: …路 1037 号, …街 12 号, and room numbers like 302 室
+  /[\u4e00-\u9fa5]{1,12}(?:路|街|大道|巷|弄|胡同)\s?\d{1,5}\s?号|\d{1,5}\s?(?:号楼|栋|幢|单元)\s?\d{0,5}\s?室?/g,
 ];
 
 export function findAddresses(text: string): Finding[] {
@@ -96,13 +109,16 @@ interface TermRule {
   pattern: RegExp;
 }
 
+const FAMILY_NOUNS =
+  'wife|husband|spouse|partner|sons?|daughters?|kids?|child|children|bab(?:y|ies)|toddlers?|infants?|newborns?|parents|mother|father|mom|mum|dad|in-laws|family|boys?|girls?|twins|little ones?';
+
 /** Words that signal a facts.md §15 category, plus the retired framing from facts.md §5.1. */
 export const SECTION_15_TERMS: readonly TermRule[] = [
   { category: '§15 grades', pattern: /\bGPA\b|\bgrade point average\b/gi },
   {
     category: '§15 immigration or work authorization',
     pattern:
-      /\bimmigration\b|\bvisas?\b|\bwork[- ]authori[sz]ation\b|\bH-?1B\b|\bgreen card\b|\bpermanent resident\b|\bsponsorship\b|\bSEVIS\b|\bI-20\b/gi,
+      /\bimmigration\b|\bvisas?\b|\bwork[- ]authori[sz]ation\b|\bH-?1B\b|\bgreen card\b|\bpermanent resident\b|\b(?:visa|employer|employment) sponsorship\b|\bSEVIS\b|\bI-20\b/gi,
   },
   // Case-sensitive acronyms: "F-1", "OPT", "CPT", "EAD" as status names.
   {
@@ -110,24 +126,36 @@ export const SECTION_15_TERMS: readonly TermRule[] = [
     pattern: /\bF-1\b|\bOPT\b|\bCPT\b|\bEAD\b/g,
   },
   {
+    // First-person possessives only: "their parents" is ordinary research language.
     category: '§15 family members',
-    pattern:
-      /\bmy (?:wife|husband|spouse|partner|son|sons|daughter|daughters|kid|kids|child|children|baby|babies|toddler|parents|mother|father|mom|dad|in-laws)\b|(?:我(?:的)?(?:儿子|女儿|老婆|妻子|丈夫|孩子|宝宝|父母))/gi,
+    pattern: new RegExp(
+      String.raw`\b(?:my|our)\s+(?:(?:little|older|younger|eldest|oldest|youngest|baby|toddler|teenage|\d+[- ]year[- ]old)\s+)?(?:${FAMILY_NOUNS})\b|我(?:的)?(?:儿子|女儿|老婆|妻子|丈夫|老公|孩子|宝宝|父母|闺女)|我家`,
+      'gi',
+    ),
   },
   {
     category: '§15 health',
     pattern: /\bdiagnos(?:is|ed)\b|\bmedical (?:leave|condition|history)\b|\bpregnan(?:t|cy)\b/gi,
   },
-  { category: '§15 compensation', pattern: /\bsalary\b|\bcompensation\b|\bstipend amount\b/gi },
+  {
+    category: '§15 compensation',
+    pattern:
+      /\bsalary\b|\bcompensation (?:package|expectations?)\b|\bmy (?:pay|stipend|compensation)\b/gi,
+  },
   {
     category: '§15 job-search activity',
     pattern:
-      /\bjob[- ](?:search|hunt|hunting|application|applications|offer|offers)\b|\boffer letter\b|\bon the (?:academic )?job market\b|\binterview(?:s|ed|ing)? (?:with|at) [A-Z]/gi,
+      /\bjob[- ](?:search|hunt|hunting|application|applications|offer|offers)\b|\boffer letter\b|\bon the (?:academic )?job market\b/gi,
+  },
+  // Case-sensitive on purpose: "interviewed at Google", not "interviews with older adults".
+  {
+    category: '§15 job-search activity',
+    pattern: /\b[Ii]nterview(?:s|ed|ing)? (?:with|at) [A-Z][\w&-]+/g,
   },
   {
     category: '§15 location or availability',
     pattern:
-      /\brelocat(?:e|ion|ing)\b|\bwilling to (?:move|relocate)\b|\bavailable (?:to start|starting|from)\b|\bstart date\b|\bnotice period\b/gi,
+      /\b(?:willing|able|open|happy) to (?:move|relocate)\b|\brelocation (?:assistance|package|support)\b|\bavailable (?:to start|immediately|starting (?:in|on|from)|from (?:January|February|March|April|May|June|July|August|September|October|November|December|\d{4}))\b|\b(?:my|earliest|possible|preferred) start date\b|\bnotice period\b/gi,
   },
   {
     category: '§15 participant data',
@@ -143,6 +171,16 @@ export const SECTION_15_TERMS: readonly TermRule[] = [
   },
 ];
 
+/**
+ * Stricter family rule for text fetched at build time (video titles, repository names and
+ * descriptions). The channel is about family life (D54), so any mention of a child or partner
+ * keeps a title off the site. Too broad for page text: "baby thermometer" is a real build.
+ */
+const FETCHED_FAMILY = new RegExp(
+  String.raw`\b(?:my|our|his|her|their)\s+(?:\w+\s+)?(?:${FAMILY_NOUNS})\b|\b(?:sons?|daughters?|toddlers?|newborns?|infants?|twins|wife|husband|kids?|bab(?:y|ies)|child|children)\b|\b\d+[- ](?:year|yr|month)[- ]olds?\b|\blittle ones?\b|儿子|女儿|宝宝|孩子|老婆|老公|闺女|娃|老大|老二|我家`,
+  'i',
+);
+
 export function findSection15Terms(text: string): Finding[] {
   const findings: Finding[] = [];
   for (const rule of SECTION_15_TERMS) {
@@ -153,7 +191,7 @@ export function findSection15Terms(text: string): Finding[] {
   return findings;
 }
 
-/** True when a short piece of fetched text (a video title, say) is safe to show. */
+/** True when text passes every rule the build-output scan applies. */
 export function isPublishableText(text: string): boolean {
   return (
     findSection15Terms(text).length === 0 &&
@@ -163,12 +201,23 @@ export function isPublishableText(text: string): boolean {
   );
 }
 
+/**
+ * True when text fetched at build time (a video title, a repository name or description) may
+ * appear on the site: it passes the build-output scan, so it can never fail a deploy, and it
+ * names no family member (D54).
+ */
+export function isPublishableFetchedText(text: string): boolean {
+  return isPublishableText(text) && !FETCHED_FAMILY.test(text);
+}
+
 // ---------------------------------------------------------------- image metadata
 
 export interface ImageMetadataReport {
   hasExif: boolean;
   hasXmp: boolean;
   hasIptc: boolean;
+  /** Any EXIF, XMP, IPTC, or a raw metadata profile stored in a PNG text chunk. */
+  hasMetadata: boolean;
   hasLocation: boolean;
   details: string[];
 }
@@ -219,18 +268,31 @@ export function describeImageMetadata(meta: {
   exif?: Uint8Array;
   xmp?: Uint8Array;
   iptc?: Uint8Array;
+  comments?: Array<{ keyword: string; text: string }>;
 }): ImageMetadataReport {
+  // ImageMagick and others store EXIF/XMP/IPTC in PNG text chunks ("Raw profile type exif").
+  const rawProfiles = (meta.comments ?? []).filter((c) =>
+    /raw profile type (?:exif|xmp|iptc|app1|8bim)|^XML:com\.adobe\.xmp$/i.test(c.keyword),
+  );
   const report: ImageMetadataReport = {
     hasExif: Boolean(meta.exif?.length),
     hasXmp: Boolean(meta.xmp?.length),
     hasIptc: Boolean(meta.iptc?.length),
+    hasMetadata: false,
     hasLocation: false,
     details: [],
   };
-  if (meta.exif?.length && exifHasGps(meta.exif)) report.details.push('EXIF GPS');
-  if (meta.xmp?.length && xmpHasLocation(meta.xmp)) report.details.push('XMP location');
-  if (meta.iptc?.length && iptcHasLocation(meta.iptc)) report.details.push('IPTC location');
-  report.hasLocation = report.details.length > 0;
+  if (report.hasExif) report.details.push('EXIF');
+  if (report.hasXmp) report.details.push('XMP');
+  if (report.hasIptc) report.details.push('IPTC');
+  if (rawProfiles.length) report.details.push('raw metadata profile in a PNG text chunk');
+  report.hasMetadata = report.details.length > 0;
+  const location: string[] = [];
+  if (meta.exif?.length && exifHasGps(meta.exif)) location.push('EXIF GPS');
+  if (meta.xmp?.length && xmpHasLocation(meta.xmp)) location.push('XMP location');
+  if (meta.iptc?.length && iptcHasLocation(meta.iptc)) location.push('IPTC location');
+  report.hasLocation = location.length > 0;
+  if (report.hasLocation) report.details.unshift(...location);
   return report;
 }
 
@@ -243,5 +305,6 @@ export function lineOf(text: string, index: number): number {
 
 /** Show enough of a match to find it without repeating the whole value in public CI logs. */
 export function mask(match: string): string {
-  return match.length <= 6 ? match : `${match.slice(0, 4)}…${match.slice(-2)}`;
+  const flat = match.replace(/\s+/g, ' ').trim();
+  return flat.length <= 6 ? flat : `${flat.slice(0, 4)}…${flat.slice(-2)}`;
 }

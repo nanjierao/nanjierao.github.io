@@ -44,7 +44,7 @@ const { Content } = await render(post);
     </header>
 
     <div class="post__body prose" lang={lang}>
-      <h2 class="post__title-zh">{title}</h2>
+      <p class="post__title-zh">{title}</p>
       <Content />
     </div>
 
@@ -76,7 +76,10 @@ const { Content } = await render(post);
   }
 
   .post__title-zh {
-    margin-top: 0;
+    margin: 0 0 var(--space-5);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    line-height: var(--leading-tight);
   }
 
   .post__body :global(img) {

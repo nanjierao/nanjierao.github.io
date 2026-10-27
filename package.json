@@ -19,7 +19,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "check:privacy": "node scripts/check-privacy.ts"
+    "check:privacy": "node scripts/check-privacy.ts",
+    "strip-images": "node scripts/strip-image-metadata.ts"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.1",

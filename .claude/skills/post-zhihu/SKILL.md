@@ -28,7 +28,10 @@ D41 and D52.
    relatively (`./name.jpg`), so Astro's image pipeline processes them and strips metadata. Never
    hot-link `zhimg.com`: Zhihu blocks hotlinking. If the draft points to images that aren't in
    `inbox/`, list them and ask Jimmy to upload them there. Only his own images: ask about
-   screenshots or pictures made by other people.
+   screenshots or pictures made by other people. Strip metadata before committing
+   (`npm run strip-images -- <files>`), and give every image Chinese alt text that says what it
+   shows (`![…](./name.jpg)`); keep his own caption where he wrote one, and show Jimmy any alt
+   text you drafted. The content tests fail on images without alt text.
 6. **Privacy check.** Report what you find; don't fix it silently:
    - phone numbers, email addresses, street addresses, ID-like numbers;
    - names or @handles of other people (Zhihu users, students, colleagues). Readers' comments may

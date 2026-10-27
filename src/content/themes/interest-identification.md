@@ -65,8 +65,7 @@ social-media posts, and students confirmed or rejected each one.
 - The two sources overlapped only partly (Jaccard .31). Together they added confirmed interests
   that were missing from the self-report form: 38.2% of each participant’s validated interests
   on average. 54% of those missing interests were in the two situational phases.
-- Privacy protocol: participants curated their own samples, sensitive content was filtered, and
-  nothing was retained. The study was supported by NSF CAREER #1942937.
+- Privacy protocol: participant self-curation, sensitive-content filtering, and non-retention. The study was supported by NSF CAREER #1942937.
 
 ## What it adds up to
 

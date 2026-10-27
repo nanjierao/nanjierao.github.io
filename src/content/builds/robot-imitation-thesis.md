@@ -1,5 +1,6 @@
 ---
-title: Humanoid robot behavior imitation (B.S. thesis)
+title: Humanoid robot behavior imitation (undergraduate thesis)
+# facts.md §7 says "B.S. thesis"; the degree wording waits on facts.md §4 VERIFY. TODO(jimmy)
 when: '2016'
 order: 8
 summary: Kinect-based human action recognition driving a humanoid robot over Wi-Fi. Outstanding Thesis Award (top 1%).

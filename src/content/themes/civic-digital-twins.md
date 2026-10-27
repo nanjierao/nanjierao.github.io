@@ -2,7 +2,7 @@
 title: 'Civic AI: crowd-sourced urban digital twins'
 context: civic
 order: 3
-summary: A design framework for gamified, LLM-assisted crowd-sourced urban digital twins, and a flood prototype for Jacksonville that confirms an event when three channels agree.
+summary: Our design framework for gamified, LLM-assisted crowd-sourced urban digital twins, and a flood prototype for Jacksonville that confirms an event when three channels agree.
 facts: ['5.3']
 publications: [dtrue-2026-csudt-framework]
 builds: [cs-udt]
@@ -11,8 +11,8 @@ builds: [cs-udt]
 # TODO(jimmy): verify, then name the coauthor here.
 ---
 
-A design framework and a working prototype for crowd-sourced urban digital twins, applied to
-hurricane flooding in Jacksonville.
+Our design framework for crowd-sourced urban digital twins, and a prototype for hurricane flooding
+in Jacksonville. This work is coauthored.
 
 ## Sense–Engage–Govern
 
@@ -45,5 +45,6 @@ cells and three open quests. Everything in the demo is labeled SIMULATED.
 
 ## Where it appears
 
-The extended abstract was accepted for an oral presentation at DTRUE 2026 (UF Jacksonville
-campus, Nov 19–20, 2026). A full paper is to appear in EPiC Series in Technology.
+- Oral presentation: DTRUE 2026, UF Jacksonville campus, Nov 19–20, 2026 (coauthored extended
+  abstract).
+- Full paper: EPiC Series in Technology (to appear).

@@ -46,8 +46,10 @@ const profile = `https://github.com/${GITHUB_USER}`;
       const raw = sessionStorage.getItem(CACHE_KEY);
       if (!raw) return null;
       const cached = JSON.parse(raw) as { savedAt?: unknown; items?: unknown };
-      if (typeof cached.savedAt !== 'number' || Date.now() - cached.savedAt > MAX_AGE_MS)
+      if (typeof cached.savedAt !== 'number' || Date.now() - cached.savedAt > MAX_AGE_MS) {
+        sessionStorage.removeItem(CACHE_KEY);
         return null;
+      }
       return sanitizeActivity(cached.items);
     } catch {
       return null;

@@ -30,31 +30,6 @@ import {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
 
-const TEXT_EXTENSIONS = new Set([
-  '.astro',
-  '.css',
-  '.csv',
-  '.html',
-  '.htm',
-  '.js',
-  '.json',
-  '.jsx',
-  '.md',
-  '.mdx',
-  '.mjs',
-  '.cjs',
-  '.svg',
-  '.ts',
-  '.tsx',
-  '.txt',
-  '.webmanifest',
-  '.xml',
-  '.yaml',
-  '.yml',
-  '.toml',
-  '.htaccess',
-  '',
-]);
 const IMAGE_EXTENSIONS = new Set([
   '.jpg',
   '.jpeg',
@@ -67,10 +42,16 @@ const IMAGE_EXTENSIONS = new Set([
   '.heic',
   '.heif',
 ]);
+// Font files: no personal data to look for.
+const FONT_EXTENSIONS = new Set(['.woff', '.woff2', '.ttf', '.otf', '.eot']);
+// Everything else is read as text unless it contains NUL bytes. Binary files this script can't
+// look inside (PDFs, video, audio, office files, archives, .ico) fail until someone reviews the
+// exact file by hand and allowlists its content fingerprint.
 
 // The checker's own rules and tests contain sample patterns on purpose.
 const SELF = [
   'scripts/lib/privacy-rules.ts',
+  'scripts/lib/filter-external.ts',
   'scripts/privacy-allowlist.json',
   'tests/unit/privacy-rules.test.ts',
 ];
@@ -178,38 +159,40 @@ async function scanImage(file: string, scope: 'repo' | 'dist'): Promise<Result[]
   try {
     const meta = await sharp(join(ROOT, file)).metadata();
     const report = describeImageMetadata(meta);
-    const results: Result[] = [];
-    if (report.hasLocation) {
-      results.push({
+    if (!report.hasLocation && !report.hasMetadata) return [];
+    // D31 and facts.md §15 bar photo metadata from every public file. In dist/ any metadata
+    // means an image bypassed Astro's pipeline; in the repository, strip it before committing
+    // (npm run strip-images -- <files>).
+    return [
+      {
         file,
         line: 0,
-        category: 'image location metadata',
+        category: report.hasLocation
+          ? 'image location metadata'
+          : scope === 'dist'
+            ? 'image metadata in build output'
+            : 'image metadata in repository',
         match: report.details.join(', '),
         severity: 'error',
-      });
-    } else if (scope === 'dist' && (report.hasExif || report.hasXmp || report.hasIptc)) {
-      // Astro's image pipeline strips metadata, so any left in the output means an image
-      // bypassed it (D31: photos go through src/assets, never raw into public/).
-      results.push({
-        file,
-        line: 0,
-        category: 'image metadata in build output',
-        match: 'EXIF/XMP/IPTC present',
-        severity: 'error',
-      });
-    }
-    return results;
+      },
+    ];
   } catch {
     return [
       {
         file,
         line: 0,
-        category: 'unreadable image',
-        match: 'could not read metadata',
-        severity: 'warning',
+        category: 'unreadable image (metadata not checked)',
+        match: `sha256:${fileHash(file)}`,
+        severity: 'error',
       },
     ];
   }
+}
+
+function fileHash(file: string): string {
+  return createHash('sha256')
+    .update(readFileSync(join(ROOT, file)))
+    .digest('hex');
 }
 
 async function scan(
@@ -221,21 +204,24 @@ async function scan(
   for (const file of files) {
     if (SELF.includes(file)) continue;
     const ext = extname(file).toLowerCase();
+    counted++;
     if (IMAGE_EXTENSIONS.has(ext)) {
-      counted++;
       results.push(...(await scanImage(file, scope)));
-    } else if (TEXT_EXTENSIONS.has(ext) || file.endsWith('.htaccess')) {
-      counted++;
-      results.push(...scanText(file, readFileSync(join(ROOT, file), 'utf8'), scope));
-    } else if (ext === '.pdf') {
+      continue;
+    }
+    if (FONT_EXTENSIONS.has(ext)) continue;
+    const bytes = readFileSync(join(ROOT, file));
+    if (bytes.subarray(0, 8192).includes(0)) {
       results.push({
         file,
         line: 0,
-        category: 'PDF not text-scanned',
-        match: 'review by hand',
-        severity: 'warning',
+        category: `unscannable ${ext || 'binary'} file (review by hand, then allowlist)`,
+        match: `sha256:${fileHash(file)}`,
+        severity: 'error',
       });
+      continue;
     }
+    results.push(...scanText(file, bytes.toString('utf8'), scope));
   }
   return { results, counted };
 }

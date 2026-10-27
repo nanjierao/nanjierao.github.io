@@ -39,8 +39,10 @@ export interface ElsewhereLink {
   id: 'scholar' | 'github' | 'youtube' | 'zhihu';
   label: string;
   href: string;
-  /** Extra words for screen readers and tooltips. */
+  /** Extra words for screen readers and tooltips (English only: a title attribute can't carry lang). */
   description: string;
+  /** Native-language name, shown with its own lang attribute in the /about list. */
+  nativeName?: { text: string; lang: string };
 }
 
 /** facts.md §13 (D50): Google Scholar, GitHub (JimmyRaoUF), YouTube, Zhihu. */
@@ -67,7 +69,8 @@ export const ELSEWHERE: readonly ElsewhereLink[] = [
     id: 'zhihu',
     label: 'Zhihu',
     href: 'https://www.zhihu.com/people/daozhu',
-    description: 'Writing in Chinese on Zhihu (知乎)',
+    description: 'Writing in Chinese on Zhihu',
+    nativeName: { text: '知乎', lang: 'zh-CN' },
   },
 ];
 
