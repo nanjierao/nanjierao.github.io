@@ -10,16 +10,6 @@
     "reason": "Public address of the UF Jacksonville campus (the DTRUE 2026 venue) in the simulated demo; not a personal address. The demo files are not edited (S1 step 6)."
   },
   {
-    "file": "source/old-site/index.html",
-    "fingerprint": "821de255a9335e00",
-    "reason": "Archived copy of the old CISE page, not published by this site. Someone else's address (facts.md §1). TODO(jimmy): decide whether to remove it from source/old-site/; it is already in the repository history."
-  },
-  {
-    "file": "source/old-site/index.html",
-    "fingerprint": "64f7c6ffb37de450",
-    "reason": "Archived copy of the old CISE page, not published by this site. TODO(jimmy): decide whether to keep it; the public email is still to be chosen (facts.md §1)."
-  },
-  {
     "file": "content/qa-library.yaml",
     "fingerprint": "214e7446ccf3a2ee",
     "reason": "Draft note telling the session not to include such details; the answer is still needs-jimmy."
