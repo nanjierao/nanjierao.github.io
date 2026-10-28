@@ -3,6 +3,14 @@
 Newest first. Status: **proposed** (drafted for Jimmy, in effect unless he objects) ·
 **needs Jimmy** (blocked on his choice) · **accepted** · **superseded**.
 
+## 2026-10-28 — Visual pass (Jimmy: "too text heavy… word cloud, diagrams, tables?")
+
+| ID | Decision | Why | Status |
+|---|---|---|---|
+| D59 | **Figures are HTML and CSS rendered at build time** (`src/components/figures/`): paired bars, part-of-a-whole bars, stat tiles, flow diagrams, a replay timeline, the Sense–Engage–Govern dimensions, a publication timeline, a builds matrix and a CV timeline. Research pages became MDX so figures sit in the text, and their prose was cut where a figure now carries the numbers. Figure numbers live in `src/data/figures.ts`; tests check that every number shown there, in the theme pages and in word-cloud blurbs appears in facts.md, and that parts add up to their totals. Grounded/inferred bars use solid vs. hatched-with-dotted-edge plus labels (D30). | No JavaScript on content pages (≤ 50 KB budget untouched), readable by screen readers, both themes from the same tokens, reflows on a phone. Chart libraries compared in THIRD_PARTY.md. | proposed |
+| D60 | **The word cloud ships now, ahead of S2/S3.** `d3-cloud` packs the homepage's links on screens 600 px and wider; on a phone, and without JavaScript, the words stay in three centered lists, all of them. Every word is a 24 px target (WCAG 2.5.8), which a packed cloud can't hold on a 390 px screen, so this replaces SITE_PLAN's "top ~25 terms on mobile". Groups differ by typeface as well as color. No drift: continuous motion would need a pause control (WCAG 2.2.2). Hover or focus shows the blurb; a click opens the page (SITE_PLAN had click → blurb). `content/wordcloud.yaml` was edited for facts: unsupported claims dropped (Hidi & Renninger, "our term", "go-to person", the Go board number, the 81-study survey, B.S. wording), placeholder links (/hands/, /life/) replaced, "progress, not perfection" and "your interests" held back. | Jimmy asked for visuals instead of walls of text; S2 can still restyle or replace it. | proposed |
+| D61 | **Build areas.** Each build lists the areas it involved (`areas` in its front matter: AI and LLMs, sensing and tracking, 3D/XR/robots, hardware, web and dashboards, user study) for the matrix on /builds. Marks follow each build's datasheet in facts.md §7. | A table answers "what has he built with X?" at a glance. | proposed |
+
 ## 2026-10-27 (evening) — S1 build choices
 
 | ID | Decision | Why | Status |

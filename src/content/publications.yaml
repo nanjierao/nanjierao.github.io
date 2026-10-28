@@ -21,6 +21,7 @@
   year: 2026
   title: 'Hands as Narrators: Characterizing Idea Reuptake from Hand Enactment in Story Writing'
   venue: 'ICIDS 2026'
+  venueShort: 'ICIDS'
   details: 'Springer'
   notes: ['Full paper, accepted']
   firstAuthor: true
@@ -36,6 +37,7 @@
   year: 2026
   title: 'Identifying Student Interests for Interest-Based Learning: A Comparison of Interest Extraction from Browsing History and Social Media Posts'
   venue: 'IEEE ICALT 2026'
+  venueShort: 'ICALT'
   notes: ['Full paper']
   firstAuthor: true
   tldr:
@@ -50,6 +52,7 @@
   year: 2023
   title: 'Everyday-Inspired Movies: Towards the Design of Movie Recommender Systems Based on Everyday Life through Personal Social Media'
   venue: 'IFIP INTERACT 2023'
+  venueShort: 'INTERACT'
   details: 'Springer, pp. 160–169'
   firstAuthor: false
 
@@ -60,6 +63,7 @@
   year: 2023
   title: 'The Context for Contextualizing: Design Implications for Adaptive Teacher Support Systems for More Relevant Instruction'
   venue: 'IEEE ICALT 2023'
+  venueShort: 'ICALT'
   details: 'pp. 71–73'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [4]).
@@ -72,6 +76,7 @@
   year: 2021
   title: 'Enhancing the Visual Efficiency for Communicating Students’ Personal Relevant Information'
   venue: 'IEEE ICALT 2021'
+  venueShort: 'ICALT'
   notes: ['Best Short Paper Nomination']
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [5]).
@@ -84,6 +89,7 @@
   year: 2021
   title: 'Flexible Low-Cost Digital Puppet System'
   venue: 'HCI International (HCII 2021)'
+  venueShort: 'HCII'
   details: 'Springer LNCS'
   firstAuthor: true
   tldr:
@@ -98,6 +104,7 @@
   year: 2020
   title: 'Understanding the Effects of Explanation Types and User Motivations on Recommender System Use'
   venue: 'AAAI HCOMP 2020'
+  venueShort: 'HCOMP'
   firstAuthor: false
 
 - id: chi-2020-self-avatars
@@ -107,6 +114,7 @@
   year: 2020
   title: 'Investigating the Effects of Self-Avatars and Story-Relevant Avatars on Children’s Creative Storytelling'
   venue: 'ACM CHI 2020'
+  venueShort: 'CHI'
   firstAuthor: false
   themes: [embodied-learning]
 
@@ -117,6 +125,7 @@
   year: 2019
   title: 'The Effects of Interactive Emotional Priming on Storytelling: An Exploratory Study'
   venue: 'ICIDS 2019'
+  venueShort: 'ICIDS'
   details: 'Springer, pp. 395–404'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [9]).
@@ -130,6 +139,7 @@
   year: 2026
   title: 'A Design Framework for Gamified, LLM-Assisted Crowd-Sourced Urban Digital Twins'
   venue: 'DTRUE 2026, UF Jacksonville Campus'
+  venueShort: 'DTRUE'
   notes: ['Oral presentation', 'Full paper to appear in EPiC Series in Technology']
   firstAuthor: true
   tldr:
@@ -147,6 +157,7 @@
   year: 2022
   title: 'Exploring Information Retrieval for Personalized Teaching Support'
   venue: 'HCI International 2022 — Late Breaking Posters'
+  venueShort: 'HCII'
   details: 'Springer, pp. 191–197'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [11]).
@@ -160,6 +171,7 @@
   year: 2020
   title: 'Investigating the Necessity of Meaningful Context Anchoring in Augmented Reality Smart Glasses Interaction for Everyday Learning'
   venue: 'IEEE VR 2020'
+  venueShort: 'IEEE VR'
   notes: ['Workshop paper and poster']
   firstAuthor: true
   tldr:

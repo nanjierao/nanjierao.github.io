@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 
@@ -13,6 +14,8 @@ export default defineConfig({
   // Whitespace follows Astro 7's default JSX rules ('jsx'), which is also how Prettier's Astro
   // plugin formats templates: write {' '} where a space must survive a line break.
   integrations: [
+    // MDX lets research pages place figures (src/components/figures) inside their text.
+    mdx(),
     react(),
     sitemap({
       filter: (page) => !NOT_IN_SITEMAP.some((path) => new URL(page).pathname === path),

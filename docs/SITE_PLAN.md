@@ -75,7 +75,7 @@ Top to bottom (D21):
   (hands / ask / life). Layout `d3-cloud`, gentle drift with `motion`. Hovering or focusing a
   portal makes its words glow and drift toward it. Clicking a word opens a one-line blurb with a
   link. Under reduced motion it is static; it is also rendered as an HTML list for screen readers.
-  On mobile it shows the top ~25 terms.
+  On a phone it stays three centered lists of all the words, so each keeps a 24 px target (D60).
 - **Three portals** under or around the cloud: Hands (camera glyph), Ask (speech glyph),
   Life & You (spark glyph). Each has one line of copy and a clear action. Desktop: left, middle,
   right. Mobile: stacked in the same order.

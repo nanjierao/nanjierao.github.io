@@ -9,6 +9,7 @@ datasheet:
   - { label: Field, value: '37 teams from 15 countries' }
   - { label: Result, value: Semifinalist }
 tags: [robotics, teleoperation, hardware]
+areas: [sensing, spatial, hardware]
 video: { id: u9nYUBc-_s0, title: ANA Avatar XPRIZE, start: 74, channel: XPRIZE }
 hardestBug: 'The power converter failed the night before testing. I disconnected the drive train, ran on a borrowed lower-rated unit, and kept the scored manipulation task.'
 themes: [embodied-learning]

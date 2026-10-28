@@ -1,11 +1,12 @@
 ---
-// Temporary homepage until S3 (D21 intro strip first). The word cloud, portals and easter egg
-// arrive with the chosen design (S2, S3).
+// Homepage until S3 (D21: intro strip first, then the word cloud). The portals and the easter
+// egg arrive with the chosen design (S2, S3).
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ElsewhereLinks from '../components/ElsewhereLinks.astro';
 import GitHubActivity from '../components/GitHubActivity.astro';
 import LatestVideo from '../components/LatestVideo.astro';
 import TimeAware from '../components/TimeAware.astro';
+import WordCloud from '../components/WordCloud.astro';
 import { PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
 import { CONTEXT_LABELS } from '../content/schemas.ts';
 import { getNews, getPosts, getThemesByContext } from '../lib/content.ts';
@@ -46,6 +47,13 @@ const cvPdf = hasCvPdf();
       )}
     </ul>
     <ElsewhereLinks label="Elsewhere" />
+  </section>
+
+  <section aria-labelledby="topics-heading">
+    <h2 id="topics-heading" class="visually-hidden">
+      Topics
+    </h2>
+    <WordCloud />
   </section>
 
   <section aria-labelledby="research-heading">

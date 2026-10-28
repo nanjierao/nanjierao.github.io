@@ -1,0 +1,32 @@
+---
+title: 'Grounding: checking what models assert about people'
+context: personal
+order: 2
+summary: A unit-level check of every claim a model makes about a student — is it grounded in the student’s own material, or inferred?
+facts: ['5.2']
+publications: [icalt-2026-interest-extraction]
+builds: [interest-extraction-pipeline]
+---
+
+import Figure from '../../components/figures/Figure.astro';
+import SplitBar from '../../components/figures/SplitBar.astro';
+import { GROUNDING } from '../../data/figures.ts';
+
+In two studies, I checked every claim a model made about a student, one unit at a time: is it
+**grounded** in the student’s own material, or **inferred**?
+
+<Figure
+  title="What models asserted about students, unit by unit"
+  note="“Inferred” means the student’s material doesn’t show it, not that it is false: an inferred claim may still be true. The check compares claims with what the student provided; it does not test truth."
+>
+  <SplitBar rows={GROUNDING} />
+</Figure>
+
+Only grounded units count toward Depth and Richness in my
+[interest-identification work](/research/interest-identification/).
+
+## The same convention on this site
+
+The legend at the bottom of every page uses the same idea: a solid underline for something shown
+in the source, a dotted underline for an inference. The planned Ask and Life & You pages will mark
+their claims this way.

@@ -1,0 +1,140 @@
+---
+// Part-of-a-whole bars: each row splits a total into labeled parts. Grounded parts are solid,
+// inferred parts hatched with a dotted edge, and every part is named in text below its bar
+// (the site's grounded/inferred convention: line style + label + color, D30).
+import type { SplitRow } from '../../data/figures.ts';
+
+interface Props {
+  rows: readonly SplitRow[];
+}
+
+const { rows } = Astro.props;
+---
+
+<ul class="split">
+  {rows.map((row) => (
+    <li class="split__row">
+      <p class="split__label">
+        {row.label}{' '}
+        <span class="split__total">
+          · {row.total.display} {row.total.unit}
+        </span>
+      </p>
+      <span class="split__bar" aria-hidden="true">
+        {row.segments.map((segment) => (
+          <span
+            class={`split__seg split__seg--${segment.kind}`}
+            style={`flex-grow: ${segment.value}`}
+          />
+        ))}
+      </span>
+      <ul class="split__key">
+        {row.segments.map((segment) => (
+          <li class={`split__part split__part--${segment.kind}`}>
+            <span class="split__swatch" aria-hidden="true" />
+            {segment.display && (
+              <>
+                <strong>{segment.display}</strong>{' '}
+              </>
+            )}
+            {segment.kind === 'grounded' || segment.kind === 'inferred' ? (
+              <span class={`mark mark--${segment.kind}`}>{segment.label}</span>
+            ) : (
+              segment.label
+            )}
+            {segment.share && <span class="split__share"> {segment.share}</span>}
+          </li>
+        ))}
+      </ul>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .split {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .split__row {
+    margin: 0 0 var(--space-4);
+  }
+
+  .split__row:last-child {
+    margin-bottom: var(--space-1);
+  }
+
+  .split__label {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .split__total {
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  .split__bar {
+    display: flex;
+    gap: 3px;
+    height: 1.4rem;
+  }
+
+  .split__seg {
+    flex-basis: 0;
+    min-width: 4px;
+    border-radius: 2px;
+  }
+
+  .split__seg--grounded,
+  .split__part--grounded .split__swatch {
+    background: var(--color-grounded);
+  }
+
+  .split__seg--inferred,
+  .split__part--inferred .split__swatch {
+    background: repeating-linear-gradient(135deg, var(--color-inferred) 0 2px, transparent 2px 6px);
+    outline: 2px dotted var(--color-inferred);
+    outline-offset: -2px;
+  }
+
+  .split__seg--focus,
+  .split__part--focus .split__swatch {
+    background: var(--color-series-a);
+  }
+
+  .split__seg--rest,
+  .split__part--rest .split__swatch {
+    background: var(--color-track);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+  }
+
+  .split__key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-5);
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-sm);
+  }
+
+  .split__key li {
+    margin: 0;
+  }
+
+  .split__swatch {
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    margin-right: 0.4em;
+    vertical-align: -0.05em;
+    border-radius: 2px;
+  }
+
+  .split__share {
+    color: var(--color-text-muted);
+  }
+</style>

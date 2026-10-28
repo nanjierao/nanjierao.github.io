@@ -1,0 +1,95 @@
+---
+// Two series compared on several measures, one small panel per measure, each on its own scale
+// starting at zero. Every bar has its series name and value as text; the second series is
+// also hatched, so the comparison never depends on color alone.
+import type { Metric } from '../../data/figures.ts';
+
+interface Props {
+  series: readonly string[];
+  metrics: readonly Metric[];
+}
+
+const { series, metrics } = Astro.props;
+const width = (value: number, max: number) => `${Math.min(100, (value / max) * 100).toFixed(1)}%`;
+---
+
+<div class="pbars">
+  {metrics.map((metric) => (
+    <div class="pbars__metric">
+      <p class="pbars__label">{metric.label}</p>
+      <ul class="pbars__rows">
+        {metric.values.map((datum, index) => (
+          <li class={`pbars__row pbars__row--${index}`}>
+            <span class="pbars__series">{series[index]}</span>
+            <span class="pbars__value">{datum.display}</span>
+            <span class="pbars__track" aria-hidden="true">
+              <span class="pbars__bar" style={`width: ${width(datum.value, metric.max)}`} />
+            </span>
+          </li>
+        ))}
+      </ul>
+      {metric.note && <p class="pbars__note">{metric.note}</p>}
+    </div>
+  ))}
+</div>
+
+<style>
+  .pbars {
+    display: grid;
+    gap: var(--space-5);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  }
+
+  .pbars__label {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .pbars__rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pbars__row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 var(--space-3);
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  .pbars__value {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pbars__track {
+    grid-column: 1 / -1;
+    display: block;
+    height: 0.85rem;
+    margin-top: 0.2rem;
+    border-radius: 2px;
+    background: var(--color-track);
+  }
+
+  .pbars__bar {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--color-series-a);
+  }
+
+  .pbars__row--1 .pbars__bar {
+    background: repeating-linear-gradient(135deg, var(--color-series-b) 0 2px, transparent 2px 5px);
+    box-shadow: inset 0 0 0 2px var(--color-series-b);
+  }
+
+  .pbars__note {
+    margin: calc(-1 * var(--space-1)) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+</style>

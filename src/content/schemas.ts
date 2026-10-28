@@ -49,6 +49,8 @@ export const publicationSchema = z
     year: z.number().int().min(2000).max(2100).optional(),
     title: z.string().min(1),
     venue: z.string().min(1),
+    /** Venue acronym for the publication timeline, e.g. "ICALT". */
+    venueShort: z.string().min(1).max(10).optional(),
     /** Publisher, pages and similar, as in facts.md. */
     details: z.string().optional(),
     /** Status notes from facts.md, e.g. "Full paper, accepted" or an award. */
@@ -66,7 +68,21 @@ export const publicationSchema = z
   })
   .refine((pub) => pub.type === 'in-preparation' || pub.factsNumber !== undefined, {
     error: 'Published work needs its facts.md §6 item number',
+  })
+  .refine((pub) => pub.type === 'in-preparation' || pub.venueShort !== undefined, {
+    error: 'Published work needs a venueShort for the timeline',
   });
+
+/** What a build involved, for the matrix on /builds; each mark follows its datasheet. */
+export const BUILD_AREAS = ['ai', 'sensing', 'spatial', 'hardware', 'web', 'study'] as const;
+export const BUILD_AREA_LABELS: Record<(typeof BUILD_AREAS)[number], string> = {
+  ai: 'AI and LLMs',
+  sensing: 'Sensing and tracking',
+  spatial: '3D, XR and robots',
+  hardware: 'Hardware',
+  web: 'Web and dashboards',
+  study: 'User study',
+};
 
 /** Builds (facts.md §7), each with its own page. */
 export const buildSchema = <T extends z.ZodType>(image: ImageValidator<T>) =>
@@ -80,6 +96,7 @@ export const buildSchema = <T extends z.ZodType>(image: ImageValidator<T>) =>
     /** Datasheet lines, each traceable to facts.md §7. */
     datasheet: z.array(z.object({ label: z.string(), value: z.string() })).min(1),
     tags: z.array(z.string()).default([]),
+    areas: z.array(z.enum(BUILD_AREAS)).default([]),
     video: z
       .object({
         id: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
@@ -161,4 +178,27 @@ export const blogSchema = z.object({
   }),
   tags: z.array(z.string()).min(1).max(5),
   draft: z.boolean().default(false),
+});
+
+/** Homepage word-cloud groups, named after the planned portals (SITE_PLAN §4). */
+export const WORD_GROUPS = ['ask', 'hands', 'life'] as const;
+export const WORD_GROUP_LABELS: Record<(typeof WORD_GROUPS)[number], string> = {
+  ask: 'Research',
+  hands: 'Building and sensing',
+  life: 'Teaching and life',
+};
+
+/** Homepage word cloud (content/wordcloud.yaml). */
+export const wordSchema = z.object({
+  text: z.string().min(1).max(40),
+  weight: z.number().int().min(1).max(5),
+  portal: z.enum(WORD_GROUPS),
+  /** A page on this site. */
+  link: z.string().regex(/^\/(?:[a-z0-9-]+\/)*$/, { error: 'Use a site path like /research/' }),
+  /** At most 15 words; true per facts.md. */
+  blurb: z
+    .string()
+    .min(1)
+    .refine((text) => text.split(/\s+/).length <= 15, { error: 'Keep blurbs to 15 words' })
+    .optional(),
 });

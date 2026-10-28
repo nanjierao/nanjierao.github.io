@@ -12,6 +12,7 @@ datasheet:
   - { label: Data, value: 'Simulated replay and synthetic community content' }
   - { label: Paper, value: 'Coauthored extended abstract, DTRUE 2026 (oral presentation)' }
 tags: [LLM pipeline, digital twin, web]
+areas: [ai, web]
 links:
   - { label: Open the demo, href: /demos/csudt/ }
 themes: [civic-digital-twins]

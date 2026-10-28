@@ -1,0 +1,48 @@
+---
+// A figure on a content page: a title, the chart or diagram, and an optional note (sample,
+// caveat, source). Figures are HTML and CSS rendered at build time, so they ship no JavaScript,
+// read as text in a screen reader, follow the light/dark tokens, and reflow on a phone.
+interface Props {
+  title: string;
+  note?: string;
+}
+
+const { title, note } = Astro.props;
+---
+
+<figure class="fig">
+  <figcaption class="fig__title">{title}</figcaption>
+  <slot />
+  {note && <p class="fig__note">{note}</p>}
+</figure>
+
+<style>
+  .fig {
+    margin: var(--space-5) 0 var(--space-6);
+    padding: var(--space-4) var(--space-4) var(--space-3);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+  }
+
+  @media (min-width: 36rem) {
+    .fig {
+      padding: var(--space-4) var(--space-5) var(--space-3);
+    }
+  }
+
+  .fig__title {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    color: var(--color-text);
+  }
+
+  .fig__note {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+</style>

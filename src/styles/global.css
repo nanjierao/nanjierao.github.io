@@ -115,6 +115,15 @@ hr {
   margin-top: 0;
 }
 
+/* Pages with figures: text keeps its reading measure, figures and tables may run wider. */
+.prose--wide {
+  max-width: 56rem;
+}
+
+.prose--wide > :where(p, ul, ol, h2, h3, h4, blockquote) {
+  max-width: var(--measure);
+}
+
 .lede {
   font-size: var(--text-lg);
   color: var(--color-text-muted);
@@ -274,6 +283,66 @@ hr {
 
 .section-list {
   max-width: var(--measure);
+}
+
+/* ---------------------------------------------------------------- tables and quotes */
+
+.table-wrap {
+  max-width: 100%;
+  margin: var(--space-4) 0 var(--space-5);
+  overflow-x: auto;
+}
+
+.table-wrap table,
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.table-wrap th,
+.table-wrap td,
+.data-table th,
+.data-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table-wrap th:first-child,
+.table-wrap td:first-child,
+.data-table th:first-child,
+.data-table td:first-child {
+  padding-left: 0;
+}
+
+.table-wrap thead th,
+.data-table thead th {
+  border-bottom: 2px solid var(--color-text-muted);
+  font-weight: 650;
+  color: var(--color-text-muted);
+}
+
+.table-wrap tbody th,
+.table-wrap td:first-child,
+.data-table tbody th {
+  font-weight: 600;
+}
+
+.prose blockquote {
+  margin: var(--space-5) 0;
+  padding: var(--space-1) 0 var(--space-1) var(--space-4);
+  border-left: 3px solid var(--color-series-a);
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.prose blockquote p {
+  margin: 0;
 }
 
 /* ---------------------------------------------------------------- annotations (D30)

@@ -9,6 +9,7 @@ datasheet:
   - { label: Noise, value: 'Each inferred episode anchored to a logged event, to offset webcam gaze noise' }
   - { label: Study, value: 'N = 24 (Hands as Narrators, ICIDS 2026)' }
 tags: [web, eye tracking, study platform]
+areas: [sensing, web, study]
 themes: [embodied-learning]
 facts: ['7', '5.4']
 # TODO(jimmy): build year, and media (facts.md §7).

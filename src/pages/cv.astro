@@ -2,6 +2,8 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ElsewhereLinks from '../components/ElsewhereLinks.astro';
 import PublicationList from '../components/PublicationList.astro';
+import CvTimeline from '../components/figures/CvTimeline.astro';
+import Figure from '../components/figures/Figure.astro';
 import TalkList from '../components/TalkList.astro';
 import { PERSON } from '../data/site.ts';
 import {
@@ -12,6 +14,7 @@ import {
   SKILLS,
   STATUS,
   TEACHING_ASSISTANT,
+  TIMELINE,
 } from '../data/cv.ts';
 import { getPublications, getThemes } from '../lib/content.ts';
 import { CV_PDF_HREF, hasCvPdf } from '../lib/cv-pdf.ts';
@@ -51,6 +54,10 @@ const cvPdf = hasCvPdf();
     )}
     <ElsewhereLinks label="Elsewhere" />
   </header>
+
+  <Figure title="At a glance">
+    <CvTimeline groups={TIMELINE} publications={[...conference, ...extended]} />
+  </Figure>
 
   <section aria-labelledby="cv-education">
     <h2 id="cv-education">Education</h2>
@@ -103,7 +110,8 @@ const cvPdf = hasCvPdf();
     <ul class="section-list">
       {TEACHING_ASSISTANT.items.map((item) => (
         <li>
-          {item.course}: {item.details}
+          {item.course}
+          {item.term && ` (${item.term})`}: {item.details}
         </li>
       ))}
       {EARLIER_TEACHING.map((item) => (

@@ -8,6 +8,7 @@ datasheet:
   - { label: Work, value: 'Designed and iterated' }
   - { label: Outcome, value: 'Later commercialized and sold in the U.S.' }
 tags: [hardware, wearable]
+areas: [hardware]
 themes: []
 facts: ['7', '9']
 # TODO(jimmy): media (facts.md §7).

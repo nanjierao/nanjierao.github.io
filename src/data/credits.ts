@@ -20,6 +20,20 @@ export const SITE_CREDITS: Credit[] = [
     use: 'Static site framework; builds every page.',
   },
   {
+    name: '@astrojs/mdx',
+    pkg: '@astrojs/mdx',
+    license: 'MIT',
+    url: 'https://docs.astro.build/en/guides/integrations-guide/mdx/',
+    use: 'Lets the research pages place charts and diagrams inside their text.',
+  },
+  {
+    name: 'd3-cloud',
+    pkg: 'd3-cloud',
+    license: 'BSD-3-Clause',
+    url: 'https://github.com/jasondavies/d3-cloud',
+    use: 'Packs the homepage word cloud (about 4 KB gzipped, homepage only).',
+  },
+  {
     name: '@astrojs/react',
     pkg: '@astrojs/react',
     license: 'MIT',

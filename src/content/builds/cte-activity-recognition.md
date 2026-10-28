@@ -9,6 +9,7 @@ datasheet:
   - { label: Dashboard, value: 'Revived the project’s React/TypeScript + Node/Flask + Docker Compose dashboard' }
   - { label: Team, value: 'Built with two student researchers' }
 tags: [LLM vision, eye tracking, dashboard]
+areas: [ai, sensing, web]
 themes: []
 facts: ['7']
 # TODO(jimmy): when (facts.md §7), media, and "Hardest bug & fix" (D29) if wanted.

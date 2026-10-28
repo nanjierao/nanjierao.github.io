@@ -3,6 +3,11 @@
  * Light and dark themes come from the same token names. Contrast on --color-bg (WCAG 2.2):
  *   light: text 16.5, muted 7.3, link 8.1, grounded 6.3, inferred 6.4, border 3.5
  *   dark:  text 15.3, muted 8.5, link 9.0, grounded 9.6, inferred 9.8, border 4.2
+ * Chart series (figures, word cloud), on bg / surface:
+ *   light: a 6.4 / 5.8, b 6.7 / 6.1, c 6.5 / 5.9
+ *   dark:  a 8.7 / 7.9, b 8.9 / 8.1, c 9.3 / 8.5
+ * Series a and b have similar lightness, so figures never tell them apart by color alone:
+ * every bar carries a text label, and series b is hatched.
  */
 :root {
   color-scheme: light;
@@ -18,6 +23,10 @@
   --color-focus: #1f4d8c;
   --color-grounded: #1d6a47;
   --color-inferred: #8f4a0b;
+  --color-series-a: #2a5d9f;
+  --color-series-b: #8b3d74;
+  --color-series-c: #7a5410;
+  --color-track: #e4e0d6;
 
   --font-serif: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-sans:
@@ -67,6 +76,10 @@
     --color-focus: #93b8ec;
     --color-grounded: #7fcca4;
     --color-inferred: #f0b26b;
+    --color-series-a: #8fb5ea;
+    --color-series-b: #e3a0cf;
+    --color-series-c: #dcb36a;
+    --color-track: #2c2a26;
   }
 }
 
@@ -83,4 +96,8 @@
   --color-focus: #93b8ec;
   --color-grounded: #7fcca4;
   --color-inferred: #f0b26b;
+  --color-series-a: #8fb5ea;
+  --color-series-b: #e3a0cf;
+  --color-series-c: #dcb36a;
+  --color-track: #2c2a26;
 }

@@ -1,0 +1,139 @@
+---
+title: Where should an AI tutor’s knowledge of a student’s interests come from?
+context: personal
+order: 1
+summary: My dissertation compares asking students with reading the records they already produce, and measures what each gives an AI tutor to teach from.
+facts: ['5.1', '4']
+publications: [icalt-2026-interest-extraction]
+builds: [interest-extraction-pipeline]
+# TODO(jimmy): GitHub URL for the extraction prompts, and the UF Digital Collections link once
+# the dissertation is released (facts.md §5.1). The two-study synthesis (target ACM CHI) is listed
+# only if you approve working papers (D28).
+---
+
+import Figure from '../../components/figures/Figure.astro';
+import Flow from '../../components/figures/Flow.astro';
+import PairedBars from '../../components/figures/PairedBars.astro';
+import SplitBar from '../../components/figures/SplitBar.astro';
+import Stats from '../../components/figures/Stats.astro';
+import {
+  STUDY1_KNOWLEDGE,
+  STUDY1_STATS,
+  STUDY2_SOURCES,
+  STUDY2_STATS,
+} from '../../data/figures.ts';
+
+Interest-based learning connects instruction to topics each student cares about. Large language
+model (LLM) tutors could scale it if they identified students’ interests automatically and
+effectively. My dissertation asks, as its abstract puts it: “From what should student interests
+be identified?”
+
+## A tutor teaches from what reaches it
+
+A tutor teaches not from the interest itself but from the information about it that reaches the
+tutor. So I compared where that information comes from and measured what each source delivers.
+
+<Figure
+  title="From sources to measures"
+  note="An interest information unit (IIU) is one distinct fact stated about an interest beyond its name. The coding scheme has 28 codes in four categories."
+>
+  <Flow
+    label="From sources to measures"
+    steps={[
+      {
+        title: 'Where interests come from',
+        items: [
+          { term: 'Asking the student', detail: 'Study 1' },
+          { term: 'Browsing history', detail: 'Study 2' },
+          { term: 'Social-media posts', detail: 'Study 2' },
+        ],
+      },
+      {
+        title: 'What reaches the tutor',
+        items: [
+          {
+            term: 'Interest information units',
+            detail: 'coded as affect, function, knowledge or engagement',
+          },
+        ],
+      },
+      {
+        title: 'How I judge identification',
+        items: [
+          { term: 'Accuracy' },
+          { term: 'Depth', detail: 'number of units' },
+          { term: 'Richness', detail: 'number of categories covered' },
+          { term: 'Phase', detail: 'where the interest is in its development' },
+        ],
+      },
+    ]}
+  />
+</Figure>
+
+## Study 1: asking
+
+Existing transcripts of college students tutored by an interest-based LLM tutor (Dr. Abhishek
+Kulkarni’s dataset). Every participant named an interest.
+
+<Stats stats={STUDY1_STATS} />
+
+How much of what students said was knowledge of the interest’s domain, before and after the tutor
+used the interest in teaching:
+
+<Figure title="Share of units that were knowledge of the interest’s domain">
+  <SplitBar rows={STUDY1_KNOWLEDGE} />
+</Figure>
+
+- More disclosure went with higher perceived usefulness of the interest-based session (r = .34;
+  0.11 points per unit on a seven-point scale, adjusted), but not significantly with motivation,
+  relatedness, or quiz scores. Evidence of a later, individual phase also correlated with
+  perceived usefulness.
+- Two coders double-coded 25 transcripts and agreed on 90.7% of 700 code-by-transcript
+  decisions; code-level Cohen’s κ was .51, and 65 case-level disagreements were resolved under
+  written rules.
+
+## Study 2: reading records (IEEE ICALT 2026)
+
+A within-subjects study. An LLM extracted interests, with explanations, from each student’s
+samples of browsing history and social-media posts, and students confirmed or rejected each one.
+
+<Figure
+  title="Browsing history vs. social-media posts"
+  note="Each panel has its own scale, starting at zero."
+>
+  <PairedBars series={STUDY2_SOURCES.series} metrics={STUDY2_SOURCES.metrics} />
+</Figure>
+
+<Stats stats={STUDY2_STATS} />
+
+Posts also placed a smaller share of interests in the early, situational phases, and 54% of the
+interests missing from self-report were in the two situational phases. Units count as grounded
+under the [grounding check](/research/grounding/). Privacy protocol: participant self-curation,
+sensitive-content filtering, and non-retention. The study was supported by NSF CAREER #1942937.
+
+## What it adds up to
+
+<div class="table-wrap">
+
+| Source             | Suits                                       | Evidence                                                                                                             |
+| ------------------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Browsing history   | finding the right interest                  | 69.8% of its interests confirmed, vs. 56.3% for posts                                                                |
+| Social-media posts | learning about the interest                 | 2.14 vs. 1.58 grounded units per confirmed interest                                                                  |
+| Both together      | covering more interests                     | added confirmed interests missing from the self-report form: 38.2% of each student’s validated interests, on average |
+| Asking             | the interest in the student’s own words     | every participant named one                                                                                          |
+| Teaching           | drawing out what the student knows about it | 88% of the units added later were domain knowledge                                                                   |
+
+</div>
+
+> “Browsing history suits finding the right interest, posts suit learning about it, and both suit
+> covering more interests.” “Asking gives the interest in the student’s own words, teaching draws
+> out what the student knows about it, and data sources, used with consent, add interests the
+> student did not name.”
+
+The appendices publish the materials for reuse: the coding scheme with worked examples and
+rules, the survey instrument, and the extraction prompts with synthetic examples.
+
+**Dissertation:** _Toward Scalable Interest-Based Learning: Comparing Data Sources for AI-Based
+Automated Identification of Students’ Personal Interests._ Ph.D. in Human-Centered Computing,
+University of Florida. Committee: Sharon Lynn Chu (chair), Juan E. Gilbert, Lisa Anthony,
+Pavlo Antonenko.
