@@ -96,4 +96,39 @@ describe('privacy rules on the labeled corpus', () => {
       expect(positions(once), JSON.stringify(text)).toEqual(positions(text));
     }
   });
+
+  it('normalizes random text once and for all, keeping its line breaks (fuzz)', () => {
+    // Pieces of escapes, look-alikes, invisible characters, combining marks and Hangul jamo that
+    // compose only once an invisible character between them is gone. Seeded, so a failure
+    // reproduces.
+    const chars = (...codes: number[]) => codes.map((c) => String.fromCharCode(c));
+    const pieces = [
+      ...['&', '#', 'x', 'X', '0', '39', '64', '160', 'a0', 'A0', '820', '8209', '8217', '2019'],
+      ...[';', '&rsquo;', '&lsquo;', '&nbsp;', '&apos;', '&amp;', '&hyphen;', '%4', '0', '%40'],
+      ...['e', 'I', 'm', "'", '@', '-', '=', '<', ' ', '\n', '\r\n', '我', '…'],
+      ...chars(0xad, 0x200b, 0x200c, 0x200d, 0x2060, 0xfeff, 0x00a0, 0x0301, 0x0338),
+      ...chars(0x2018, 0x2019, 0x02bc, 0x2010, 0x2011, 0xff11, 0xff06, 0xff03, 0xff1b),
+      ...chars(0x1100, 0x1161, 0xac00, 0x2163, 0xfb01, 0x2028),
+    ];
+    let seed = 20261027;
+    const next = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 2 ** 32;
+    for (let n = 0; n < 20000; n++) {
+      let text = '';
+      const length = 1 + Math.floor(next() * 14);
+      for (let i = 0; i < length; i++) text += pieces[Math.floor(next() * pieces.length)];
+      const once = normalizeForScan(text);
+      expect(normalizeForScan(once), JSON.stringify(text)).toBe(once);
+      expect(once.split('\n').length, JSON.stringify(text)).toBe(text.split('\n').length);
+    }
+    // Every BMP character alone, between two jamo, and inside an escape.
+    const [jamoL, jamoV] = chars(0x1100, 0x1161);
+    for (let code = 0; code < 0x10000; code++) {
+      if (code >= 0xd800 && code <= 0xdfff) continue;
+      const c = String.fromCharCode(code);
+      for (const text of [c, `${jamoL}${c}${jamoV}`, `&#${c}39;`]) {
+        const once = normalizeForScan(text);
+        if (normalizeForScan(once) !== once) expect(normalizeForScan(once)).toBe(once);
+      }
+    }
+  });
 });
