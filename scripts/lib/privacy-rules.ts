@@ -23,6 +23,19 @@
 //   the author.
 // - Amounts without a currency sign ("128k", "50k") count as pay only next to words that always
 //   mean pay (salary, stipend, TC), never next to "base" or "offer".
+//
+// Sixth review (October 2026), after the final five probes:
+// - The owner view rewrites words, not characters: "He holds" reads "I hold", "Jimmy's married"
+//   "I'm married", "He's been" "I've been", and a finding maps back to the whole original words.
+//   A he/his/him stays third person when another man or role is nearer before it in the sentence
+//   ("Jimmy interviewed a father about how his daughter…") or the sentence is about a synthetic
+//   person. Q&A answers are also found in CRLF files, 'He''s' strings, "\nHe" JSON escapes,
+//   &quot;-encoded island props and FAQPage JSON-LD.
+// - Some rules take a per-match `accept` check: pay for others ("a $1,200 stipend for each
+//   teacher"), and a Chinese clause that carries another person's subject over a comma ("我一个朋友在
+//   大厂，年薪 50 万") or gives general advice ("投了简历之后，一般…").
+// - CV labels may sit inside Markdown or HTML emphasis and definition lists ("**Availability:**",
+//   "<dt>GPA</dt><dd>3.9").
 
 export interface Finding {
   category: string;
@@ -38,11 +51,12 @@ export interface Finding {
  * like their plain forms. First the soft hyphen and the zero-width characters (U+00AD,
  * U+200B–U+200D, U+2060, U+FEFF) are removed, before NFKC, so a removal can't leave a pair that NFKC
  * would then compose. NFKC handles full-width digits and punctuation; then curly and modifier
- * apostrophes become ', U+2010/U+2011 hyphens become -, and the HTML/URL escapes for ', @, those
- * hyphens and a non-breaking space are decoded. Each decoded character is plain ASCII that can't
- * start another escape (&amp; is not decoded), so nothing decodes twice. Line breaks are kept, so
- * line numbers stay right. Idempotent: scripts/check-privacy.ts normalizes before calling the
- * rules, and the rules normalize again, so match positions must not drift.
+ * apostrophes become ', U+2010/U+2011 hyphens become -, and the HTML/URL escapes for ', ", @, those
+ * hyphens and a non-breaking space are decoded (Astro writes every " in an attribute or an island
+ * prop as &quot;). Each decoded character is plain ASCII that can't start another escape (&amp; is
+ * not decoded), so nothing decodes twice. Line breaks are kept, so line numbers stay right.
+ * Idempotent: scripts/check-privacy.ts normalizes before calling the rules, and the rules normalize
+ * again, so match positions must not drift.
  */
 export function normalizeForScan(text: string): string {
   return text
@@ -53,7 +67,8 @@ export function normalizeForScan(text: string): string {
     .replace(/&#0*39;|&#x0*27;|&apos;|&[lr]squo;|&#0*821[67];|&#x0*201[89];/gi, "'")
     .replace(/&#0*64;|&#x0*40;|&commat;|%40/gi, '@')
     .replace(/&#0*820[89];|&#x0*201[01];|&hyphen;/gi, '-')
-    .replace(/&nbsp;|&#0*160;|&#x0*a0;/gi, ' ');
+    .replace(/&nbsp;|&#0*160;|&#x0*a0;/gi, ' ')
+    .replace(/&quot;|&#0*34;|&#x0*22;/gi, '"');
 }
 
 // ---------------------------------------------------------------- shared pieces
@@ -63,10 +78,16 @@ const MONTH_OR_SEASON = String.raw`(?:January|February|March|April|May|June|July
 /**
  * Where a CV-style label sits: the start of a line, or right after an HTML tag, a quote or a
  * Markdown table pipe ("<li>Availability: …", "| Salary: |", "note: 'Compensation: …'"), then an
- * optional list bullet. An apostrophe counts as a quote only when no letter comes before it, so
- * the possessive in "Teachers' stipend: $300" is not a label start. Needs the m flag.
+ * optional list bullet and an optional Markdown emphasis ("**Availability:** …"). An apostrophe
+ * counts as a quote only when no letter comes before it, so the possessive in "Teachers' stipend:
+ * $300" is not a label start. Needs the m flag.
  */
-const LABEL_START = String.raw`(?:^|(?<=[>"\`|])|(?<=(?:^|[\s(\[=:])'))[ \t]*(?:[-*•][ \t]*)?`;
+const LABEL_START = String.raw`(?:^|(?<=[>"\`|])|(?<=(?:^|[\s(\[=:])'))[ \t]*(?:[-*•][ \t]*)?(?:\*\*|__|\*|_)?`;
+/**
+ * A label's colon, also inside emphasis ("**Label:** v", "<strong>Label:</strong> v", "**Label**:
+ * v") or as a definition list or table cell ("<dt>Label</dt><dd>v").
+ */
+const LABEL_COLON = String.raw`(?:[:：](?:\*\*|__|\*|_)?(?:\s*<\/(?:strong|b|em|i|span)>)?|(?:\*\*|__|\*|_)[:：]|\s*<\/(?:dt|th)>\s*<(?:dd|td)[^>]*>)`;
 /**
  * One of `terms` at a CV-label position. A rule keeps its label forms in one group, so LABEL_START
  * (lookbehinds tried at every position) runs once per position, not once per form.
@@ -87,11 +108,12 @@ const ZH_GAP_CHAR = String.raw`[^,。!?;\n我]`;
 const ZH_I = String.raw`(?<!自)我(?![国校院系司方军省市])(?!们?(?:觉得|认为|听说|看到|发现|猜|相信|建议|研究))(?!们(?:班|学校|系|院|专业|年级|组|实验室|那届|这届|公司|团队))`;
 /**
  * The words between 我 and a term, when they may not pass through another person, a teaching
- * role or a research object: "我带的学生明年入职", "我身边拿到 offer 的同学", "我教的学生托福平均 95 分",
- * "我研究的孩子被诊断为…" are not about the author.
+ * role, a course one teaches or a research object: "我带的学生明年入职", "我身边拿到 offer 的同学", "我一个
+ * 学长拒了年薪百万的 offer", "我教的学生托福平均 95 分", "我这门课的平均分是 80", "我研究的孩子被诊断为…" are
+ * not about the author.
  */
 const ZH_SELF_GAP = (n: number) =>
-  String.raw`(?:(?!朋友|同学|学生|本科生|研究生|孩子|室友|同事|导师|老师|家人|父母|父亲|母亲|妈妈|爸爸|老婆|老公|儿子|女儿|他|她|们|身边|周围|研究|数据|模型|项目|带的|教的|出的|批的|改的|推荐的)${ZH_GAP_CHAR}){0,${n}}?`;
+  String.raw`(?:(?!朋友|同学|学生|本科生|研究生|孩子|室友|舍友|同事|同门|学长|学姐|学弟|学妹|师兄|师姐|师弟|师妹|搭档|队友|认识的|合作者|博士后|导师|老师|家人|父母|父亲|母亲|妈妈|爸爸|老婆|老公|儿子|女儿|他|她|们|身边|周围|研究|数据|模型|项目|带的|教的|出的|批的|改的|推荐的|(?:的|这门|那门|上的|开的|讲的|助教)课(?!程)|课程评价|评教)${ZH_GAP_CHAR}){0,${n}}?`;
 /** A Chinese term standing as its own clause: a title, a tag or a CV field ("求职", "年薪30万"). */
 const ZH_ALONE_BEFORE = String.raw`(?:^|(?<=[,。!?;:\n>|"'(“「]))[ \t]*(?:[-*•][ \t]*)?`;
 const ZH_ALONE_AFTER = String.raw`[ \t]*(?=$|[,。!?;\n<|"')”」])`;
@@ -99,7 +121,7 @@ const ZH_ALONE_AFTER = String.raw`[ \t]*(?=$|[,。!?;\n<|"')”」])`;
  * An elided subject at the start of a clause, for Chinese narrative verbs whose subject is the
  * author ("拿到了 offer，开心", "今年投了 30 份简历"). Not "很多同学拿到了 offer" or "评论区好多求内推的".
  */
-const ZH_ELIDED_I = String.raw`${ZH_ALONE_BEFORE}(?:今年|去年|最近|刚刚?|已经|终于|也|又|还|昨天|今天|上周|这周|前几天)?`;
+const ZH_ELIDED_I = String.raw`${ZH_ALONE_BEFORE}(?:今年|去年|最近|刚刚?|已经|终于|也|又|还|昨天|今天|上周|这周|前几天)?(?:秋招|春招|校招)?(?:只|才|一共|总共|最后|最终)?`;
 /**
  * 我, then within the clause one of `terms` (through `gap`, by default ZH_SELF_GAP(12)), or one of
  * `exact` right after 我. One shared gap for all the terms of a rule: a separate gap per term made a
@@ -162,33 +184,36 @@ class ReportedSpans {
 
 /**
  * Run patterns over normalized text; report each place once per category. A match in the owner
- * view (see ownerView) is reported with the text at the same place in `text`, and never when it
- * runs from one part of the view into another.
+ * view (see ownerView) is reported with the text it was rewritten from (a match that starts or
+ * ends inside a rewritten word covers the whole word), and never when it runs from one part of the
+ * view into another.
  */
 function collect(
   text: string,
-  patterns: Array<{ category: string; pattern: RegExp }>,
+  patterns: ReadonlyArray<Pick<TermRule, 'category' | 'pattern' | 'accept'>>,
   view: OwnerView | null = null,
 ): Finding[] {
   const findings: Finding[] = [];
   const reported = new Map<string, ReportedSpans>();
-  for (const { category, pattern } of patterns) {
+  for (const { category, pattern, accept } of patterns) {
     let spans = reported.get(category);
     if (!spans) reported.set(category, (spans = new ReportedSpans()));
     for (const m of text.matchAll(pattern)) {
       const start = m.index ?? 0;
       const end = start + m[0].length;
       if (spans.overlaps(start, end)) continue;
+      if (accept && !accept(text, start, m[0].length)) continue;
       spans.add(start, end);
       findings.push({ category, match: m[0], index: start });
     }
     spans.commit();
     if (!view) continue;
     for (const m of view.text.matchAll(pattern)) {
-      const start = view.toText(m.index ?? 0, m[0].length);
-      if (start < 0) continue;
-      const end = start + m[0].length;
+      const at = view.toText(m.index ?? 0, m[0].length);
+      if (!at) continue;
+      const [start, end] = at;
       if (spans.overlaps(start, end)) continue;
+      if (accept && !accept(view.text, m.index ?? 0, m[0].length)) continue;
       spans.add(start, end);
       findings.push({ category, match: text.slice(start, end), index: start });
     }
@@ -203,142 +228,318 @@ function collect(
 const BLANK = '\u0000';
 /** The owner's name, not as a cited author ("Rao et al.", "Rao, N.", "Rao (2024)"). */
 const OWNER_NAME = String.raw`(?:Nanjie\s+\(Jimmy\)\s+Rao|Nanjie\s+Rao|Jimmy\s+Rao|Jimmy|Nanjie|Rao(?!\s+et\s+al\b|\s*&|,\s*[A-Z]\.|\s*\(\d{4}))\b`;
-const OWNER_NAME_RE = new RegExp(String.raw`\b${OWNER_NAME}`, 'g');
+/** Where a name or a pronoun starts: a word start, or right after a JSON escape ("…\nHe has…"). */
+const WORD_START = String.raw`(?:(?<=\\[nrt])|\b)`;
+const OWNER_NAME_RE = new RegExp(`${WORD_START}${OWNER_NAME}`, 'g');
 /**
  * Where a sentence ends: . ! ? before a space (not after Ph.D, Dr, e.g. or an initial), 。, a blank
- * line, a new list item, YAML key or table row, and block-level HTML tags.
+ * line (also with CRLF line ends), a new list item, YAML key or table row, and block-level HTML
+ * tags.
  */
 const SENTENCE_END =
-  /(?<!\b(?:Ph\.D|Dr|Mr|Ms|Mrs|Prof|e\.g|i\.e|U\.S|vs|etc|al|St|Jr|Sr|No|Fig|Inc|[A-Z]))[.!?](?=["'”’)\]]*(?:\s|$))|[。!?]|\n[ \t]*\n|\n(?=[ \t]*(?:[-*•][ \t]|\d+\.[ \t]|[\w"'-]+:[ \t]|\||<))|<\/?(?:p|li|ul|ol|div|h[1-6]|br|td|th|tr|dt|dd|blockquote|section|article|figcaption)\b[^>]*>/g;
-/** A Q&A answer: a YAML key a:/answer: (block scalar, quoted or plain), or a JSON "a"/"answer". */
-const QA_KEY = /^([ \t]*(?:-[ \t]+)?)(?:[Aa]|[Aa]nswer)[ \t]*:[ \t]*(.*)$/gm;
-const QA_JSON = /"(?:a|answer)"\s*:\s*"((?:[^"\\\n]|\\.)*)"/g;
-
-/** Third person to first person, keeping the length: the replacement is padded at its start. */
-const TO_FIRST_PERSON: Array<[RegExp, (m: string, ...groups: string[]) => string]> = [
-  [
-    new RegExp(
-      String.raw`(?:\b${OWNER_NAME}|\b[Hh]e)\s+(is|isn't|was|wasn't|has|hasn't|had|does|doesn't)\b`,
-      'g',
-    ),
-    (m, verb) => {
-      const first: Record<string, string> = {
-        is: 'am',
-        "isn't": "'m not",
-        has: 'have',
-        "hasn't": "haven't",
-        does: 'do',
-        "doesn't": "don't",
-      };
-      const v = first[verb!] ?? verb!;
-      return `I${v.startsWith("'") ? '' : ' '}${v}`;
-    },
-  ],
-  [/\b[Hh]e's\b/g, () => "I'm"],
-  [/\b[Hh]e'(ll|d)\b/g, (_m, c) => `I'${c}`],
-  [new RegExp(String.raw`\b${OWNER_NAME}'s`, 'g'), () => 'my'],
-  [new RegExp(String.raw`\b${OWNER_NAME}|\b[Hh]e\b`, 'g'), () => 'I'],
-  [/\b[Hh]is\b/g, () => 'my'],
-  [/\bhimself\b/g, () => 'myself'],
-  [/\bhim\b/g, () => 'me'],
+  /(?<!\b(?:Ph\.D|Dr|Mr|Ms|Mrs|Prof|e\.g|i\.e|U\.S|vs|etc|al|St|Jr|Sr|No|Fig|Inc|[A-Z]))[.!?](?=["'”’)\]]*(?:\s|$))|[。!?]|\n[ \t\r]*\n|\n(?=[ \t]*(?:[-*•][ \t]|\d+\.[ \t]|[\w"'-]+:[ \t]|\||<))|<\/?(?:p|li|ul|ol|div|h[1-6]|br|td|th|tr|dt|dd|blockquote|section|article|figcaption)\b[^>]*>/g;
+/** A Q&A answer: a YAML key a:/answer:/answer_en: (block scalar, quoted or plain; LF or CRLF). */
+const QA_KEY = /^([ \t]*(?:-[ \t]+)?)(?:[Aa]|[Aa]nswer(?:_en)?)[ \t]*:[ \t]*([^\r\n]*)\r?$/gm;
+/**
+ * A JSON answer: an "a"/"answer"/"answer_en" string, also as an Astro island prop ("a":[0,"…"]),
+ * and the text of a schema.org FAQPage acceptedAnswer.
+ */
+const QA_JSON = [
+  /"(?:a|answer(?:_en)?)"\s*:\s*(?:\[\s*0\s*,\s*)?"((?:[^"\\\n]|\\.)*)"/g,
+  /"acceptedAnswer"\s*:\s*\{[^{}]{0,200}?"text"\s*:\s*"((?:[^"\\\n]|\\.)*)"/g,
 ];
 
-function toFirstPerson(span: string): string {
-  let out = span;
-  for (const [pattern, replace] of TO_FIRST_PERSON) {
-    out = out.replace(pattern, (m: string, ...groups: unknown[]) => {
-      const r = replace(m, ...(groups.filter((g) => typeof g === 'string') as string[]));
-      return r.length <= m.length ? r.padStart(m.length, ' ') : m;
-    });
+/** An apostrophe, also doubled inside a single-quoted YAML string ('He''s married'). */
+const APOS = `(?:''|')`;
+const ADVERB = String.raw`(?:(?:also|still|currently|now|only|often|usually|mainly|mostly|already|actually|really|sometimes|always|never|rarely|recently|just|even)\s+)?`;
+/** Words ending in s after "He" that are not a verb ("He always…", "He thus…"). */
+const NOT_A_VERB = String.raw`(?!(?:is|was|has|does|thus|perhaps|always|sometimes|unless|less|yes|this|his|its|us|as|plus|towards|afterwards|besides|whereas|nevertheless|nonetheless|news|ethics|physics|mathematics|statistics|series|species|politics|analytics|robotics|graphics|economics|linguistics|regardless)\b)`;
+const SUBJECT = String.raw`(?:${OWNER_NAME}|[Hh]e\b)`;
+const BE_HAVE_DO: Record<string, string> = {
+  is: 'am',
+  "isn't": 'am not',
+  has: 'have',
+  "hasn't": "haven't",
+  does: 'do',
+  "doesn't": "don't",
+};
+
+/**
+ * Third person to first person, tried in this order where the owner's name or a he/his/him
+ * starts: "He is" → "I am", "He's been" → "I've been", "Jimmy's married" → "I'm married", "He's"
+ * → "I'm", "Jimmy's" → "my", "He holds" → "I hold", "He" → "I", "his" → "my", "him" → "me".
+ */
+const TO_FIRST_PERSON: Array<[RegExp, (m: RegExpExecArray) => string]> = [
+  [
+    new RegExp(
+      String.raw`${SUBJECT}(\s+${ADVERB})(is|isn't|was|wasn't|has|hasn't|had|does|doesn't)\b`,
+      'y',
+    ),
+    (m) => `I${m[1]}${BE_HAVE_DO[m[2]!] ?? m[2]}`,
+  ],
+  [new RegExp(String.raw`${SUBJECT}${APOS}s(?=\s+(?:been|got|gotten|had)\b)`, 'y'), () => "I've"],
+  [
+    new RegExp(
+      String.raw`${OWNER_NAME}${APOS}s(?=\s+(?:married|engaged|divorced|single|pregnant|expecting|on|in|currently|now|still|also|looking|available|open|not|a|an|the)(?![-\w']))`,
+      'y',
+    ),
+    () => "I'm",
+  ],
+  [new RegExp(String.raw`[Hh]e${APOS}s\b`, 'y'), () => "I'm"],
+  [new RegExp(String.raw`[Hh]e${APOS}(ll|d)\b`, 'y'), (m) => `I'${m[1]}`],
+  [new RegExp(String.raw`${OWNER_NAME}${APOS}s\b`, 'y'), () => 'my'],
+  [
+    new RegExp(
+      String.raw`${SUBJECT}(\s+${ADVERB})${NOT_A_VERB}([a-z]{2,}?)(ies|sses|shes|ches|xes|zes|oes|s)\b`,
+      'y',
+    ),
+    ([, gap, stem, end]) =>
+      `I${gap}${end === 'ies' ? `${stem}y` : end === 's' ? stem : stem! + end!.slice(0, -2)}`,
+  ],
+  [new RegExp(SUBJECT, 'y'), () => 'I'],
+  [/[Hh]is\b/y, () => 'my'],
+  [/himself\b/y, () => 'myself'],
+  [/him\b/y, () => 'me'],
+];
+const FIRST_PERSON_START = new RegExp(
+  String.raw`${WORD_START}(?:${OWNER_NAME}|[Hh]e\b|[Hh]is\b|him(?:self)?\b)`,
+  'g',
+);
+const PRONOUN = /^(?:[Hh]e|[Hh]is|him(?:self)?)\b/;
+
+/** Words that are not a person's name at the start of a capitalized word. */
+const NOT_A_NAME = String.raw`(?:He|His|Him|She|Her|They|Their|It|Its|The|This|That|These|Those|There|A|An|In|On|At|When|While|If|After|Before|During|Since|Because|For|With|And|But|Or|So|Then|Our|My|We|You|Your|Each|Every|Some|Many|Most|All|Both|One|Two|Jimmy|Nanjie|Rao)\b`;
+/**
+ * Another person in the sentence, so a later he/his/him is probably theirs: a man or boy, a role
+ * ("a teacher", "his co-author", "a participant", "an undergraduate who"), a title ("Dr. Example"),
+ * a name with a possessive ("Malik's posts"), an age ("Omar Sample, 38,") or a verb ("Sam Example
+ * lists").
+ */
+const OTHER_PERSON = new RegExp(
+  String.raw`\b(?:(?:grand|step|god)?(?:father|son|dad|daddy|papa|man|men|boy|brother|husband|uncle|nephew|grandpa|gentleman|guy)s?|(?:teacher|student|participant|parent|colleague|labmate|teammate|classmate|roommate|friend|mentor|mentee|advisor|adviser|co-?author|collaborator|principal|undergrad(?:uate)?|member|puppeteer|engineer|researcher|professor|reviewer|child|kid|learner|tutor|coach|volunteer|interviewee|respondent|cook|chef|tinkerer|hobbyist|runner|nurse|driver|farmer|worker|retiree|musician|artist|writer|doctor|patient|neighbou?r|player|founder|person|someone|who|whose|whom)s?)\b|\b(?-i:(?:RA|TA|Dr|Prof|Mr|Mx))\b\.?\s+(?-i:[A-Z])|\b(?!${NOT_A_NAME})(?-i:[A-Z][a-z]+)(?:'s\b|(?=,\s*\d{1,2}\s*,)|(?=\s+(?-i:[a-z]{2,}s)\b))`,
+  'gi',
+);
+/** The owner as an object ("A participant told Jimmy that his kids…"). */
+const OBJECT_VERB_BEFORE =
+  /\b(?:told|tells|asked|asks|showed|shows|gave|gives|sent|sends|thanked|thanks|emailed|reminded|warned|taught|teaches|introduced|helped|helps|interviewed|called|met|visited|wrote\s+to|said\s+to)\s+$/i;
+/** A sentence about a made-up person, or one followed by "(Sample person, synthetic data.)". */
+const SYNTHETIC =
+  /\b(?:synthetic|fictional|hypothetical|made-up|sample (?:person|people|records?|data|profiles?|users?))\b/i;
+const SYNTHETIC_NOTE_AFTER = /^\s*\([^)\n]{0,60}\b(?:synthetic|sample|fictional)/i;
+
+interface Rewrite {
+  start: number;
+  end: number;
+  text: string;
+}
+
+/**
+ * The first-person rewrites inside one part of the text, with `ends` the sentence ends. The
+ * owner's name is always his; a he/his/him is read as his unless another person (OTHER_PERSON) is
+ * nearer before it in the sentence, or the sentence is about a synthetic person.
+ */
+function firstPersonRewrites(text: string, start: number, end: number, ends: number[]): Rewrite[] {
+  // Search a copy of the part, so a search never runs on past its end.
+  const words = text.slice(start, end);
+  const others = [...words.matchAll(OTHER_PERSON)].map((m) => start + (m.index ?? 0));
+  const rewrites: Rewrite[] = [];
+  let sentence = -1;
+  let sentenceStart = 0;
+  let sentenceEnd = 0;
+  let synthetic = false;
+  let last: 'owner' | 'other' | null = null;
+  let ownerEnd = -1;
+  let oi = 0;
+  const enter = (at: number) => {
+    if (at < sentenceEnd && sentence >= 0) return;
+    let lo = 0;
+    let hi = ends.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (ends[mid]! <= at) lo = mid;
+      else hi = mid - 1;
+    }
+    sentence = lo;
+    sentenceStart = ends[lo]!;
+    sentenceEnd = ends[lo + 1] ?? text.length;
+    // Only the sentence's words inside this part: a text without sentence ends is one sentence.
+    synthetic =
+      SYNTHETIC.test(text.slice(Math.max(sentenceStart, start), Math.min(sentenceEnd, end))) ||
+      SYNTHETIC_NOTE_AFTER.test(text.slice(sentenceEnd, sentenceEnd + 80));
+    last = null;
+  };
+  FIRST_PERSON_START.lastIndex = 0;
+  for (let c = FIRST_PERSON_START.exec(words); c; c = FIRST_PERSON_START.exec(words)) {
+    const at = start + c.index;
+    for (; oi < others.length && others[oi]! < at; oi++) {
+      enter(others[oi]!);
+      const isWho = /^who/i.test(text.slice(others[oi]!, others[oi]! + 3));
+      if (
+        isWho &&
+        ownerEnd >= sentenceStart &&
+        /^\s*,?\s*$/.test(text.slice(ownerEnd, others[oi]!))
+      )
+        continue;
+      last = 'other';
+    }
+    enter(at);
+    let rewrite: Rewrite | null = null;
+    for (const [pattern, replace] of TO_FIRST_PERSON) {
+      pattern.lastIndex = at;
+      const m = pattern.exec(text);
+      if (!m || at + m[0].length > end) continue;
+      // After a JSON escape ("\nHe"), a space keeps the new word a word of its own.
+      const space = /\w/.test(text[at - 1] ?? '') ? ' ' : '';
+      rewrite = { start: at, end: at + m[0].length, text: space + replace(m) };
+      break;
+    }
+    if (!rewrite) continue;
+    FIRST_PERSON_START.lastIndex = rewrite.end - start;
+    if (PRONOUN.test(c[0])) {
+      if (synthetic || last === 'other') continue;
+      last = 'owner';
+    } else {
+      // A possessive or object mention of the owner after another person doesn't take over:
+      // "A grandfather in Jimmy's study said his grandson…", "A participant told Jimmy that his…".
+      const possessive = /'s$/.test(text.slice(at, rewrite.end)) && rewrite.text.endsWith('my');
+      const object = OBJECT_VERB_BEFORE.test(text.slice(Math.max(sentenceStart, at - 24), at));
+      if (!(last === 'other' && (possessive || object))) last = 'owner';
+      ownerEnd = rewrite.end;
+    }
+    rewrites.push(rewrite);
   }
-  return out;
+  return rewrites;
 }
 
 interface OwnerView {
   /** The rewritten parts, each after BLANK (and a line break when the part starts a line). */
   text: string;
-  /** Where a match at `index` in `text` sits in the scanned text, or -1 if it leaves its part. */
-  toText(index: number, length: number): number;
+  /**
+   * Where a match at `index` in `text` sits in the scanned text, as [start, end), widened to whole
+   * rewritten words; null when it leaves its part.
+   */
+  toText(index: number, length: number): [number, number] | null;
 }
 
 /**
  * The parts of the text that are about the owner, as he would say them: every sentence that names
  * him and every Q&A answer (the /ask library is written in the third person), with he/his/him and
- * his name read as I/my/me. A part where nothing changes is left out, since the rules have already
- * seen it. Each rewrite keeps the length, so a match maps back to the same characters. Null when no
- * part changes.
+ * his name read as I/my/me (see firstPersonRewrites). A part where nothing changes is left out,
+ * since the rules have already seen it. Null when no part changes.
  */
 function ownerView(text: string): OwnerView | null {
   const spans: Array<[number, number]> = [];
+  // Where each line starts, how far it is indented, and whether it is blank, so a block scalar
+  // ("a: >-" and the more indented lines after it) is found without copying lines.
+  const lineStart: number[] = [];
+  const indent: number[] = [];
+  const blank: boolean[] = [];
   for (const m of text.matchAll(QA_KEY)) {
+    if (lineStart.length === 0) {
+      for (let at = 0; at <= text.length;) {
+        let i = at;
+        while (text[i] === ' ' || text[i] === '\t') i++;
+        let next = text.indexOf('\n', i);
+        if (next < 0) next = text.length;
+        lineStart.push(at);
+        indent.push(i - at);
+        blank.push(text.slice(i, next).trim() === '');
+        at = next + 1;
+      }
+    }
     const column = m[1]!.length;
     const lineEnd = (m.index ?? 0) + m[0].length;
-    let end = lineEnd;
-    let pos = lineEnd;
-    while (pos < text.length && text[pos] === '\n') {
-      const next = text.indexOf('\n', pos + 1);
-      const stop = next < 0 ? text.length : next;
-      const line = text.slice(pos + 1, stop);
-      if (line.trim() !== '') {
-        if ((/^[ \t]*/.exec(line)?.[0].length ?? 0) <= column) break;
-        end = stop;
-      }
-      pos = stop;
+    const valueEnd = lineEnd - (m[0].endsWith('\r') ? 1 : 0);
+    let lo = 0;
+    let hi = lineStart.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (lineStart[mid]! <= (m.index ?? 0)) lo = mid;
+      else hi = mid - 1;
     }
-    spans.push([lineEnd - m[2]!.length, end]);
+    let end = valueEnd;
+    for (let line = lo + 1; line < lineStart.length; line++) {
+      if (blank[line]) continue;
+      if (indent[line]! <= column) break;
+      end = line + 1 < lineStart.length ? lineStart[line + 1]! - 1 : text.length;
+    }
+    spans.push([valueEnd - m[2]!.length, end]);
   }
-  for (const m of text.matchAll(QA_JSON)) {
-    const start = (m.index ?? 0) + m[0].length - m[1]!.length - 1;
-    spans.push([start, start + m[1]!.length]);
+  for (const pattern of QA_JSON) {
+    for (const m of text.matchAll(pattern)) {
+      const start = (m.index ?? 0) + m[0].length - m[1]!.length - 1;
+      spans.push([start, start + m[1]!.length]);
+    }
   }
   const names = [...text.matchAll(OWNER_NAME_RE)].map((m) => m.index ?? 0);
-  if (names.length > 0) {
-    const ends = [0, ...[...text.matchAll(SENTENCE_END)].map((m) => (m.index ?? 0) + m[0].length)];
-    ends.push(text.length);
-    let i = 0;
-    for (const at of names) {
-      while (i + 1 < ends.length && ends[i + 1]! <= at) i++;
-      spans.push([ends[i]!, ends[i + 1]!]);
-    }
+  if (spans.length === 0 && names.length === 0) return null;
+  const ends = [0, ...[...text.matchAll(SENTENCE_END)].map((m) => (m.index ?? 0) + m[0].length)];
+  ends.push(text.length);
+  let i = 0;
+  for (const at of names) {
+    while (i + 1 < ends.length && ends[i + 1]! <= at) i++;
+    spans.push([ends[i]!, ends[i + 1]!]);
   }
-  if (spans.length === 0) return null;
   spans.sort((a, b) => a[0] - b[0]);
-  const parts: string[] = [];
-  const at: number[] = [];
-  const from: number[] = [];
-  const length: number[] = [];
-  // One rewrite of the whole text (the rewrites are local and keep the length), then each part
-  // is compared with it: rewriting thousands of short answers one by one was slow.
-  const rewritten = toFirstPerson(text);
-  let size = 0;
+  // The view: copied stretches and rewritten words, each part after BLANK. For every segment, where
+  // it starts in the view and in the text, how long it is in each, and which part it belongs to.
+  let view = '';
+  const viewAt: number[] = [];
+  const textAt: number[] = [];
+  const textLength: number[] = [];
+  const copied: boolean[] = [];
+  const part: number[] = [];
+  const segment = (piece: string, from: number, length: number, copy: boolean, p: number) => {
+    viewAt.push(view.length);
+    textAt.push(from);
+    textLength.push(length);
+    copied.push(copy);
+    part.push(p);
+    view += piece;
+  };
+  let parts = 0;
   let done = 0;
-  for (const [s, end] of spans) {
-    const start = Math.max(s, done);
+  for (let k = 0; k < spans.length; k++) {
+    const start = Math.max(spans[k]![0], done);
+    let end = spans[k]![1];
+    while (k + 1 < spans.length && spans[k + 1]![0] < end) end = Math.max(end, spans[++k]![1]);
     if (end <= start) continue;
     done = end;
-    const first = rewritten.slice(start, end);
-    if (first === text.slice(start, end)) continue;
-    const lead = BLANK + (text[start - 1] === '\n' ? '\n' : '');
-    parts.push(lead, first);
-    at.push(size + lead.length);
-    from.push(start);
-    length.push(end - start);
-    size += lead.length + first.length;
+    const rewrites = firstPersonRewrites(text, start, end, ends);
+    if (rewrites.length === 0) continue;
+    parts++;
+    segment(BLANK + (text[start - 1] === '\n' ? '\n' : ''), -1, 0, false, parts);
+    let pos = start;
+    for (const r of rewrites) {
+      if (r.start > pos) segment(text.slice(pos, r.start), pos, r.start - pos, true, parts);
+      segment(r.text, r.start, r.end - r.start, false, parts);
+      pos = r.end;
+    }
+    if (end > pos) segment(text.slice(pos, end), pos, end - pos, true, parts);
   }
-  if (parts.length === 0) return null;
+  if (parts === 0) return null;
+  const find = (index: number) => {
+    let lo = 0;
+    let hi = viewAt.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (viewAt[mid]! <= index) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo;
+  };
   return {
-    text: parts.join(''),
-    toText(index, matchLength) {
-      let lo = 0;
-      let hi = at.length - 1;
-      while (lo < hi) {
-        const mid = (lo + hi + 1) >> 1;
-        if (at[mid]! <= index) lo = mid;
-        else hi = mid - 1;
-      }
-      const offset = index - at[lo]!;
-      if (offset < 0 || offset + matchLength > length[lo]!) return -1;
-      return from[lo]! + offset;
+    text: view,
+    toText(index, length) {
+      const first = find(index);
+      const lastIndex = index + Math.max(length, 1) - 1;
+      const last = find(lastIndex);
+      if (textAt[first]! < 0 || textAt[last]! < 0 || part[first] !== part[last]) return null;
+      const start = copied[first] ? textAt[first]! + index - viewAt[first]! : textAt[first]!;
+      const end = copied[last]
+        ? textAt[last]! + lastIndex - viewAt[last]! + 1
+        : textAt[last]! + textLength[last]!;
+      return [start, Math.max(end, start)];
     },
   };
 }
@@ -493,14 +694,15 @@ const PHONE_RULES: PhoneRule[] = [
     pattern: /\btel:[+\d][\d ().-]{5,}/gi,
   },
   {
-    // A number after a phone label: "Cell: 352 555 0123", "Phone 3525550123", "手机：…", and data
+    // A number after a phone label: "Cell: 352 555 0123", "Phone 3525550123", "手机：…", "我的美国号
+    // 3525550123", "号码 1 3 9 …" (digits spaced out to get past a filter), and data
     // keys ('"phone": "3525550123"', "phoneNumber: '…'", "phone_number: …"). Not a year range
     // ("Mobile: 2019—2024"), a date, a version, a thousands-grouped count ("Cell: 12 345 678
     // nuclei"), a journal volume ("Cell 179 (5) 1037–1050"), a conference ("Mobile 2025 (12–16
     // Sept.)"), a resolution, "telemetry: …", "phone_count: …" or a quoted "cell" key (a
     // spreadsheet cell).
     pattern: new RegExp(
-      String.raw`(?:(?:\b|(?<=_))(?:(?:phone|tel(?:ephone)?|mobile|whatsapp)(?:[\s_-]*(?:number|num|no\.?|#))?["']?|cell(?:[\s_-]*(?:number|num|no\.?|#))?)|手机|电话|微信)\s*(?:号码|号)?\s*[:：=]?\s*["']?\+?\d[\d\s().${DASH}]{5,}\d(?!\d)${UNIT_AFTER}`,
+      String.raw`(?:(?:\b|(?<=_))(?:(?:phone|tel(?:ephone)?|mobile|whatsapp)(?:[\s_-]*(?:number|num|no\.?|#))?["']?|cell(?:[\s_-]*(?:number|num|no\.?|#))?)|手机|电话|微信|(?:美国|国内|中国|我的?)(?=\s*(?:手机)?号(?!码?牌))|(?<![编学工单账序批型帐])(?=号码(?!牌)))\s*(?:手机)?(?:号码|号)?\s*[:：=]?\s*["']?\+?\d[\d\s().${DASH}]{5,}\d(?!\d)${UNIT_AFTER}`,
       'gi',
     ),
     accept: (m) => {
@@ -516,26 +718,32 @@ const PHONE_RULES: PhoneRule[] = [
       );
     },
   },
+  {
+    // A mobile number in Chinese numerals after a phone word ("我电话：一三九 一二三四 五六七八",
+    // "手机号是幺三九…"), another way past a site's number filter. Not "一二三四五六七八九十".
+    pattern:
+      /(?:手机|电话|号码|手机号|联系方式|打我)[^\n,。!?;]{0,6}?[一幺][三四五六七八九](?:\s?[一二三四五六七八九零〇幺两]){9}(?![一二三四五六七八九零〇幺两])/g,
+  },
   // Messaging handles work like phone numbers: a WeChat ID or QQ number is a way to reach a
-  // person. Only with a first-person or label cue ("加我微信 …", "我微信是 …", "微信号：…", "加V：…",
-  // "我的QQ：…", "QQ号 …", "扣扣：…"); not "微信支付", "加我微信公众号", "WeChat: available on
-  // request", "微信：8.0.50" (a version), "我微信 Python 交流群", "QQ群：…" (a group), "wx 是 weight_x"
-  // (a variable) or "// VX: envelope". Without a colon or 是, or after a bare vx/wx, the handle must
-  // contain a digit, "_" or "-".
+  // person. Only with a first-person or label cue ("加我微信 …", "我微信是 …", "微信号：…", "微信搜 …",
+  // "我的 WeChat ID: …", "加V：…", "我的QQ：…", "QQ 87654321", "扣扣：…"); not "微信支付", "加我微信
+  // 公众号", "WeChat: available on request", "微信：8.0.50" (a version), "我微信 Python 交流群", "QQ群：…"
+  // (a group), "QQ 10000 人", "wx 是 weight_x" (a variable) or "// VX: envelope". Without a colon or
+  // 是, or after a bare vx/wx, the handle must contain a digit, "_" or "-".
   {
     category: 'contact handle',
     pattern:
-      /(?:加(?:我的?)?|我的)(?:微信|[vV]信|[vV][xX]|wx|WX)号?\s*(?:[:：]|是|号是)?\s*[A-Za-z][-_A-Za-z0-9]{5,19}(?![\w-])/g,
+      /(?:加(?:我的?)?|我的)\s*(?:微信|[vV]信|[vV][xX]|wx|WX|[Ww]e[Cc]hat)号?\s*(?:[:：]|是|号是)?\s*[A-Za-z][-_A-Za-z0-9]{5,19}(?![\w-])/g,
   },
   {
     category: 'contact handle',
     pattern:
-      /(?:微信号|微信\s*ID|微信id)\s*(?:[:：]|是)\s*[A-Za-z][-_A-Za-z0-9]{5,19}(?![\w-])|(?<![\w$.{,])(?:vx|VX|wx|WX)\s*[:：]\s*[A-Za-z](?=[-_A-Za-z0-9]{5,19}(?![\w-]))[A-Za-z]*[\d_-][-_A-Za-z0-9]*/g,
+      /(?:微信号|微信\s*ID|微信id)\s*(?:[:：]|是)\s*[A-Za-z][-_A-Za-z0-9]{5,19}(?![\w-])|(?:微信号|微信\s*ID|微信id|微信(?:上)?搜(?:索)?)\s*[:：]?\s*[A-Za-z](?=[-_A-Za-z0-9]{5,19}(?![\w-]))[A-Za-z]*[\d_-][-_A-Za-z0-9]*|(?<![\w$.{,])(?:vx|VX|wx|WX)\s*[:：]\s*[A-Za-z](?=[-_A-Za-z0-9]{5,19}(?![\w-]))[A-Za-z]*[\d_-][-_A-Za-z0-9]*/g,
   },
   {
     category: 'contact handle',
     pattern:
-      /(?:微信|WeChat)(?:同号)?\s*[:：]\s*[A-Za-z](?=[-_A-Za-z0-9]{5,19}(?![\w-]))[A-Za-z]*[\d_-][-_A-Za-z0-9]*/g,
+      /(?:微信|[Ww]e[Cc]hat|威信|薇信|微xin)(?:\s*(?:ID|id|号))?(?:同号)?\s*[:：]\s*[A-Za-z](?=[-_A-Za-z0-9]{5,19}(?![\w-]))[A-Za-z]*[\d_-][-_A-Za-z0-9]*/g,
   },
   {
     category: 'contact handle',
@@ -550,7 +758,7 @@ const PHONE_RULES: PhoneRule[] = [
   {
     category: 'contact handle',
     pattern:
-      /(?:(?:(?<!自)我的?|加(?:我的?)?|个人)\s*(?:QQ|qq|扣扣|企鹅)\s*(?:号码?)?\s*(?:[:：]|是)?|(?<![A-Za-z])(?:QQ|qq|扣扣|企鹅)\s*(?:号码?)?\s*(?:[:：]|是)|(?<![A-Za-z])QQ\s*号码?)\s*\d{5,11}(?!\d)/g,
+      /(?:(?:(?<!自)我的?|加(?:我的?)?|个人)\s*(?:QQ|qq|扣扣|企鹅)\s*(?:号码?)?\s*(?:[:：]|是)?|(?<![A-Za-z])(?:QQ|qq|扣扣|企鹅)\s*(?:号码?)?\s*(?:[:：]|是)|(?<![A-Za-z])(?:QQ|扣扣)\s*(?:号码?)?)\s*\d{5,11}(?!\d)(?!\s*(?:[人个位条次万亿元]|用户|群))/g,
   },
 ];
 
@@ -589,8 +797,8 @@ const EMAIL =
 // Addresses written to dodge spam bots: "jane [at] uni [dot] edu", "jane(at)uni.edu",
 // "jane{at}uni.edu", "jane AT uni DOT edu". The bare " at … dot " form needs the word "dot", so
 // "I worked at Google.com" and "look at the data dot plot" don't count.
-const AT_WORD = String.raw`\s*(?:\[\s*(?:at|AT|@)\s*\]|\(\s*(?:at|AT|@)\s*\)|\{\s*(?:at|AT|@)\s*\}|<\s*(?:at|AT)\s*>)\s*`;
-const DOT_WORD = String.raw`(?:\s*(?:\[\s*(?:dot|DOT|\.)\s*\]|\(\s*(?:dot|DOT|\.)\s*\)|\{\s*(?:dot|DOT|\.)\s*\}|<\s*(?:dot|DOT)\s*>)\s*|\s+(?:dot|DOT)\s+)`;
+const AT_WORD = String.raw`\s*(?:【\s*(?:at|AT|@)\s*】|\[\s*(?:at|AT|@)\s*\]|\(\s*(?:at|AT|@)\s*\)|\{\s*(?:at|AT|@)\s*\}|<\s*(?:at|AT)\s*>)\s*`;
+const DOT_WORD = String.raw`(?:\s*(?:【\s*(?:dot|DOT|\.|点)\s*】|\[\s*(?:dot|DOT|\.)\s*\]|\(\s*(?:dot|DOT|\.)\s*\)|\{\s*(?:dot|DOT|\.)\s*\}|<\s*(?:dot|DOT)\s*>)\s*|\s+(?:dot|DOT)\s+)`;
 const OBFUSCATED_TLD = String.raw`(?:edu|com|org|net|gov|io|me|cn|uk|ca|de|jp|info|dev|ai|us|EDU|COM|ORG|NET|GOV|IO|CN)`;
 const OBFUSCATED_EMAIL = new RegExp(
   String.raw`(?<![\w.%+-])[A-Za-z0-9._%+-]+(?:${AT_WORD}[A-Za-z0-9-]+(?:(?:${DOT_WORD}|\.)[A-Za-z0-9-]+)*?(?:${DOT_WORD}|\.)|\s+(?:at|AT)\s+[A-Za-z0-9-]+(?:${DOT_WORD}[A-Za-z0-9-]+)*?${DOT_WORD})${OBFUSCATED_TLD}\b`,
@@ -611,23 +819,26 @@ function afterLoginCommand(before: string): boolean {
   while (words.length && words[words.length - 1]!.startsWith('-')) words.pop();
   return words.length > 0 && LOGIN_COMMAND.test(words[words.length - 1]!);
 }
+/** After a loose address: a sentence-ending period is fine, "jane AT uni.edu.cn/x" is not. */
+const LOOSE_END = String.raw`(?![/\w-]|\.[\w/-])`;
 /**
- * Addresses written for people, not bots: "jane AT uni.edu" (capital AT), "Email: jane at
- * uni.edu" (after an email cue), "jane &lt;at&gt; uni.edu" (an escaped <at> in built HTML),
- * "jane#gmail.com（#换成@）", "jane # 163.com" and "jane 艾特 gmail 点 com". Not "LOOK AT THE DATA",
- * "Meet us AT CHI.2026", "I worked at google.com", "C#.NET", "README#install.md" or "this.#logger".
+ * Addresses written for people, not bots: "jane AT uni.edu." (capital AT), "Email: jane at
+ * uni.edu", "My email is jane at uni.edu", "邮箱：jane at gmail.com" (after an email cue), "jane
+ * &lt;at&gt; uni.edu" (an escaped <at> in built HTML), "jane#gmail.com（#换成@）", "jane # 163.com",
+ * "jane 艾特 gmail 点 com" and "jane @ gmail.com". Not "LOOK AT THE DATA", "Meet us AT CHI.2026",
+ * "I worked at google.com", "C#.NET", "README#install.md", "this.#logger" or "x @ W.T".
  */
 const LOOSE_EMAILS: Array<{ pattern: RegExp; address: (m: string) => string }> = [
   {
     pattern: new RegExp(
-      String.raw`(?<![\w.%+-])[A-Za-z0-9._%+-]+\s+AT\s+[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.${OBFUSCATED_TLD}\b(?![/\w.-])`,
+      String.raw`(?<![\w.%+-])[A-Za-z0-9._%+-]+\s+AT\s+[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.${OBFUSCATED_TLD}\b${LOOSE_END}`,
       'g',
     ),
     address: (m) => m.replace(/\s+AT\s+/, '@'),
   },
   {
     pattern: new RegExp(
-      String.raw`(?<=\b(?:e-?mail(?: me)?|mail me|write to(?: me)?|contact(?: me)?|reach me|drop me a line)[ \t]{0,3}(?:at[ \t]{1,3}|[:：][ \t]{0,3}))[A-Za-z0-9._%+-]+[ \t]{1,3}at[ \t]{1,3}[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.${OBFUSCATED_TLD}\b(?![/\w.-])`,
+      String.raw`(?:(?<=\b(?:(?:e-?mail(?: me)?|mail me|write to(?: me)?|contact(?: me)?|reach me|drop me a line)[ \t]{0,3}(?:at[ \t]{1,3}|[:：—–][ \t]{0,3})|e-?mail(?: address)? is[ \t]{1,3}))|(?<=(?:邮箱|邮件|电邮)(?:地址)?[ \t]{0,3}(?:是|[:：])?[ \t]{0,3}))[A-Za-z0-9._%+-]+[ \t]{1,3}at[ \t]{1,3}[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.${OBFUSCATED_TLD}\b${LOOSE_END}`,
       'gi',
     ),
     address: (m) => m.replace(/\s+at\s+/i, '@'),
@@ -644,6 +855,14 @@ const LOOSE_EMAILS: Array<{ pattern: RegExp; address: (m: string) => string }> =
     pattern:
       /(?<![\w.%+\-/#])[A-Za-z0-9._%+-]*[A-Za-z0-9_%+-]\s?(?:#|\(#\)|\[#\]|\s?艾特\s?)\s?[A-Za-z0-9-]+(?:(?:\.|\s?点\s?)[A-Za-z0-9-]+)*?(?:\.|\s?点\s?)(?:com|cn|edu|net|org)\b/g,
     address: (m) => m.replace(/\s?(?:\(#\)|\[#\]|#|艾特)\s?/, '@').replace(/\s?点\s?/g, '.'),
+  },
+  {
+    // Spaces around the @: "jane @ gmail.com", "邮件 jane @ 163.com". Not "x @ W.T" (no domain).
+    pattern: new RegExp(
+      String.raw`(?<![\w.%+-])[A-Za-z0-9._%+-]+[ \t]+@[ \t]+[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.${OBFUSCATED_TLD}\b${LOOSE_END}`,
+      'g',
+    ),
+    address: (m) => m.replace(/\s+@\s+/, '@'),
   },
 ];
 const ALWAYS_ALLOWED = [
@@ -805,6 +1024,11 @@ interface TermRule {
   pattern: RegExp;
   /** Skipped for bundled code (check-privacy's code mode): object keys look like quotations. */
   proseOnly?: boolean;
+  /**
+   * Extra check on a match at `index` (length `length`) in `source`: the scanned text, or the
+   * owner view for a match found there. Runs once per match, so it can look around cheaply.
+   */
+  accept?: (source: string, index: number, length: number) => boolean;
 }
 
 const FAMILY = '§15 family members';
@@ -819,11 +1043,57 @@ const CITATIONS = '§15 citation counts';
 
 const rx = (parts: string[], flags: string) => new RegExp(parts.join('|'), flags);
 
+/**
+ * People a Chinese sentence can open with. A clause after a comma keeps that subject ("我一个朋友在
+ * 大厂做推荐，年薪 50 万", "他读博期间，拿到了三家公司的实习 offer"), unless 我 comes back first.
+ */
+const ZH_OTHER_SUBJECT = new RegExp(
+  String.raw`^[ \t]*(?:[-*•][ \t]*)?[^,。!?;\n]{0,8}?(?<![和跟与])(?:他|她|朋友|同学|学生|室友|舍友|同事|同门|师兄|师姐|师弟|师妹|学长|学姐|学弟|学妹|博士后|博后|工程师|老师|很多人|不少人|大家|有人|那位|这位|一位|有位|隔壁)`,
+);
+/** Narrative time words: "今年投了 30 份简历，一般都没回音" is still one's own story. */
+const ZH_NARRATIVE_START =
+  /^[ \t]*(?:[-*•][ \t]*)?(?:今年|去年|前年|最近|刚|已经|终于|昨天|今天|上周|这周|前几天|当年|那年|自从|自打)/;
+/** After a subject-less clause: general advice ("投了简历之后，一般…", "拿到了 offer 也别急着…"). */
+const ZH_ADVICE_AFTER =
+  /^\s*(?:(?:之后|以后),?[^。!?;\n]{0,24}?(?:一般|通常|往往|会|别(?!的|人)|不要|记得)|也别|先别|就去|别急|记得)|^[^。!?;\n]*(?:的共识|结构性问题)/;
+
+/**
+ * A Chinese match is the author's own: it starts with 我, or its clause doesn't carry over another
+ * person's subject from before a comma.
+ */
+function zhOwnClause(source: string, index: number): boolean {
+  if (source[index] === '我') return true;
+  const before = source.slice(Math.max(0, index - 120), index);
+  if (!/,[ \t]*$/.test(before)) return true;
+  const sentence = /[^。!?;\n]*$/.exec(before)?.[0] ?? '';
+  const subject = ZH_OTHER_SUBJECT.exec(sentence);
+  return !subject || sentence.slice(subject[0].length).includes('我');
+}
+/** As zhOwnClause, and a subject-less clause that isn't general advice. */
+function zhOwnStory(source: string, index: number, length: number): boolean {
+  if (!zhOwnClause(source, index)) return false;
+  if (source[index] === '我' || ZH_NARRATIVE_START.test(source.slice(index, index + 8)))
+    return true;
+  const rest = source.slice(index + length, index + length + 80);
+  return /^[^。!?;\n]*我/.test(rest) || !ZH_ADVICE_AFTER.test(rest);
+}
+
 // ------------------------------------------------ grades
 
 const GPA = String.raw`(?:[cugCUG]?(?:GPA|gpa|Gpa)|G\.\s?P\.\s?A\.?|grade point average)`;
 /** After a GPA value: a threshold or someone else's ("3.5 or above", "3.5 以上", "4.0 的学生"). */
-const NOT_OWN_SCORE = String.raw`(?!(?:\s*\/\s*4\.0{1,2})?\s*(?:or\s+(?:above|higher|better|more|below|lower|less)\b|and\s+(?:above|higher)\b|以上|以下|左右|起|\+|的(?:学生|同学|申请者|人)))`;
+const NOT_OWN_SCORE = String.raw`(?!(?:\s*\/\s*4\.0{1,2})?\s*(?:or\s+(?:above|higher|better|more|below|lower|less)\b|and\s+(?:above|higher)\b|(?:is|isn't|is\s+not)\s+(?:enough|good enough|competitive|too\s+low)\b|(?:does\s+not|doesn't)\s+rule\s+out\b|以上|以下|左右|起|\+|的(?:学生|同学|申请者|人)))`;
+/**
+ * Before a GPA: not someone else's ("his GPA was 3.2", "Leo's GPA of 3.2", "a student's GPA of
+ * 3.9") or a hypothetical one ("whether a GPA of 3.0 is enough"). The owner's is still found: by
+ * the owner rule ("Jimmy's GPA"), and in the owner view, where "his" reads "my".
+ */
+const GPA_NOT_OTHERS = String.raw`(?<!\b(?:[Hh]is|[Hh]er|[Tt]heir|[Ww]hose|[Ii]ts)\s+(?:[\w-]+\s+)?)(?<!\b(?!(?:[Mm]aster|[Bb]achelor|[Dd]octor|[Aa]ssociate)'s)[A-Za-z]+(?:'s|s')\s+(?:[\w-]+\s+)?)(?<!\b(?:[Ww]hether|[Ww]hy|[Ii]f)\s+(?:an?|the|your)\s+(?:[\w-]+\s+)?)`;
+/**
+ * Before a number and GPA: a person other than the author, or a hypothetical one. Both cases are
+ * spelled out (here and in GPA_NOT_OTHERS) for the reason given at NOT_A_FIELD.
+ */
+const GPA_VALUE_NOT_OTHERS = String.raw`(?<!\b(?:[Ss]tudents?|[Aa]pplicants?|[Ss]omeone|[Aa]nyone|[Pp]erson|[Pp]eople|[Rr]eaders?|[Ll]earners?|[Cc]andidates?|[Tt]hose|[Kk]ids?|[Cc]hild|[Cc]hildren|[Uu]ndergraduates?|[Pp]articipants?)\s+with\s+an?\s)(?<!\b(?:[Ww]hy|[Ww]hether|[Ii]f|[Hh]ow)\s+an?\s)(?<!\b(?:[Hh]is|[Hh]er|[Tt]heir|[Ww]hose)\s)`;
 const TEST_NAME = String.raw`(?-i:GRE|TOEFL|IELTS|GMAT)`;
 const GRADE_RULES: TermRule[] = [
   {
@@ -839,13 +1109,20 @@ const GRADE_RULES: TermRule[] = [
       [
         String.raw`\bmy\s+(?:[\w-]+\s+)?${GPA}`,
         String.raw`${OWNER_POSSESSIVE}(?:${GPA}|grades)\b`,
-        String.raw`(?<!\b(?:[Mm]ean|[Aa]verage|[Mm]edian|[Mm]inimum|[Mm]in\.?|[Pp]rior|[Rr]equired|[Cc]utoff|[Tt]ypical)\s(?:[\w-]+\s)?)\b${GPA}\s*(?:\([^)\n]{1,20}\)\s*)?(?:[:：=|]|of|was|is|[-–—]|<\/t[dh]>\s*<t[dh][^>]*>)?\s*[0-4](?:\.\d{1,2})?(?![\d.]*%|\w|\(\)|\.\d)${NOT_OWN_SCORE}`,
-        String.raw`(?<![\d.])(?<!\b(?:mean|average|median|minimum|min\.?|above|below|least|than|cutoff|threshold|required|requires?)\s(?:an?\s|of\s)?)[0-4]\.\d{1,2}\s+(?:(?:cumulative|overall|major|undergrad(?:uate)?|graduate|unweighted|weighted)\s+)?${GPA}(?!\s+(?:or\s+(?:higher|above|better|lower|below|less|more)|cutoff|threshold|requirement|minimum)\b)`,
-        String.raw`${LABEL_START}(?:${TEST_NAME}|TOEFL\s+iBT)\b(?:\s+(?:General|score|total|overall))?\s*[:：]?\s*(?-i:[VQ])?\s*\d{1,3}(?:\.\d)?(?![\d%])`,
+        String.raw`\b(?=${GPA})(?<!\b(?:[Mm]ean|[Aa]verage|[Mm]edian|[Mm]inimum|[Mm]in\.?|[Pp]rior|[Rr]equired|[Cc]utoff|[Tt]ypical)\s(?:[\w-]+\s)?)${GPA_NOT_OTHERS}${GPA}\s*(?:\([^)\n]{1,20}\)\s*)?(?:${LABEL_COLON}|[=|]|of|was|is|[-–—]|<\/t[dh]>\s*<t[dh][^>]*>)?\s*[0-4](?:\.\d{1,2})?(?![\d.]*%|\w|\(\)|\.\d)${NOT_OWN_SCORE}`,
+        String.raw`(?=[0-4]\.\d)(?<![\d.])(?<!\b(?:mean|average|median|minimum|min\.?|above|below|least|than|cutoff|threshold|required|requires?)\s(?:an?\s|of\s)?)${GPA_VALUE_NOT_OTHERS}[0-4]\.\d{1,2}\s+(?:(?:cumulative|overall|major|undergrad(?:uate)?|graduate|unweighted|weighted)\s+)?${GPA}(?!\s+(?:or\s+(?:higher|above|better|lower|below|less|more)|cutoff|threshold|requirement|minimum)\b)${NOT_OWN_SCORE}`,
+        // A test score on a CV line: with a colon, or a number standing alone ("GRE 326", "TOEFL 112
+        // (2021)", "GRE V160 Q168"), not "GRE 320 是一个分水岭".
+        String.raw`${LABEL_START}(?:${TEST_NAME}|TOEFL\s+iBT)\b(?:\s+\(?(?:General|score|total|overall|quant(?:itative)?|verbal|math)\)?)?(?:\s*${LABEL_COLON}\s*(?-i:[VQ])?\s*\d{1,3}(?:\.\d)?(?![\d%])|\s*(?-i:[VQ])?\s*\d{1,3}(?:\.\d)?(?![\d%])(?=\s*(?:$|[,;.)(|/]|\((?-i:[VQ])|(?-i:[VQ])\d)))`,
         String.raw`\b(?:my|I\s+(?:got|scored|had|earned|received))\s+(?:an?\s+)?(?:[\w-]+\s+){0,2}?${TEST_NAME}\b[^.\n]{0,20}?(?<!\d)\d{2,3}(?:\.\d)?(?!\d)`,
         String.raw`\bI\s+(?:got|scored|earned|received)\s+(?:an?\s+)?\d{2,3}(?:\.\d)?\s+on\s+(?:the\s+)?${TEST_NAME}\b`,
         String.raw`\bclass\s+rank(?:ing)?\s*[:：]?\s*(?:top\s+)?\d`,
-        String.raw`\branked\s+(?:top\s+)?\d{1,3}(?:\s*%|\s*\/\s*\d{2,4}|\s+(?:out\s+)?of\s+\d{2,4})\s+in\s+(?:my|the|our)\s+(?:class|major|cohort|department|program|year)\b(?!\s+(?:showcase|hackathon|competition|contest|challenge|demo|poster|exhibition|fair|expo|awards?)\b)`,
+        // Letter grades of one's own: "I got straight A's", "I got a B+ in machine learning"; not "I
+        // got an A-ha moment" or "I got a C in the output".
+        String.raw`\bI\s+(?:got|earned|received|made|had)\s+(?:(?:straight|all)\s+(?-i:A)(?:'s|s)\b|an?\s+(?-i:[A-DF][+-]?)\s+(?:in|on|for)\s+(?!(?:the\s+)?(?:output|logs?|console|terminal|end|row|column|cell|grid)\b)\w)`,
+        String.raw`\bmy\s+(?:(?:undergrad(?:uate)?|graduate|college|high[- ]school|university|master'?s|bachelor'?s|doctoral|Ph\.?D\.?|course|class)\s+)?grades\s+(?:were|was|are|in\s+(?:college|undergrad|high school|grad school))\b`,
+        String.raw`\branked\s+(?:in\s+the\s+)?top\s+\d{1,3}\s*%\s+(?:of|in)\s+(?:my|our)\s+(?:class|major|cohort|department|program|year)\b`,
+        String.raw`\branked\s+(?:top\s+)?\d{1,3}(?:st|nd|rd|th)?(?:\s*%|\s*\/\s*\d{2,4}|\s+(?:out\s+)?of\s+\d{2,4})\s+(?:students\s+)?in\s+(?:my|the|our)\s+(?:class|major|cohort|department|program|year)\b(?!\s+(?:showcase|hackathon|competition|contest|challenge|demo|poster|exhibition|fair|expo|awards?)\b)`,
         String.raw`\b(?:ranked|graduated|finished)\s+(?:\d{1,3}(?:st|nd|rd|th)|first|second|third|top)\s+(?:out\s+of\s+\d{2,4}\s+)?(?:in|of)\s+(?:my|our)\s+(?:class|major|cohort|department|program|year)\b`,
       ],
       'gim',
@@ -873,12 +1150,12 @@ const GRADE_RULES: TermRule[] = [
     pattern: rx(
       [
         zhAfterI([
-          String.raw`(?:GPA|gpa|绩点|均分|加权|学分绩|(?<!(?:GPU|显卡|模型|论文|学校|大学|QS|项目|回答|框架|仓库)\s?)排名|成绩|高考|GRE|托福|TOEFL|雅思|IELTS)${ZH_CLAUSE}{0,6}?(?:(?<!\d)\d+(?:\.\d+)?(?!\d|\.\d|\s*(?:年|月|日|号|届|名?\s*的))|第\s*[\d一二三四五六七八九十]+(?!\s*名?\s*的))`,
+          String.raw`(?:GPA|gpa|绩点|均分|加权|学分绩|(?<!(?:GPU|显卡|模型|论文|学校|大学|QS|项目|回答|框架|仓库)\s?)排名|成绩|高考|GRE|托福|TOEFL|雅思|IELTS)${ZH_CLAUSE}{0,6}?(?:(?<!\d)\d+(?:\.\d+)?(?!\d|\.\d|\s*(?:年|月|日|号|届|名?\s*的))|第\s*[\d一二三四五六七八九十]+(?!\s*名?\s*的)|(?<=排名${ZH_CLAUSE}{0,4})[一二两三四五六七八九十百千万]{1,5}多?名(?!\s*的))`,
           String.raw`(?:考研|四级|六级|CET-?[46])${ZH_CLAUSE}{0,6}?(?<!\d)\d{2,4}(?:\.\d)?(?!\d|\s*[年月日号届级次])`,
           String.raw`(?:保研|专业|年级|班级)排名\s*(?:是|为)?\s*:?\s*(?:第\s*[\d一二三四五六七八九十]+|\d+\s*\/\s*\d+|前\s*(?:\d+(?:\.\d+)?\s*%|[\d一二三四五六七八九十]+\s*名?))(?![\d.%/一二三四五六七八九十])(?!\s*(?:的|是|才|就|可以|这种|这样|这类|以内))`,
           String.raw`挂(?:过|了)\s*[\d一二两三四五六七八九十几]*\s*(?:门|科)`,
           String.raw`考了\s*\d{2,3}(?:\.\d)?\s*(?:分|(?=$|[,。!?;\n]))`,
-          String.raw`(?:是|考了?|排(?:在)?)(?:班里|班上|全班|年级|专业|全系|全院|全校|全省|全市|系里)?\s*(?:第\s*[\d一二三四五六七八九十]+\s*名?|倒数第\s*[\d一二三四五六七八九十]+)(?!\s*[个次篇年天届批位作代手章节轮期页])`,
+          String.raw`(?:是|考了?|排(?:在)?)(?:班里|班上|全班|年级|专业|全系|全院|全校|全省|全市|系里|我们(?:班|年级|专业|系))?\s*(?:第\s*[\d一二三四五六七八九十]+\s*名?|倒数第\s*[\d一二三四五六七八九十]+|前\s*[\d一二三四五六七八九十]+\s*名(?!\s*的))(?!\s*[个次篇年天届批位作代手章节轮期页])`,
           String.raw`(?:挂科|挂了${ZH_CLAUSE}{0,2}?(?:高数|线代|概率|大物|英语|数学|物理|化学|C语言|编程|课))`,
           String.raw`(?:资格考试|qualifying exam|博资考|中期考核)${ZH_CLAUSE}{0,6}?(?:挂|没过|没通过|fail)`,
         ]),
@@ -888,9 +1165,17 @@ const GRADE_RULES: TermRule[] = [
         String.raw`${ZH_ALONE_BEFORE}(?:专业|年级|班级|全班|全系)(?:排名)?\s*(?:第\s*[\d一二三四五六七八九十]+|前\s*\d+(?:\.\d+)?\s*%)\s*名?${ZH_ALONE_AFTER}`,
         String.raw`${ZH_ALONE_BEFORE}(?:本科|硕士|研究生|大学)(?:的)?\s*(?:GPA|绩点|均分|加权(?:平均分?)?|学分绩|排名)\s*(?:是|为)?\s*:?\s*\d`,
         String.raw`${ZH_ALONE_BEFORE}(?:四级|六级|CET-?[46])\s*:?\s*\d{3}${ZH_ALONE_AFTER}`,
+        // Test and exam scores as a CV field ("托福 110，GRE 328（V160 Q168）", "高考 580 分"), not a
+        // requirement ("常见门槛：托福 100，雅思 7") or a question ("高考 580 分在我们省能上什么学校？").
+        String.raw`${ZH_ALONE_BEFORE}(?=托福|雅思|TOEFL|IELTS|GRE|GMAT)(?<!(?:要求|门槛|最低|至少|分数线|录取线|标准|建议|一般)[^\n]{0,14})(?:托福|雅思|TOEFL|IELTS|GRE|GMAT)(?:\s*(?:总分|成绩|口语|写作|阅读|听力))?\s*:?\s*\d{1,3}(?:\.\d)?(?=\s*\(|${ZH_ALONE_AFTER})`,
+        String.raw`${ZH_ALONE_BEFORE}(?:高考|考研|中考)(?:总分|数学|语文|英语|成绩)?\s*(?:考了|只有|才|是)?\s*\d{3}\s*多?\s*分?${ZH_ALONE_AFTER}`,
+        // A failed course or exam with the subject left out ("大二高数挂了，重修才过", "博资考我挂了一次").
+        String.raw`(?:${ZH_ALONE_BEFORE}(?:今年|去年|当年|那年)?)(?:大[一二三四]|研一|高三|期末)?\s*(?:高数|线代|概率|大物|英语|数学|物理|化学|C语言|编程)挂了(?!\s*的)`,
+        String.raw`(?:资格考试|qualifying exam|博资考|中期考核)${ZH_CLAUSE}{0,4}?我${ZH_CLAUSE}{0,4}?(?:挂|没过|没通过|fail)`,
       ],
       'gm',
     ),
+    accept: zhOwnClause,
   },
 ];
 
@@ -898,10 +1183,12 @@ const GRADE_RULES: TermRule[] = [
 
 const IMMIGRATION_RULES: TermRule[] = [
   {
-    // Words that only mean immigration status. "green card" only with holder/status/process words
-    // or a possessive (not "a green card to signal I understand", "Each child got a green card and
-    // a red card to vote"); "permanent resident" only for one person (not "Permanent residents and
-    // seasonal visitors face flood risks"); sponsorship only with visa/employer words, a
+    // Words that only mean immigration status. "green card" only with holder/status/process words,
+    // "I hold/have a green card" or a possessive (not "a green card to signal I understand", "Each
+    // child got a green card and a red card to vote", "I hold a green card in the voting game");
+    // "I'm not / I became a U.S. citizen"; "permanent resident" only for one person (not
+    // "Permanent residents and seasonal visitors face flood risks"); sponsorship only with
+    // visa/employer words, a
     // first-person need or a CV label (not "without industry sponsorship", "I need sponsorship from
     // a teacher at each school"); OPT/CPT/EAD as a status ("Currently on OPT", "On OPT through
     // June 2028", "I hold an EAD"); citizenship as a CV field with a nationality, not a curriculum
@@ -910,10 +1197,11 @@ const IMMIGRATION_RULES: TermRule[] = [
     pattern: rx(
       [
         String.raw`\bimmigration\b`,
-        String.raw`\b(?:work|employment)[- ]authori[sz]ation\b`,
+        String.raw`\b(?:work|employment)[-_ ]authori[sz]ation\b`,
         String.raw`\bgreencards?\b`,
         String.raw`\bgreen card(?:s)?\s+(?:holder|status|application|interview|lottery|process|backlog|sponsorship)\b`,
         String.raw`\b(?:my|a valid|getting a|got (?:a|my|the)|apply(?:ing)? for (?:a|the)|applied for (?:a|the))\s+green card\b(?!\s+(?:and|or)\s+an?\s+(?:red|yellow|blue|orange|white|black|pink|purple)\s+card|\s+to\s+(?:vote|hold|show|raise|signal))`,
+        String.raw`\bI\s+(?:hold|have|had|got|received|obtained)\s+(?:a|my)\s+green card\b(?!\s+(?:and|or)\b|\s+(?:to|up|in|on)\b)`,
         String.raw`\b(?:a|an|my|U\.?S\.?|US|American|Canadian|lawful)\s+permanent resident\b(?!s)`,
         String.raw`\bpermanent resident (?:card|status)\b`,
         String.raw`\bSEVIS\b`,
@@ -933,7 +1221,7 @@ const IMMIGRATION_RULES: TermRule[] = [
         String.raw`\b(?:visa\s+)?sponsorship\s*[:：]\s*(?:yes|no|not|none|required|needed|n\/a)\b`,
         String.raw`\b(?:legally\s+)?(?:authori[sz]ed|eligible|permitted)\s+to\s+work\s+(?:in|for)\s+(?:the\s+)?(?:U\.?S\.?\b|USA?\b|United States|America|Canada|China)`,
         String.raw`\b(?:my|a valid|have a|hold a|need a)\s+work\s+permit\b`,
-        String.raw`\bI(?:'m| am)\s+an?\s+(?!(?:digital|good|active|engaged|responsible|model|corporate|global|private)\s)(?:[\w.]+\s+)?citizen\b(?!\s+of\s+(?:the|this|our|every)\s+(?:[\w-]+\s+)?(?:community|repo|repositor(?:y|ies)|internet|web|project))(?!\s+(?:scien|journal|sens|report|particip))`,
+        String.raw`\bI(?:(?:'m| am)(?:\s+(?:not|now|also))?|(?:\s+(?:recently|finally|just))?\s+became|'ve become| have become)\s+an?\s+(?!(?:digital|good|active|engaged|responsible|model|corporate|global|private)\s)(?:[\w.]+\s+)?citizen\b(?!\s+of\s+(?:the|this|our|every)\s+(?:[\w-]+\s+)?(?:community|repo|repositor(?:y|ies)|internet|web|project))(?!\s+(?:scien|journal|sens|report|particip))`,
         String.raw`${OWNER_POSSESSIVE}(?:visa(?!-)|immigration|work authori[sz]ation|green card|OPT(?![-\s]+(?:\d|experiments?|baselines?|models?|runs?|results?|checkpoints?)))\b`,
         String.raw`\bcurrently\s+on\s+(?-i:(?:STEM\s+)?(?:OPT|CPT|F-?1|J-?1|H-?1-?B))\b(?![-\w])`,
         String.raw`\b(?:eligible for|hold an?|have an?|got (?:an?|my))\s+(?-i:(?:STEM\s+)?(?:OPT|CPT|EAD))\b(?![-\w])`,
@@ -958,7 +1246,7 @@ const IMMIGRATION_RULES: TermRule[] = [
         String.raw`(?<![\w$#.])NIW\b`,
         String.raw`(?<![\w$#.])EB-[123][A-C]?\b`,
         String.raw`(?<![\w$#.])EB[123][A-C]\b`,
-        String.raw`(?<![-\w])visas?\b(?!:[^\s]|\s*(?:信用)?卡|\s+(?:cards?|debit|credit|network|payments?)\b)`,
+        String.raw`(?<![-\w])visas?(?:\b|(?=_(?:status|type|class|category|expir)))(?!:[^\s]|\s*(?:信用)?卡|\s+(?:cards?|debit|credit|network|payments?)\b)`,
         String.raw`\b(?:[Ss]tudent|[Ww]ork|[Tt]ourist|H-?1-?B|F-?1|J-?1|O-1) [Vv]isa\b`,
         String.raw`\bVisa (?:status|application|interview|sponsorship|issues?|appointment|delays?|processing|renewal|denial|refusal|stamping|wait)\b`,
         String.raw`\b[FJ]-?1\s+(?:[Vv]isa|status|student|scholar|OPT|CPT|holder)\b(?![- ](?:teacher|model|network|distillation|score))`,
@@ -967,7 +1255,7 @@ const IMMIGRATION_RULES: TermRule[] = [
         String.raw`\bCPT (?:status|authori[sz]ation|extension|application|period)\b`,
         String.raw`\bSTEM OPT\b`,
         String.raw`\b(?:[Mm]y|on (?:my|an?)|apply(?:ing)? for|applied for)\s+(?:STEM\s+)?(?:OPT|CPT|EAD)\b(?![-\w])(?!\s+(?:\d|experiments?|baselines?|models?|runs?|results?|checkpoints?|weights)\b)`,
-        String.raw`\bI(?:'m| am| was)\s+(?:currently\s+|still\s+)?on\s+(?:an?\s+|my\s+)?(?:STEM\s+)?(?:OPT|CPT|F-?1|J-?1|H-?1-?B)\b(?![-\w])`,
+        String.raw`\bI(?:'m| am| was|'ve been| have been)\s+(?:currently\s+|still\s+)?on\s+(?:an?\s+|my\s+)?(?:STEM\s+)?(?:OPT|CPT|F-?1|J-?1|H-?1-?B)\b(?![-\w])`,
         String.raw`\bEAD [Cc]ard\b`,
       ],
       'g',
@@ -992,7 +1280,12 @@ const IMMIGRATION_RULES: TermRule[] = [
         String.raw`(?<![确担环])保身份(?![证信认验安])`,
         String.raw`(?:转|掉|黑)身份(?![证信认验])`,
         String.raw`维持(?:合法)?身份(?![证信认同验])`,
-        String.raw`身份(?:黑了|过期|到期|快到期)`,
+        String.raw`身份(?:黑了|快?过期|快?到期)`,
+        String.raw`永久居留`,
+        String.raw`sponsor\s*(?:我的?\s*)?身份(?![证认])`,
+        String.raw`入了?\s*(?:美|加|英|澳|日|新)籍`,
+        String.raw`[Ee][Bb]-?[123][A-Ca-c]?\s*的\s*(?:期|排期)`,
+        String.raw`${ZH_I}(?:现在|目前)?(?:是|还)?\s*在\s*(?:STEM\s*)?(?:OPT|CPT)\s*(?:上|阶段|期间)?(?=$|[,。!?;\n])`,
         String.raw`${ZH_I}${ZH_CLAUSE}{0,6}?没有身份(?![信认证标验])`,
         String.raw`美签(?![名字约到收章署])`,
         String.raw`(?<![当见会])面签(?![字署名收约章合贷])`,
@@ -1041,7 +1334,7 @@ const NOT_FAMILY_AFTER =
  * "family-friendly"; "-in-law" and "-to-be" still count), and not a classifier possessive
  * ("children's books", "kids' media").
  */
-const NOT_FAMILY = String.raw`(?![-' ](?:${NOT_FAMILY_AFTER})\b)(?!-(?!in-law|to-be)\w)(?!'s?[-\s]+(?:books?|literature|media|museums?|librar(?:y|ies)|hospitals?|shows?|programs?|songs?|stories|games?|apps?|TV|television|theat(?:er|re)|rights|education|learning|development)\b)(?!\s+who\s+code)`;
+const NOT_FAMILY = String.raw`(?![-' ](?:${NOT_FAMILY_AFTER})\b)(?!-(?!in-law|to-be)\w)(?!'s?[-\s]+(?:books?|literature|media|museums?|librar(?:y|ies)|hospitals?|shows?|programs?|songs?|stories|storytelling|literacy|stud(?:y|ies)|research|games?|apps?|TV|television|theat(?:er|re)|rights|education|learning|development)\b)(?!\s+who\s+code)`;
 const NUMBER_WORD = 'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve';
 
 // Chinese family nouns with the compounds they must not match: 老公司/老公众号/老公寓, 老婆饼,
@@ -1075,11 +1368,13 @@ const FAMILY_RULES: TermRule[] = [
         String.raw`\bour\s+(?:first|second|third|fourth|new|newborn)\s+(?:child|baby|kid)\b|\bour\s+(?:little ones?|firstborn)\b`,
         String.raw`\b(?:we're|we are|I'm|I am)\s+expecting\s+(?:a|our|my)\s+(?:\w+\s+)?(?:baby|child)\b`,
         String.raw`\bmy\s+(?!(?:research|lab|project|business|work|thesis|study|coding|hackathon|teaching|writing|industry|community|school|dance|tennis|debate|accountability|co-?author)\b)(?:[\w-]+\s+)?(?:partner|significant other|girlfriend|boyfriend|fianc[eé]e?)\b${NOT_FAMILY}(?!\s+(?:on|in|for|at|from|with)\s+(?:this|the|that|a|our|my)\s+(?:project|hackathon|team|competition|course|class|lab|study|paper|work)\b)`,
-        String.raw`(?=(?:father|mother|dad|mom|mum|parent)\s)(?:(?<=\bI(?:'m| am)\s+(?:also\s+|now\s+)?an?\s+(?:[\w-]+\s+)?)|(?<=(?:^|[.!?;:]\s+)As\s+an?\s+(?:[\w-]+\s+)?)|(?<=\b(?:Jimmy|Nanjie)\b[^.\n]{0,40}))${FATHER_OF}`,
+        String.raw`(?=(?:father|mother|dad|mom|mum|parent)\s)(?:(?<=\bI(?:'m| am)\s+(?:also\s+|now\s+)?(?:an?|the)\s+(?:[\w-]+\s+)?)|(?<=(?:^|[.!?;:]\s+)As\s+an?\s+(?:[\w-]+\s+)?)|(?<=\b(?:Jimmy|Nanjie)\b[^.\n]{0,40}))${FATHER_OF}`,
         String.raw`\b(?:I'm|I am)\s+an?\s+(?:new\s+|first-time\s+|working\s+|proud\s+|stay-at-home\s+|single\s+)?(?:dad|father|mom|mother|mum|parent)\b(?![- ](?:nodes?|class|elements?|components?|process|containers?|directory|window|frame)\b)`,
         String.raw`\bAs\s+an?\s+(?:single|first-time|working|stay-at-home)\s+(?:dad|father|mom|mother|parent)\b`,
         String.raw`${OWNER_POSSESSIVE}(?:wife|husband|spouse|partner|sons?|daughters?|kids?|children|bab(?:y|ies)|family|parents|mother|father|mom|dad|brothers?|sisters?|in-laws)\b${NOT_FAMILY}`,
-        String.raw`\bI(?:'ve\s+got|\s+have\s+got|'ve|\s+have|\s+had)\s+(?:an?|one|two|three|four|five|six|twin)\s+(?:(?:little|young|grown|adult|teenage|baby|\w+-(?:year|month)-old)\s+)?(?:kids?|children|child|sons?|daughters?|bab(?:y|ies)|toddlers?|stepkids|stepsons?|stepdaughters?|grandchildren)\b(?![-']|\s+(?:in|from|at|per|who|participate|participated|test|tested|try|tried|use|used|play|played|for|each|with|participants?|users?|process(?:es)?|nodes?|elements?|class(?:es)?|themes?|mode|account|version|seats?)\b)`,
+        String.raw`\bI(?:'ve\s+got|\s+have\s+got|'ve|\s+have|\s+had)\s+(?:an?|one|two|three|four|five|six|twin)\s+(?:(?:little|young|grown|adult|teenage|baby|\w+-(?:year|month)-old)\s+)?(?:kids?|children|child|sons?|daughters?|bab(?:y|ies)|toddlers?|newborns?|infants?|twins|stepkids|stepsons?|stepdaughters?|grandchildren)\b(?![-']|\s+(?:in|from|per|who|participate|participated|test|tested|try|tried|use|used|play|played|for|each|with|participants?|users?|process(?:es)?|nodes?|elements?|class(?:es)?|themes?|mode|account|version|seats?|at\s+(?:the|a|an|each|our|this|that|one|two|three))\b)`,
+        // Siblings: "I have a younger brother in Shenzhen", not "two sisters in the study".
+        String.raw`\bI(?:'ve\s+got|\s+have\s+got|'ve|\s+have|\s+had)\s+(?:an?|one|two|three|four|twin)\s+(?:(?:younger|older|elder|big|little|baby|twin|half-|step)\s*)?(?:brothers?|sisters?|siblings?)\b(?!\s+(?:pairs?|dyads?|in\s+(?:the|my|our|each)\s+(?:study|studies|workshop|sample|session|class|pilot))\b)`,
         String.raw`\bI(?:'m| am| got| was)\s+(?:happily\s+|recently\s+|newly\s+)?(?:(?:married|divorced|widowed)\b(?!\s+to\s+(?:the|this|that|an?)\b)|engaged\b(?!\s+(?:in|with|by|on)\b|\s+to\s+(?:the|this|that|an?)\b))`,
         atLabel([
           String.raw`(?:proud\s+|busy\s+|single\s+|working\s+)?(?=(?:father|mother|dad|mom|mum|parent)\s+(?:of|to)\s)(?![^\n]{0,200}\b(?:synthetic|sample person|fictional)\b)${FATHER_OF}`,
@@ -1094,10 +1389,11 @@ const FAMILY_RULES: TermRule[] = [
   {
     // Chinese: spouse words anywhere (老婆说…, 老公做饭), and children, parents and relatives after
     // 我/我的/我和/我们的 ("我三岁的女儿", "我的两个孩子", "我们的女儿"), "我有两个孩子", "我当爹了",
-    // "作为两个孩子的爸爸，我…", "我另一半也是博士". Not 我们的孩子 (our children in general), 我的孩子们
+    // "作为两个孩子的爸爸，我…", "我另一半也是博士", 我家 with family life (我们家的周末, 我家那位, 我家老大,
+    // 我家里人), 我是独子, 我们俩去年领证了, 我还是单身. Not 我们的孩子 (our children in general), 我的孩子们
     // (my students), 我的妈呀 (an exclamation), 我家老板/导师/实验室 (my advisor, my lab), 我家乡, 我们
-    // 家庭教育/家长群/家族, 我家网速/电脑/猫, 我的对象模型, 我有一个孩子气的想法, 我另一半时间在写代码,
-    // "作为一个妈妈，她在访谈里…".
+    // 家庭教育/家长群/家族, 我家的路由器/书架/网速/猫, 我的对象模型, 我有一个孩子气的想法, 我另一半时间在写代码,
+    // 我领了驾驶证, "作为一个妈妈，她在访谈里…", or general advice ("当了爸爸以后时间会变少").
     category: FAMILY,
     pattern: rx(
       [
@@ -1106,16 +1402,18 @@ const FAMILY_RULES: TermRule[] = [
             String.raw`(?:也)?(?:当了|成为了?|做了)(?:一[个名位])?\s*(?:${ZH_AGE})?(?:[\d一二两三四五六七八九十]+\s*个)?(?:孩子的|娃的)?${ZH_PARENT_WORD}(?![们的妈爸])`,
           ],
           [
-            String.raw`(?:们俩的|们的(?=女儿|儿子|宝宝|闺女)|的|和|跟|与|家的?)?(?:${ZH_AGE}|刚出生的|大|小(?!孩子)|二)?(?:${ZH_KIDS}|${ZH_PARTNER}|${ZH_PARENTS})`,
+            String.raw`(?:们俩的|们的(?=女儿|儿子|宝宝|闺女)|们家的?|的|和|跟|与|家的?)?(?:${ZH_AGE}|刚出生的|大|小(?!孩子)|二)?(?:${ZH_KIDS}|${ZH_PARTNER}|${ZH_PARENTS})`,
             String.raw`(?:的)?(?:哥哥|姐姐|弟弟|妹妹|哥(?!们|儿们|伦)|姐(?!妹)|弟(?!子|兄)|妹(?!子)|奶奶|爷爷|外婆|外公|姥姥|姥爷|舅舅|舅妈|姑姑|姑父|姨妈|姨夫|叔叔|伯伯|表哥|表姐|表弟|表妹|堂哥|堂姐|堂弟|堂妹|侄子|侄女|外甥女?|公婆|老爸|老妈|爹(?![啊呀耶])|娘(?![啊呀耶])|妻(?!子)|孙子|孙女)`,
             String.raw`(?:的)?(?:妈|爸)(?![妈爸呀啊耶哟诶欸吖呦咧!?,。….])`,
-            String.raw`(?:们)?家(?!乡|庭|老板|导师|实验室|组|长|族|里没|的(?:老板|导师|网|电脑|宽带|猫|狗)|人工|网|电脑|宽带|路由|猫|狗|附近|楼下|门口|小区|这边|那边|离|装修|房子|公寓|空调|冰箱|洗衣机|电视|显卡|台式|笔记本|服务器|主机|书房|阳台|厨房|院子|花园|wifi|WiFi|Wi-Fi|NAS)`,
+            String.raw`(?:们)?家(?:的|里的?)?(?:周末|假期|日常|生活|晚饭|年夜饭|聚会|传统|规矩|家务|过年|春节|旅行|那位|那口子|领导|先生|太太|老人|长辈|老[大二三幺]|[大二三小]宝|几口|[三四五]口|人(?!工))`,
             String.raw`(?:已经|刚)?结婚(?:了|[\d一二两三四五六七八九十]+年)`,
             String.raw`(?:也|还)?有(?:了)?\s*(?:[\d一二两三四五六七八九十]+\s*个|个)\s*(?:${ZH_AGE})?(?:儿子|女儿|闺女|孩子(?![们气般似样])|宝宝|娃(?![娃们]))`,
             String.raw`(?:也)?(?:是|成了|当了?|当上了?)(?:一[个名位])?\s*(?:${ZH_AGE})?(?:[\d一二两三四五六七八九十]+\s*个)?(?:孩子的|娃的)?${ZH_PARENT_WORD}(?![们妈爸])`,
             String.raw`(?:的)?(?:内人|另一半(?![时的数代工精篇部章论份内样])|那口子|前妻|前夫|前女友|前男友|夫人)`,
             String.raw`(?:们|俩)?(?:夫妻俩?|两口子|小两口)(?!关系)`,
-            String.raw`是独生(?:子|女)`,
+            String.raw`是(?:家里的)?(?:独生(?:子|女)|独子|独女)`,
+            String.raw`(?:们俩?|俩)?${ZH_CLAUSE}{0,6}?领(?:了)?(?:结婚)?证(?![件书明])`,
+            String.raw`${ZH_SELF_GAP(6)}(?:还是|一直|依然|目前|现在|已经)?(?:单身|离婚|离异|已婚|未婚)(?!率|家庭|案|诉讼|数据|研究|问题|相关|的(?:家庭|父母|孩子|人))`,
           ],
         ),
         String.raw`(?<!二次元|纸片人|没有)老婆(?![饼婆])`,
@@ -1130,15 +1428,27 @@ const FAMILY_RULES: TermRule[] = [
         String.raw`(?:作为|身为)(?:一[个名位])?\s*(?:[\d一二两三四五六七八九十]+\s*个)?(?:${ZH_AGE})?(?:孩子|娃|宝宝)的(?:爸爸|妈妈|父亲|母亲|爹|妈)(?=[^。!?\n]{0,20}我)`,
         String.raw`家有一儿一女`,
         String.raw`(?:一边|边)带娃`,
+        // With the subject left out: "去年结婚了", "当爹以后…", "家里有两个娃", "儿子出生那天…", "娃刚满月",
+        // "内人也是博士", "作为一个新手爸爸，我…". Not "当爹当妈都不容易", "家里有两个孩子的家庭", "儿子出生率",
+        // "爱人如己", "作为一个妈妈，她在访谈里说我们的系统…".
+        String.raw`(?:${ZH_ALONE_BEFORE}(?:今年|去年|已经|刚)?)(?:已经|刚)?结婚(?:了|[\d一二两三四五六七八九十]+年)`,
+        String.raw`(?:作为|身为)(?:一[个名位])?\s*(?:新手|二胎|全职|单亲|职场)?(?:爸爸|奶爸|宝爸|父亲|老爸|妈妈|宝妈|母亲)(?=[^。!?\n]{0,20}我(?!们))`,
+        String.raw`(?:${ZH_ALONE_BEFORE}(?:自从|自打)?)当(?:了)?爹(?:以后|之后|后|了|的(?:第|那))`,
+        String.raw`${ZH_ALONE_BEFORE}(?:我)?家里(?:有|是)\s*(?:[\d一二两三四五六七八九十]+\s*个|个)\s*(?:娃|孩子|宝宝|儿子|女儿)(?!的)`,
+        String.raw`(?:${ZH_ALONE_BEFORE}(?:今年|去年|上个月|上周|前几天|刚刚?)?)(?:儿子|女儿|闺女|娃|大宝|二宝)(?:今年|刚刚?|已经|上个月)?\s*(?:出生(?!率|人口|日期)|满月|满[\d一二两三四五六七八九十]+岁|上(?:幼儿园|小学|一年级|初中))(?![^,。!?;\n]*的(?:家长|妈妈|爸爸|父母|那位|参与者))`,
+        String.raw`${ZH_ALONE_BEFORE}(?:内人|爱人)(?![工类民机生间文性们如己])`,
       ],
       'gm',
     ),
+    accept: zhOwnStory,
   },
 ];
 
 // ------------------------------------------------ health
 
-const CONDITIONS = String.raw`ADHD|autism|depression|anxiety|cancer|diabetes|PTSD|OCD|bipolar(?: disorder)?|epilepsy|long COVID|COVID(?:-19)?|migraines?|insomnia|dyslexia|asthma|(?:a )?(?:mental|physical|learning) (?:illness|disability|disorder)|chronic \w+|an? eating disorder|a stroke\b(?!\s+of\b)|a heart attack|an? (?:panic|anxiety) disorder|leukemia|lupus|multiple sclerosis`;
+const CONDITIONS = String.raw`ADHD|autism|depression|anxiety|cancer|diabetes|PTSD|OCD|bipolar(?: disorder)?|epilepsy|long COVID|COVID(?:-19)?|migraines?|insomnia|dyslexia|asthma|(?:a )?(?:mental|physical|learning) (?:illness|disability|disorder)|chronic \w+|an? eating disorder|a stroke\b(?!\s+of\b)|a heart attack|an? (?:panic|anxiety) disorder|leukemia|lupus|multiple sclerosis|(?:partial\s+)?hearing loss|tinnitus|a concussion|carpal tunnel(?: syndrome)?|tendinitis|repetitive strain injury`;
+/** Conditions that "my …" names as one's own ("my asthma"); not "my anxiety about the talk". */
+const MY_CONDITIONS = String.raw`asthma|diabetes|epilepsy|migraines?|insomnia|dyslexia|PTSD|OCD|bipolar(?: disorder)?|leukemia|lupus|multiple sclerosis|long COVID|hearing loss|tinnitus|concussion|eating disorder|health\s+(?:issues?|problems?|conditions?|scares?|crisis|struggles?)`;
 const ZH_CONDITIONS = String.raw`抑郁|焦虑|双相|惊恐|强迫症|ADHD|多动症|自闭|癌|肿瘤|白血病|糖尿病|新冠|肺炎|心脏病|高血压|精神分裂|进食障碍|失眠症|偏头痛|甲状腺|胃溃疡|胃炎|带状疱疹|面瘫|哮喘|癫痫|腰椎间盘|颈椎病`;
 const HEALTH_RULES: TermRule[] = [
   {
@@ -1156,24 +1466,26 @@ const HEALTH_RULES: TermRule[] = [
         String.raw`\b(?:I was|I've been|I have been|I am|I'm|I got|I was recently|I've recently been)\s+diagnosed\b`,
         String.raw`我被\s*diagnosed`,
         String.raw`\bmy\s+diagnosis\s+(?:of|with)\s+(?:${CONDITIONS})\b`,
-        String.raw`\bI(?:'ve|'d|'m| have| had| am| was)?(?:\s+been)?\s+(?:have|had|live with|lived with|living with|struggle with|struggled with|struggling with|suffer from|suffered from|suffering from|deal with|dealt with|dealing with|cope with|coped with|coping with|battle|battled|battling|fight|fought|fighting|got|caught|diagnosed with|treated for|being treated for|am being treated for|was treated for|recovering from|recovered from|started having|began having|keep having|get)\s+(?:an?\s+|chronic\s+|severe\s+|mild\s+|clinical\s+|major\s+|generali[sz]ed\s+|social\s+|type\s+[12]\s+|postpartum\s+|seasonal\s+)*(?:${CONDITIONS}|depressive disorder|panic attacks|a (?:back|knee|neck|shoulder|sports|head) injury|(?:knee|back|heart|eye|brain|hip|shoulder) surgery)\b(?![-\w])(?!\s+(?:scores?|patients?|items?|scales?|measures?|data|research|misinformation|surveys?|stud(?:y|ies)|detection|screening|apps?|participants?|groups?|prevention|awareness)\b)`,
+        String.raw`\bI(?:'ve|'d|'m| have| had| am| was)?(?:\s+been)?\s+(?:have|had|live with|lived with|living with|struggle with|struggled with|struggling with|suffer from|suffered from|suffering from|deal with|dealt with|dealing with|cope with|coped with|coping with|battle|battled|battling|fight|fought|fighting|got|caught|diagnosed with|treated for|being treated for|am being treated for|was treated for|recovering from|recovered from|started having|began having|keep having|get)\s+(?:an?\s+|chronic\s+|severe\s+|mild\s+|clinical\s+|major\s+|generali[sz]ed\s+|social\s+|type\s+[12]\s+|postpartum\s+|seasonal\s+)*(?:${CONDITIONS}|depressive disorder|panic attacks|a (?:back|knee|neck|shoulder|sports|head) injury|(?:knee|back|heart|eye|brain|hip|shoulder) surgery)\b(?![-\w])(?!\s+(?:scores?|patients?|items?|scales?|measures?|data|research|misinformation|surveys?|stud(?:y|ies)|detection|screening|apps?|participants?|groups?|prevention|awareness|simulat\w*|users?|students?|learners?|testers?)\b)`,
+        String.raw`\bI\s+(?:broke|fractured|sprained|tore|dislocated|injured)\s+my\s+(?:left\s+|right\s+)?(?:wrist|arm|leg|ankle|hand|finger|thumb|back|knee|shoulder|collarbone|foot|toe|ACL|hip|rib|elbow|neck)s?\b`,
         String.raw`\bI(?:'m| am| was)\s+(?:autistic|disabled|neurodivergent|chronically ill|pregnant|hospitali[sz]ed)\b`,
         atLabel([
           String.raw`(?:living|dealing|coping|struggling)\s+with\s+(?:chronic\s+|severe\s+|clinical\s+|major\s+)*(?:${CONDITIONS})\b(?=[^.\n]{0,40}\bI\b)`,
           String.raw`(?:medical|sick|maternity|paternity|parental|mental[- ]health|health)\s+leave(?:\s+of\s+absence)?\s*[,:(—–-]\s*(?:${MONTH_OR_SEASON}|\d{4})`,
           String.raw`leave of absence\s*\((?:medical|health|personal)\)`,
         ]),
-        String.raw`\bI(?:'m| am| was)\s+(?:also\s+|partially\s+|legally\s+)?(?:hard of hearing|deaf|blind|colou?r[- ]?blind|diabetic|dyslexic|epileptic|immunocompromised|in therapy|in treatment|in rehab|on (?:antidepressants|medication|meds|insulin|SSRIs?))\b(?!\s+(?:to|mode|research|design|studies|robots?|chatbots?)\b)`,
+        String.raw`\bI(?:'m| am| was|'ve been| have been)\s+(?:also\s+|partially\s+|legally\s+)?(?:hard of hearing|deaf|blind|colou?r[- ]?blind|diabetic|dyslexic|epileptic|immunocompromised|in therapy|in treatment|in rehab|on (?:antidepressants|medication|meds|insulin|SSRIs?))\b(?!\s+(?:to|mode|research|design|studies|robots?|chatbots?)\b)`,
         String.raw`\bI\s+(?:see|saw|started seeing|have been seeing|'ve been seeing|go to|went to)\s+(?:a|my)\s+(?:therapist|psychiatrist|psychologist|counsel(?:l)?or)\b(?![-\s](?:robot|bot|chatbot|app|agent|training|workshop|conference|meeting|program|education|certification)\b)`,
         String.raw`\bI\s+(?:take|took|am taking|'m taking|started taking)\s+(?:(?:\w+\s+)?medication|meds|antidepressants|insulin|SSRIs?)\b(?!\s+(?:adherence|reminders?|apps?)\b)`,
         String.raw`\bmy\s+(?:therapist|therapy|psychiatrist|medications?|meds|surgery|illness|disability|chronic\s+\w+|depression|anxiety disorder|ADHD|autism|cancer|pregnancy|miscarriage|medical (?:leave|condition|history|records?))\b(?![-\w])`,
+        String.raw`\bmy\s+(?:${MY_CONDITIONS})\b(?![-\w])(?!\s+(?:stud(?:y|ies)|research|apps?|datasets?|participants?|project|scores?|screening|dashboard|tracker|model|data|paper|simulat\w*)\b)`,
         String.raw`\bmy\s+(?:doctor|physician|GP|neurologist|cardiologist|oncologist|psychologist|counsel(?:l)?or|(?:back|knee|neck|shoulder|head|sports) injury|blood pressure|panic attacks)\b(?![- '](?:degree|program|studies|study|thesis|dissertation|course|students?|candidates?|research|al)\b)`,
         String.raw`\b(?:my|I was on|I am on|I'm on|I took|I'll be on|I will be on|I went on)\s+(?:a\s+)?(?:\w+\s+)?(?:maternity|paternity|parental|sick|medical|bereavement|mental[- ]health)\s+leave\b`,
         String.raw`请了?\s*(?:a\s+)?(?:medical|sick|maternity|paternity|parental)\s+leave`,
         String.raw`\b(?:took|take|taking|went on)\s+(?:a\s+)?(?:medical\s+)?leave of absence\b`,
         String.raw`(?:\bI\s+|${LABEL_START})(?:took|take|went on)\s+(?:a\s+)?(?:\w+\s+)?leave\s+(?:of absence\s+)?(?:for|due to)\s+(?:(?:personal|my|mental|family)\s+)?(?:health|medical|mental[- ]health)\b`,
         String.raw`\b(?:for|due to)\s+(?:personal|my own|my|family)\s+(?:health|medical|mental[- ]health)\s+reasons\b`,
-        String.raw`\bdue to my health\b`,
+        String.raw`\bdue\s+to\s+my\s+health\b`,
         String.raw`${OWNER_POSSESSIVE}(?:health(?![- ](?:tech|sensing|research|projects?|informatics|apps?|devices?|studies|study|data|thermometers?)\b)|illness|diagnosis|therapist|surgery|pregnancy|disability)\b`,
       ],
       'gim',
@@ -1191,7 +1503,10 @@ const HEALTH_RULES: TermRule[] = [
           [
             String.raw`(?:被)?(?:确诊|诊断|查出|患上|患有|得了|得过)(?:了|为|出|过|来)?${ZH_CLAUSE}{0,6}?(?:${ZH_CONDITIONS})(?![研数项论模课题资疫])`,
             String.raw`(?:看(?:了)?(?:心理医生|精神科)|做(?:了)?${ZH_CLAUSE}{0,4}?心理咨询|去(?:了)?${ZH_CLAUSE}{0,6}?(?:counseling|心理咨询中心)|counseling\s*center${ZH_CLAUSE}{0,6}?咨询)`,
-            String.raw`吃(?:着)?(?:抗抑郁|抗焦虑|精神类|安眠|降压|降糖)(?:的)?药`,
+            String.raw`吃(?:了|着|过)?${ZH_CLAUSE}{0,6}?(?:抗抑郁|抗焦虑|精神类|安眠|降压|降糖)(?:的)?药`,
+            String.raw`住了[\d一二两三四五六七八九十几]+\s*(?:天|周|个月|次)(?:的)?院`,
+            String.raw`(?:因为|由于)(?:抑郁症?|焦虑症|双相|癌症|心脏病)${ZH_CLAUSE}{0,4}?(?:休学|住院|请假|退学|延期)`,
+            String.raw`做(?:了|过)?(?:个|一次|一个|两次)?${ZH_CLAUSE}{1,4}?手术(?!\s*的?(?:机器人|器械|视频|模拟|导航|规划|室|数据|记录))`,
             String.raw`吃${ZH_CLAUSE}{0,4}?药(?:来)?控制(?:血压|血糖|情绪|病情)`,
             String.raw`(?:请|休)了?${ZH_CLAUSE}{0,4}?病假`,
             String.raw`(?:因为|由于|因)(?:身体|健康)(?:原因|问题)`,
@@ -1201,20 +1516,27 @@ const HEALTH_RULES: TermRule[] = [
             String.raw`休了?产假`,
           ],
           [
-            String.raw`(?:也|一直)?有\s*(?:轻度|中度|重度|严重的|慢性)?\s*(?:抑郁症?|焦虑症|双相|惊恐(?:障碍|发作)|强迫症|ADHD|多动症|糖尿病|心脏病|高血压|偏头痛|哮喘|癫痫|胃炎|胃溃疡)(?![研数项论模课题资])`,
+            String.raw`(?:也|一直)?有\s*(?:轻度|中度|重度|严重的|慢性)?\s*(?:抑郁症?|焦虑症?(?![型感的研])|双相|惊恐(?:障碍|发作)|强迫症|ADHD|多动症|糖尿病|心脏病|高血压|偏头痛|哮喘|癫痫|胃炎|胃溃疡)(?![研数项论模课题资])`,
             String.raw`(?:也|一直)?患有(?!拖延|懒癌|选择困难|社恐|中二)`,
             String.raw`(?:也|一直)?(?:是)?(?:一[名个位])?\s*(?:癌症|抑郁症|糖尿病|ADHD|双相|焦虑症|自闭症|心脏病)\s*(?:患者|病人|幸存者|人(?!群|数|工|口))`,
             String.raw`是(?:双相|抑郁症|焦虑症)`,
             String.raw`是(?:轻度|中度|重度)(?:双相|抑郁症?|焦虑症?)`,
-            String.raw`(?:也|又|曾经?|一度)?抑郁了`,
+            String.raw`(?:也|又|曾经?|一度)?抑郁(?:了|过)`,
+            String.raw`(?:常年|长期|一直|经常|严重)失眠(?!的)`,
+            String.raw`(?:自己)?(?:就)?是(?:${ZH_CLAUSE}{0,2})?(?:色弱|色盲)(?!用户|人群|患者的)`,
             String.raw`的(?:抑郁症?|焦虑症|双相|病|旧病)(?:又)?(?:复发|犯了|加重)`,
             String.raw`(?:也|曾|曾经|当时|后来|去年|今年|刚|又|已经)?(?:住院(?!医)|住了[\d一二两三四五六七八九十几]*\s*(?:天|周|个月)\s*(?:医院|ICU)|做了?(?:个|一次|一个)?手术(?!机器人|器械|视频|模拟|导航|规划|室)|做了?(?:个|一次)?(?:胃镜|肠镜)|开刀|做化疗|化疗|放疗|流产|怀孕|怀上了|(?:去)?看(?:了)?心理医生|在?吃抗抑郁药)`,
             String.raw`(?:也|又|终于|已经)?\s*(?:新冠)?(?<!太)阳了`,
-            String.raw`(?:有)?(?:腰椎间盘突出|颈椎病)`,
+            String.raw`(?:有)?(?:腰椎?间盘突出|颈椎病|甲亢|甲减)`,
             String.raw`(?:的)?(?:心理咨询师|心理医生|主治医生)`,
             String.raw`的病(?![人毒例历房床理])`,
           ],
         ),
+        // With the subject left out: "去年查出了糖尿病", "去年做了个膝盖手术", "去看了精神科". Not "已经确诊的
+        // 抑郁症患者", "确诊了焦虑症的学生", "去年做了个手术机器人的 demo".
+        String.raw`(?:${ZH_ALONE_BEFORE}(?:今年|去年|最近|前段时间|上个月|已经)?)(?:被)?(?:确诊|查出|诊断出?)(?:了|为|来|出了)?(?!的)${ZH_CLAUSE}{0,6}?(?:${ZH_CONDITIONS})(?![研数项论模课题资疫])(?![^,。!?;\n]*的(?:学生|人|孩子|患者|家长|老师|参与者|用户))`,
+        String.raw`(?:${ZH_ALONE_BEFORE}(?:今年|去年|最近|前段时间|上个月)?)做了?(?:个|一次|一个)?${ZH_CLAUSE}{0,4}?手术(?!\s*的?(?:机器人|器械|视频|模拟|导航|规划|室|数据|记录))`,
+        String.raw`(?:${ZH_ALONE_BEFORE}(?:今年|去年|最近|后来|前段时间)?)去看了?(?:心理医生|精神科)(?!的)`,
         String.raw`(?:老婆|妻子|太太|媳妇|爱人|她)(?:已经|刚)?怀孕`,
         String.raw`怀孕(?:[\d一二两三四五六七八九十]+(?:周|个月))`,
         String.raw`陪产假`,
@@ -1228,6 +1550,7 @@ const HEALTH_RULES: TermRule[] = [
       ],
       'gm',
     ),
+    accept: zhOwnStory,
   },
 ];
 
@@ -1240,18 +1563,44 @@ const AMOUNT_K = String.raw`\b\d{2,3}(?:\.\d)?[kK]\b`;
 const PER_PERIOD = String.raw`[$¥€£]\s?\d+(?:\.\d+)?\s*(?:\/|per\s+|an?\s+)(?:hour|hr|year|yr|month|mo)\b`;
 /** Words that always mean pay; only these go with an amount that has no currency sign. */
 const PAY_WORD = String.raw`(?:stipend|salary|salaries|base (?:pay|salary)|total comp(?:ensation)?|TC|signing bonus|sign-on bonus|RSUs?)`;
-const COMP_WORD = String.raw`(?:${PAY_WORD}|base|equity|offer|assistantship)`;
-const ZH_AMOUNT = String.raw`(?:[$¥]\s*\d[\d,]*(?:\.\d+)?|[\d一二两三四五六七八九十百千几]+(?:[.,]\d+)?\s*(?:万|千|k|K|w|W|刀|美元|美金|块|元)(?:刀|美元|美金|元)?)`;
+/** "base" only with pay around it ("base $150K + equity"), not a robot's mobile base. */
+const BASE_PAY = String.raw`base(?=\s*(?:pay|salary|comp)\b|\s*(?:\+|plus\b|and\s+(?:equity|bonus|RSUs?|stock))|[^.;\n]{0,30}\b(?:equity|bonus|RSUs?|TC|stock)\b)`;
+/** "offer", not a prize: "The offer of $1,000 in prize money". */
+const OFFER_PAY = String.raw`offer(?!\s+of\s+[$¥€£]\s?[\d,]+(?:\.\d+)?\s*[kK]?\s+in\s+(?:prize|award|grant|funding|scholarship|travel))`;
+const COMP_WORD = String.raw`(?:${PAY_WORD}|${BASE_PAY}|equity|${OFFER_PAY}|assistantship)`;
+/** After a pay word: talk about pay in general ("salaries vary"). */
+const NOT_PAY_TALK = String.raw`(?!\s+(?:vary|varies|differ|differs|range|ranges|depend|depends)\b)`;
+/** The author as the one paid: "I", or "my" before the pay ("my research assistantship"). */
+const OWN_PAY =
+  /\bI\b|\bmy\s+(?:[\w-]+\s+){0,2}(?:stipend|salary|salaries|pay|compensation|offer|assistantship|fellowship|position|job|role|internship|income|wages?|base|RSUs?|TC)\b/i;
+/** Someone else is paid: "for each teacher", "per family", "Teachers who joined … received". */
+const PAY_RECIPIENT = new RegExp(
+  String.raw`\b(?:for|per|to)\s+(?:(?:each|every|all|the|its|our|their)\s+(?:[\w-]+\s+)?|\d+\s+)?(?:teachers?|participants?|famil(?:y|ies)|students?|undergrad(?:uate)?s?|researchers?|partners?|parents?|children|child|kids?|interns?|fellows?|tutors?|volunteers?|educators?|librarians?|schools?|mentors?|coaches?)\b|\b(?:each|every)\s+(?:[\w-]+\s+)?(?:teacher|participant|student|researcher|partner|family|parent|child|kid|intern|fellow|tutor|volunteer|educator|undergraduate)\b|\b(?:teachers|participants|families|students|researchers|partners|parents|undergraduates|interns|fellows|tutors|volunteers|educators)\b(?:\s+who\b[^.;\n]{0,40}?)?\s+(?:received|receive|receives|were\s+(?:offered|paid|given|awarded)|got|earned|earn|earns)\b`,
+  'i',
+);
+/** Right before the amount or pay word: another holder, a hypothetical or a funder. */
+const PAY_NOT_OWN_BEFORE = new RegExp(
+  String.raw`(?:\b(?:whose|his|her|their|its)\s+(?:[\w-]+\s+){0,2}|\b(?!(?:Jimmy|Nanjie|Rao)')[A-Za-z-]+(?:'s|s')\s+(?:[\w-]+\s+){0,2}|\b(?:why|whether|if|how)\s+(?:an?|the)\s+|\b(?:funded|funds|fund|covered|covers|budgeted|included|includes|provided|provides|supported|supports|awarded)\s+(?:an?\s+|the\s+)?)$`,
+  'i',
+);
+/** Pay in a clause that is about someone other than the author (see the amount rule). */
+function othersPay(source: string, index: number, length: number): boolean {
+  const before = /[^.;!?\n。]*$/.exec(source.slice(Math.max(0, index - 160), index))?.[0] ?? '';
+  const after = /^[^.;!?\n。]*/.exec(source.slice(index + length, index + length + 160))?.[0] ?? '';
+  const clause = before + source.slice(index, index + length) + after;
+  if (PAY_NOT_OWN_BEFORE.test(before)) return true;
+  return !OWN_PAY.test(clause) && PAY_RECIPIENT.test(clause);
+}
+const ZH_AMOUNT = String.raw`(?:[$¥]\s*\d[\d,]*(?:\.\d+)?|[\d一二两三四五六七八九十百千几]+(?:[.,]\d+)?\s*(?:来|多)?\s*(?:万|千|k|K|w|W|刀|美元|美金|块|元)(?:刀|美元|美金|元)?)`;
 /** An amount that is pay, not a quota or a bill ("20 万 token 的额度", "1200 刀房租", "20 刀订阅"). */
 const ZH_PAY_AMOUNT = String.raw`${ZH_AMOUNT}(?!\s*(?:tokens?|字|步|行|次|人|个|条|篇|词|张|分钟|小时|依赖)|\s*(?:的)?\s*(?:房租|学费|生活费|开销|花销|保险|预算|租金|贷款|话费|会员|订阅|API|额度))`;
 
 const COMPENSATION_RULES: TermRule[] = [
   {
     // Pay of one's own or on a CV: a pay label at the start of a line ("Salary: …",
-    // "<dt>Compensation:", "Pay: $25/hr"), "my salary/stipend", "My RA position pays $25/hour", an
-    // amount of $1,000+ next to a pay word ("a $30,000 stipend", "$150k offer", "base $150K +
-    // equity"), Nk next to a word that always means pay ("TC 250k"), "I earn $28k", "signing
-    // bonus". Not study payments ("Compensation: $20 gift card", "Compensation: $15 per family",
+    // "<dt>Compensation:", "Pay: $25/hr"), "my salary/stipend", "My RA position pays $25/hour",
+    // "My summer internship at a tech company paid $55/hr", "I earn $28k", "signing bonus". Amounts
+    // next to a pay word are the next rule. Not study payments ("Compensation: $20 gift card", "Compensation: $15 per family",
     // "Teachers' stipend: $300 for the workshop"), "my pay-as-you-go credits", "My salary-free side
     // project", "base pay on Prolific was $12 per hour", "teachers earn a median salary of
     // $50,000", "a 128k context window; its base model", "50k student essays to study equity" or
@@ -1265,19 +1614,35 @@ const COMPENSATION_RULES: TermRule[] = [
         String.raw`\bsalary\s+(?:expectations?|requirements?|negotiations?|history)\b`,
         String.raw`\bcompensation\s+(?:package|expectations?)\b`,
         String.raw`\bmy\s+(?:[\w-]+\s+)?(?:salary|salaries|compensation|pay(?![- ](?:as[- ]you[- ]go|rate|scale|gap|per|wall|-?off))|wages?|stipend|income|earnings|hourly rate|pay rate|offer letter)(?![-\w])`,
-        String.raw`\bmy\s+(?:[\w-]+\s+){0,2}?(?:internship|assistantship|fellowship|position|job|RA(?:ship)?|TA(?:ship)?|GA(?:ship)?|role|appointment)\s+(?:paid|pays|paying|pay)\s+(?:me\s+)?(?:about\s+|around\s+|only\s+)?[$¥€£]\s?\d`,
+        String.raw`\bmy\s+(?:[\w-]+\s+){0,2}?(?:internship|assistantship|fellowship|position|job|RA(?:ship)?|TA(?:ship)?|GA(?:ship)?|role|appointment)(?:\s+(?:at|with|in|on)(?:\s+[\w&.-]+){1,4}?)?\s+(?:paid|pays|paying|pay)\s+(?:me\s+)?(?:about\s+|around\s+|only\s+)?[$¥€£]\s?\d`,
         String.raw`${OWNER_POSSESSIVE}(?:salary|stipend|pay|compensation|income|offer)\b`,
         String.raw`\b(?:signing|sign-on)\s+bonus\b`,
         String.raw`(?-i:\bRSUs\b)`,
-        String.raw`${AMOUNT_CUR}[^.。!?;\n]{0,40}?\b${COMP_WORD}\b`,
-        String.raw`${AMOUNT_K}[^.。!?;\n]{0,40}?\b${PAY_WORD}\b`,
-        String.raw`(?<!\b(?:median|average|mean|typical|starting|minimum|national)\s)\b(?:${COMP_WORD}|offered)\b[^.。!?;\n]{0,25}?${AMOUNT_CUR}`,
-        String.raw`(?<!\b(?:median|average|mean|typical|starting|minimum|national)\s)\b${PAY_WORD}\b[^.。!?;\n]{0,25}?${AMOUNT_K}`,
         String.raw`\b(?:I make|I earn|I earned|I was paid|I get paid|I am paid|I'm paid|I got paid|I'm underpaid|I am underpaid|I was underpaid)\b[^.\n]{0,25}?(?:${AMOUNT_CUR}|${AMOUNT_K}|${PER_PERIOD})`,
         String.raw`\bpaid\s+${PER_PERIOD}\s+as\s+an?\s+(?:RA|TA|GA|intern|research assistant|teaching assistant|graduate assistant)\b`,
       ],
       'gim',
     ),
+  },
+  {
+    // An amount of $1,000+ next to a pay word ("a $30,000 stipend", "$150k offer", "base $150K +
+    // equity", "The salary is $95,000"), Nk next to a word that always means pay ("TC 250k"). Not
+    // pay for others or for no one in particular (see othersPay): "a $1,200 stipend for each
+    // teacher", "Undergraduate researchers received a $3,000 stipend", "a teacher whose salary is
+    // $46,000", "why a $30,000 stipend goes further", "The NSF award funded a $25,000 graduate
+    // assistantship"; and not "| Mobile base | $1,800 |", "The offer of $1,000 in prize money" or
+    // "earned $150k and told him salaries vary".
+    category: COMPENSATION,
+    pattern: rx(
+      [
+        String.raw`${AMOUNT_CUR}[^.。!?;\n]{0,40}?\b${COMP_WORD}\b${NOT_PAY_TALK}`,
+        String.raw`${AMOUNT_K}[^.。!?;\n]{0,40}?\b${PAY_WORD}\b${NOT_PAY_TALK}`,
+        String.raw`(?<!\b(?:median|average|mean|typical|starting|minimum|national)\s)\b(?:${COMP_WORD}|offered)\b[^.。!?;\n]{0,25}?${AMOUNT_CUR}`,
+        String.raw`(?<!\b(?:median|average|mean|typical|starting|minimum|national)\s)\b${PAY_WORD}\b[^.。!?;\n]{0,25}?${AMOUNT_K}`,
+      ],
+      'gim',
+    ),
+    accept: (source, index, length) => !othersPay(source, index, length),
   },
   {
     // Chinese: a pay word after 我 ("我的年薪", "我工资8000", "我的奖学金每年 3 万刀", "我第一份工作月薪
@@ -1292,13 +1657,14 @@ const COMPENSATION_RULES: TermRule[] = [
       [
         zhAfterI(
           [
-            String.raw`(?:收入|奖学金|补助|津贴|stipend|工资|薪水)(?!计算器|条|表|数据|调查|模型|预测|小程序|系统)${ZH_CLAUSE}{0,8}?(?:${ZH_PAY_AMOUNT}|\d{3,})`,
-            String.raw`(?:年薪|月薪|时薪|总包|年包|签字费)${ZH_CLAUSE}{0,8}?(?:${ZH_PAY_AMOUNT}|\d{3,})`,
-            String.raw`(?:\bbase\b|\bpackage\b|\bfellowship\b|\bstartup\b|\bstipend\b|(?<![A-Za-z])(?:RA|TA|GA)(?![A-Za-z]))(?:(?!预算|经费|电脑|设备|房租|学费|订阅|会员)${ZH_CLAUSE}){0,8}?${ZH_PAY_AMOUNT}`,
+            String.raw`(?:收入|奖学金|补助|补贴|津贴|stipend|工资|薪水)(?!计算器|条|表|数据|调查|模型|预测|小程序|系统)${ZH_CLAUSE}{0,8}?(?:${ZH_PAY_AMOUNT}|\d{3,})`,
+            String.raw`(?:全奖|半奖)\s*,?\s*(?:一年|每年|一个月|每月|每个月)?\s*(?:大概|差不多|也就|才|有)?\s*${ZH_PAY_AMOUNT}`,
+            String.raw`(?:年薪|月薪|时薪|总包|年包|签字费|月入(?!门)|年入)${ZH_CLAUSE}{0,8}?(?:${ZH_PAY_AMOUNT}|\d{3,})`,
+            String.raw`(?:\bbase\b|\bTC\b|\bpackage\b|\bfellowship\b|\bstartup\b|\bstipend\b|(?<![A-Za-z])(?:RA|TA|GA)(?![A-Za-z]))(?:(?!预算|经费|电脑|设备|房租|学费|订阅|会员)${ZH_CLAUSE}){0,8}?${ZH_PAY_AMOUNT}`,
             String.raw`(?:一个月|每月|每个月|一年|每年|一小时|每小时)\s*(?:能|就|才|只有|大概|不到|差不多|也就)?\s*(?:拿|有|到手|赚|挣|税前|税后)\s*(?:能|就|才|只有|大概|不到|差不多)?\s*${ZH_PAY_AMOUNT}`,
-            String.raw`(?:(?<![A-Za-z])(?:RA|TA|GA)(?![A-Za-z])|博后|postdoc|实习|上班|PhD|博士生)${ZH_CLAUSE}{0,6}?(?:一个月|每月|每个月|一年|每年|一小时|每小时)\s*(?:能|就|才|只有|大概|不到|差不多)?\s*${ZH_PAY_AMOUNT}`,
+            String.raw`(?:(?<![A-Za-z])(?:RA|TA|GA)(?![A-Za-z])|博后|postdoc|实习|上班|PhD|博士生?)${ZH_CLAUSE}{0,6}?(?:一个月|每月|每个月|一年|每年|一小时|每小时)\s*(?:能|就|才|只有|大概|不到|差不多)?\s*${ZH_PAY_AMOUNT}`,
             String.raw`(?:税前|税后)\s*(?:到手|能拿)?\s*(?:能|就|才|只有|大概|不到)?\s*${ZH_PAY_AMOUNT}`,
-            String.raw`${ZH_PAY_AMOUNT}\s*(?:的|一年的|每年的)\s*(?:fellowship|stipend|奖学金|startup|offer|package|base|签字费)`,
+            String.raw`${ZH_PAY_AMOUNT}\s*(?:的|一年的|每年的)\s*(?:fellowship|stipend|奖学金|补助|补贴|津贴|工资|startup|offer|package|base|签字费)`,
             String.raw`offer\s*(?:给了|开了)\s*[\d一二两三四五六七八九十百千几]+`,
             String.raw`\d+(?:\.\d+)?\s*(?:k|K|w|W|万)\s*(?:刀\s*)?的\s*offer`,
           ],
@@ -1308,16 +1674,17 @@ const COMPENSATION_RULES: TermRule[] = [
             String.raw`们(?:的)?\s*(?:(?<![A-Za-z])(?:RA|TA|GA)(?![A-Za-z])\s*)?(?:工资|补助|stipend)${ZH_CLAUSE}{0,8}?${ZH_PAY_AMOUNT}`,
           ],
         ),
-        String.raw`给我开(?:了|的)?(?:价)?${ZH_CLAUSE}{0,6}?\d+(?:\.\d+)?\s*(?:[kKwW]|万)`,
-        String.raw`${ZH_ALONE_BEFORE}(?:年薪|月薪|时薪|总包|年包|包裹|签字费|税前|税后|到手|薪资|工资|薪水|(?:RA|TA|GA)\s*(?:工资|补助))\s*(?:是|有|约|大概|大约|才|只有|不到|超过|接近)?\s*(?:每月|每个月|一个月|每年|一年)?\s*:?\s*${ZH_AMOUNT}(?:左右|以上|多)?${ZH_ALONE_AFTER}`,
+        String.raw`给我开(?:了|的)?(?:价)?${ZH_CLAUSE}{0,6}?(?:\d+(?:\.\d+)?\s*(?:[kKwW]|万)|\d{3,}\s*(?:刀|美元|美金|块|元)?\s*(?:一个月|每月|一年|每年|一小时))`,
+        String.raw`${ZH_ALONE_BEFORE}(?:年薪|月薪|时薪|总包|年包|包裹|签字费|税前|税后|到手|薪资|工资|薪水|(?:RA|TA|GA|实习|博后|postdoc|博士生?)\s*(?:工资|补助|补贴|stipend|年薪|月薪|时薪))\s*(?:是|有|给了?|开了?|约|大概|大约|才|只有|不到|超过|接近)?\s*(?:每月|每个月|一个月|每年|一年)?\s*:?\s*${ZH_AMOUNT}(?:\s*[\d一二三四五六七八九])?(?:左右|以上|多)?${ZH_ALONE_AFTER}`,
         String.raw`${ZH_ALONE_BEFORE}(?:TC|base|stipend)\s+(?:每月|每个月|一个月|每年|一年)?\s*(?:[$¥]\s?\d{1,3}(?:,\d{3})+|[$¥]?\d+(?:\.\d+)?\s*(?:万|千|k|K|w|W|刀))${ZH_ALONE_AFTER}`,
-        String.raw`${ZH_ALONE_BEFORE}(?:薪资|工资|薪水|待遇)\s*:`,
+        String.raw`${ZH_ALONE_BEFORE}(?:实习|博后)?(?:薪资|工资|薪水|待遇)\s*:`,
         String.raw`${ZH_ALONE_BEFORE}(?:期望|预期)(?:薪资|年薪|月薪|工资)`,
         String.raw`(?:${ZH_ALONE_BEFORE}(?:实习|全职|return)?\s*)offer\s*(?:给了|开了)\s*[\d一二两三四五六七八九十百千几]+`,
         String.raw`(?:${ZH_ALONE_BEFORE}(?:拿到了?|拿了|收到了?|接了)?\s*)\d+(?:\.\d+)?\s*(?:k|K|w|W|万)\s*(?:刀\s*)?的\s*offer`,
       ],
       'gm',
     ),
+    accept: zhOwnStory,
   },
 ];
 
@@ -1333,14 +1700,18 @@ const ZH_EMPLOYERS = String.raw`谷歌|微软|字节|腾讯|阿里|百度|华为
  */
 const ZH_JOB_NARRATIVE = [
   String.raw`投了\s*(?:[\d一二两三四五六七八九十百千几]+\s*(?:多|来)?\s*(?:份|个|家)\s*)?简历`,
-  String.raw`(?:拿到了|收到了|拿了|接了|接受了|拒了|拒绝了|签了)\s*(?:${ZH_CLAUSE}{0,20}?(?:的|个)\s*)?(?:return\s+)?(?:[A-Za-z-]+\s+){0,2}offer(?!\s*的)`,
+  String.raw`(?:拿到了|(?<=(?:我|刚|已经|终于|最近|昨天|今天|上周|这周|前几天|今年|去年|也|又|才)\s{0,2})拿到|收到了?|拿了|接了|接受了|拒了|拒绝了|签了)\s*(?:${ZH_CLAUSE}{0,20}?(?:的|个)\s*)?(?:return\s+)?(?:[A-Za-z-]+\s+|(?:实习|全职|正式|口头|书面|教职|博后|暑期)\s*){0,2}offer(?!\s*的)`,
+  String.raw`(?:在|正在|开始)?海投(?!论文|稿|期刊|会议|顶会)`,
+  String.raw`(?:准备|打算|开始|在)?申(?:请)?(?:了)?\s*(?:教职|faculty)`,
+  String.raw`手(?:上|里)(?:有|拿着|握着)?\s*(?:[\d一二两三四五六七八九十几]+\s*个|个)\s*offer`,
   String.raw`被\s*rescind`,
   String.raw`面了\s*(?:[\d一二两三四五六七八九十几]+\s*家|[A-Z][\w&.]*|${ZH_EMPLOYERS})`,
   String.raw`签了三方(?!\s*的)`,
   String.raw`投了${ZH_CLAUSE}{0,12}?(?:postdoc|博后|教职|岗位|职位|\bAP\b|\bTT\b|faculty|research scientist|工业界|学术界)`,
   String.raw`申(?:请)?了\s*[\d一二两三四五六七八九十百千几]+\s*(?:多)?\s*(?:个|所)\s*(?:学校的\s*)?(?:AP|TT|教职|faculty)`,
   String.raw`(?:申|投)(?:请)?(?:了)?${ZH_CLAUSE}{0,8}?\b(?:AP|TT)\b(?!\s*(?:课|考试|微积分|物理|化学|生物|成绩|统计|心理))`,
-  String.raw`(?:去|到)\s*(?!Zoom|Teams|Skype|Webex|腾讯会议)[A-Z][\w&.]*\s*面试`,
+  String.raw`(?:去|到)\s*(?!Zoom|Teams|Skype|Webex|腾讯会议|Google Meet)[A-Z][\w&.]*(?:\s+[A-Z][\w&.]*){0,3}\s*(?:的\s*)?面试`,
+  String.raw`面完\s*(?:[A-Z]|${ZH_EMPLOYERS})`,
   String.raw`求内推`,
   String.raw`(?:分享|发|写)(?:一下|一篇|一份)?\s*面经`,
   String.raw`[二三四]面(?:过了|挂了|通过)(?!\s*的)`,
@@ -1394,7 +1765,7 @@ const JOB_SEARCH_RULES: TermRule[] = [
         String.raw`\bI(?:'m| am| was|'ve been| have been)\s+(?:\w+\s+)?job[- ](?:hunting|searching|seeking)\b`,
         atLabel([
           String.raw`(?:looking for|seeking|searching for|applying (?:for|to))\s+(?:(?:a|an|new)\s+)?(?:${JOB_QUAL}\s+){1,3}${JOB_NOUN}\b`,
-          String.raw`(?:seeking|looking for|objective)\s*[:：]\s*(?:(?:a|an)\s+)?(?:${JOB_QUAL}|tenure|research|UX|industry|faculty)\b`,
+          String.raw`(?:seeking|looking for|objective)\s*${LABEL_COLON}\s*(?:(?:a|an)\s+)?(?:${JOB_QUAL}|tenure|research|UX|industry|faculty)\b`,
           String.raw`(?:accepted|received|signed|declined)\s+(?:an?|the|my)\s+(?:[\w-]+\s+){0,2}?(?:offer|role|job|position(?!\s+(?:paper|statement)))\b${NOT_JOB_OFFER}`,
           String.raw`open\s+to\s+(?:${JOB_QUAL}\s+){0,3}(?:roles?|positions?|jobs?|opportunities|offers|work\b)`,
           String.raw`(?:job\s+|career\s+)?status\s*[:：]\s*(?:open to|seeking|looking for|actively|on the (?:job )?market)\b`,
@@ -1405,13 +1776,23 @@ const JOB_SEARCH_RULES: TermRule[] = [
         String.raw`\bmy\s+(?:job|final[- ]round|on-?site|on-?campus)\s+interviews?\b`,
         String.raw`\b(?:my|an?)\s+(?:on-?site|on-?campus|campus|phone|first[- ]round|second[- ]round|final[- ]round|faculty|job|zoom|virtual)\s+(?:interview|visit)s?\s+(?:at|with|for)\s+(?:the\s+)?(?!(?:Dr|Prof|Mr|Ms|Mrs)\.?\s)(?!(?-i:Teacher|Student|Participant|Parent|Principal|Child|Caregiver|Family|Families|P\d))(?-i:[A-Z])`,
         String.raw`\binterview(?:s|ed|ing)?\s+(?:with|at)\s+(?-i:${EMPLOYERS})\b${EMPLOYER_STUDY_AFTER}`,
-        String.raw`\bI(?:'m| am|'ve been| have been)\s+(?:currently\s+|also\s+)?interviewing\s+(?:with|at)\s+(?:(?:two|three|four|five|several|a few|many|multiple|some|\d+)\s+)?(?:[\w-]+\s+){0,2}?(?:compan(?:y|ies)|firms?|startups?)\b`,
-        String.raw`(?:\bI(?:'m| am| will be|'ll be)\s+|${LABEL_START})available\s+for\s+(?:job\s+|on-?site\s+|phone\s+)?interviews\b(?=\s*(?:[.,;!]|$)|\s+(?:in|from|starting|after|until|through|on|this|next|during)\b)`,
+        String.raw`\bI(?:'m| am|'ve been| have been)\s+(?:currently\s+|also\s+)?interviewing\s+(?:with|at)\s+(?:(?:two|three|four|five|several|a few|many|multiple|some|\d+)\s+)?(?:[\w-]+\s+){0,2}?(?:compan(?:y|ies)|firms?|startups?|labs?|universit(?:y|ies))\b(?!\s+(?:about|on|to understand|for (?:my|our|a|the) (?:study|project|research))\b)`,
+        String.raw`(?:\bI(?:'m| am| will be|'ll be)\s+|${LABEL_START})(?:available|free)\s+for\s+(?:job\s+|on-?site\s+|phone\s+)?interviews\b(?=\s*(?:[.,;!]|$)|\s+(?:in|from|starting|after|until|through|on|this|next|during|(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)days?|weekdays|mornings|afternoons|evenings)\b)`,
+        // Interviews and visits of one's own: "I have a campus visit next month", "a phone screen
+        // with Example Labs", "an onsite interview with a big tech lab", "I've had two on-site
+        // interviews", "waiting to hear back from three search committees". Not "a campus visit
+        // from a fourth-grade class", "My phone screen with the tutor app is shown in Figure 2" or
+        // "waiting to hear back from the IRB".
+        String.raw`\bI(?:'ve| have| had)\s+(?:a|an|my|two|three|\d+)\s+(?:campus|on-?campus)\s+visits?\b(?!\s+(?:from|with|for)\b)`,
+        String.raw`\bI(?:'ve| have)\s+had\s+(?:\w+\s+)?(?:on-?site|campus|final[- ]round|job)\s+interviews?\b`,
+        String.raw`\b(?:my|an?)\s+(?:phone|recruiter|technical|HR)\s+screens?\s+(?:with|at|for)\s+(?-i:[A-Z])`,
+        String.raw`\b(?:hear|heard|hearing)\s+back\s+from\s+(?:\w+\s+){0,2}?(?:search|hiring)\s+committees?\b`,
+        String.raw`\b(?:an?|my)\s+(?:on-?site|final[- ]round|campus|job)\s+interviews?\s+(?:at|with)\s+(?:a|an)\s+(?:[\w-]+\s+){0,3}?(?:compan(?:y|ies)|startups?|firms?|labs?)\b`,
         String.raw`\b(?:an?|my|two|three|\d+)\s+(?:on-?sites?|fly-?outs?)\s+(?:at|with)\s+(?!the\b)(?-i:[A-Z])`,
         String.raw`\b(?:campus|faculty|academic|job)\s+fly-?outs?\b|\bI\s+had\s+(?:\w+\s+)?fly-?outs?\b`,
         String.raw`(?:\bI(?:'m| am)\s+(?:currently\s+|actively\s+)?|${LABEL_START}(?:currently|actively)\s+)interviewing\s+for\s+(?:[\w-]+\s+){0,3}(?:roles?|positions?|jobs?|internships?)\b`,
         String.raw`\bhiring committee\b|\bfaculty search committee\b`,
-        String.raw`\bmy\s+(?:on-?site|fly-?out|campus visit)\s+(?:at|with)\b|\bcampus\s+visits?\b(?=[^.\n]{0,60}\b(?:professor|faculty|tenure)\b)`,
+        String.raw`\bmy\s+(?:on-?site|fly-?out|campus visit)\s+(?:at|with)\b|(?<!\bwhat\s+an?\s)\bcampus\s+visits?\b(?=[^.\n]{0,60}\b(?:professor|faculty|tenure)\b)(?![^.\n]{0,60}\b(?:usually|typically|generally)\b)`,
         String.raw`\b(?:refer|recommend)\s+me\s+(?:for|to)\s+(?:the|a|an|your)\s+(?:[\w-]+\s+){0,3}(?:opening|role|position|job|req)\b`,
         String.raw`\b(?:my|gave\s+(?:a|my)|give\s+(?:a|my)|giving\s+(?:a|my)|prepar(?:e|ed|ing)\s+(?:a|my))\s+job\s+talk\b`,
       ],
@@ -1448,7 +1829,11 @@ const JOB_SEARCH_RULES: TermRule[] = [
             String.raw`找(?:\s*faculty)?\s*(?:教职(?![工员])|博后|博士后|postdoc|职位|实习)`,
             String.raw`申(?:请)?(?:了)?${ZH_CLAUSE}{0,8}?(?:教职(?![工员])|职位)`,
             String.raw`(?:on-?site|onsite)\s*面试`,
-            String.raw`(?:准备|打算|想|要)跳槽`,
+            String.raw`(?:准备|打算|想|要|考虑|在考虑)跳槽`,
+            String.raw`(?:on-?site|onsite|fly-?out)(?!\s*(?:会议|workshop|工作坊|study|研究|实验|部署|测试|活动|参会|访谈|观察|教学))`,
+            String.raw`(?:在|正在)?投${ZH_CLAUSE}{0,16}?(?:岗位|职位|教职|postdoc|博后|faculty)`,
+            String.raw`(?:和|跟)\s*(?:HR|hr|公司|对方)\s*谈(?:薪|钱|package|offer)|谈薪`,
+            String.raw`找到工作(?![流室表簿台区坊量])`,
             String.raw`campus visit`,
             String.raw`(?:上|在|进入)\s*(?:the\s+)?(?:job\s+)?market`,
             String.raw`offer`,
@@ -1462,22 +1847,32 @@ const JOB_SEARCH_RULES: TermRule[] = [
             String.raw`海投`,
             String.raw`(?:在|开始|正在|也在)看(?:${ZH_CLAUSE}{0,6}?的)?(?:工作|工业界|学术界|业界|教职|大厂)?(?:机会|岗位|职位|坑)(?!成本|公平|均等)`,
           ],
-          [String.raw`的\s*job\s*talk`, String.raw`${ZH_GAP_CHAR}{0,16}?open\s+to\s+work`],
+          [String.raw`的\s*job\s*talk`, String.raw`${ZH_GAP_CHAR}{0,28}?open\s+to\s+work`],
         ),
         String.raw`${ZH_ELIDED_I}(?:${ZH_JOB_NARRATIVE.join('|')})`,
         String.raw`offer\s*(?:被\s*)?(?:rescind|撤回|撤销)`,
+        String.raw`(?:帮我内推|内推一下我)(?!${ZH_CLAUSE}{0,8}?(?:项目|仓库|star|文章|帖子))`,
         String.raw`(?:去|到)\s*[A-Z][\w&.]*(?:\s+[A-Z][\w&.]*){0,3}\s*(?:on-?site|onsite|fly-?out|campus visit)`,
         String.raw`${ZH_ALONE_BEFORE}(?:我的)?(?:求职|找工作|秋招|春招|校招|教职求职|找教职)(?:经验|经历|总结|复盘|日记|记录|心得|时间线)(?:分享)?(?:\s*\([^)\n]{1,6}\))?${ZH_ALONE_AFTER}`,
         String.raw`${ZH_ALONE_BEFORE}(?:求职|找工作|秋招|春招|校招|社招|投简历|找实习|电面|终面|HR\s*面|面试挂了|简历被(?:刷|挂)|教职面试|(?:今年|明年)?申教职|拿到(?:了)?\s*教职|拿到\s*${ZH_CLAUSE}{0,12}?(?:return\s+)?offer|准备跳槽)${ZH_ALONE_AFTER}`,
       ],
       'gm',
     ),
+    accept: zhOwnStory,
   },
 ];
 
 // ------------------------------------------------ location and availability
 
 const AVAIL_WHEN = String.raw`(?:${MONTH_OR_SEASON}|\d{4}|graduation|my (?:defense|graduation|Ph\.?D\.?))`;
+/**
+ * After "stay in" or "jobs in": a field, not a place ("stay in HCI", "roles in Learning Sciences").
+ * The words spell out both cases although the rules are case-insensitive: Node 24's optimized
+ * regexp code sometimes missed "Computing" for "computing" here after tier-up.
+ */
+const NOT_A_FIELD = String.raw`(?!(?:HCI|CS|AI|ML|NLP|Academia|Learning|Computer|touch)\b)(?!(?:[\w-]+\s+){0,3}(?:[Rr]esearch|[Ss]ciences?|[Ee]ducation|[Ff]ield|[Aa]cademia|[Ii]ndustry|[Cc]omputing|[Dd]esign|[Ee]ngineering)\b)`;
+/** After "live in": a tool one works in, not a place ("I live in Obsidian"). */
+const NOT_A_TOOL = String.raw`(?!(?:Astro|Obsidian|Notion|Linux|Python|Figma|Jupyter|Zotero|VS|Emacs|Vim|Excel|React|Unity|Slack|Overleaf|LaTeX|Markdown|GitHub|Docker|Terminal)\b)`;
 const NOT_RELOCATE_OBJECT = String.raw`(?!\s+(?:the|a|an|it|this|that|these|those|my|our|its|his|her|their)\b)`;
 /** Tools and sites one moves a blog or a workflow to, not places ("我准备搬到 Linux 上用"). */
 const ZH_NOT_PLACE = String.raw`(?!\s*(?:新的?|实验室|办公室|服务器|大楼|楼|线上|云|GitHub|GitLab|Gitee|Linux|Windows|Mac|macOS|Ubuntu|Obsidian|Notion|Astro|Hugo|Jekyll|Hexo|WordPress|Vercel|Netlify|Cloudflare|Docker|VS ?Code|Vim|Emacs|Zotero|Logseq|飞书|语雀|知乎|B站|公众号|小红书)|\s*[A-Za-z][\w .+-]*?\s*(?:上|里|平台))`;
@@ -1510,8 +1905,8 @@ const AVAILABILITY_RULES: TermRule[] = [
           String.raw`remote[- ]only\b(?=\s*[,.;)]|\s*$)`,
           String.raw`(?:(?:job\s+|work\s+)?location\s+preferences?|preferred\s+(?:work\s+|job\s+)locations?|preferred\s+locations?(?=\s*[:：]\s*(?:remote|anywhere|open|flexible|(?-i:[A-Z])))|desired\s+locations?|geographic\s+preferences?)\s*[:：]`,
           String.raw`(?:relocation|willing to relocate)\s*(?:[:：]|[—–]\s)`,
-          String.raw`(?:(?:expected|earliest|possible|preferred|desired)\s+start(?:\s+date)?|start\s+date)\s*(?:[:：]|[—–]\s)\s*(?:\|\s*)?(?:${MONTH_OR_SEASON}|\d|immediately|ASAP|negotiable|flexible)`,
-          String.raw`(?:availability|available)\s*(?:[:：]|[—–]\s)\s*(?:\|\s*)?(?:available\s+)?(?:immediate(?:ly)?|now|from|starting|beginning|after|as of|${MONTH_OR_SEASON}|\d{4}|full[- ]time|part[- ]time)\b`,
+          String.raw`(?:(?:expected|earliest|possible|preferred|desired)\s+start(?:\s+date)?|start\s+date)\s*(?:${LABEL_COLON}|[—–]\s)\s*(?:\|\s*)?(?:${MONTH_OR_SEASON}|\d|immediately|ASAP|negotiable|flexible)`,
+          String.raw`(?:availability|available)\s*(?:${LABEL_COLON}|[—–]\s)\s*(?:\|\s*)?(?:available\s+)?(?:immediate(?:ly)?|now|from|starting|beginning|after|as of|${MONTH_OR_SEASON}|\d{4}|full[- ]time|part[- ]time)\b`,
           String.raw`status\s*[:：]\s*available\s+(?:immediately|now|from|starting|beginning|after|as of|in)\b`,
           String.raw`notice period\s*[:：]\s*\d`,
           String.raw`available\s+(?:immediately|(?:from|starting|beginning)(?:\s+in|\s+on)?\s+(?:${MONTH_OR_SEASON}|\d{4})|${MONTH_OR_SEASON}\s+\d{4}|for\s+(?:full[- ]time|part[- ]time|employment|hire|positions?|roles?|work)\b)`,
@@ -1521,12 +1916,19 @@ const AVAILABILITY_RULES: TermRule[] = [
         String.raw`(?:\bI(?:'m| am)\s+|${LABEL_START})(?:free|ready)\s+to\s+start\s+(?:(?:in|on|from|after)\s+(?:${MONTH_OR_SEASON}|\d{4}|graduation|my\s+(?:defense|graduation))|immediately|right\s+(?:away|after))`,
         String.raw`\bI(?:'m| am| will be|'ll be)\s+(?:available\s+to\s+(?:start|begin|join)|can\s+start|could\s+start)\s*[:：]?\s*(?:in\s+|on\s+|from\s+|as of\s+)?(?:${MONTH_OR_SEASON}|\d{4}|immediately|right away|ASAP)`,
         String.raw`\bI(?:'m| am| will be|'ll be)\s+available\s+for\s+(?:(?:${JOB_QUAL})\s+){0,2}(?:internships?|${JOB_NOUN})\b`,
-        String.raw`\bI(?:\s+(?:(?:need|have|want|prefer|plan|hope|would like|would prefer)\s+to|must|should|will)|'d (?:like|prefer) to|'ll)\s+(?:stay|remain|live|be based|be located)\s+(?:in|near|close to)\s+(?:the\s+)?(?!(?:HCI|CS|AI|ML|NLP|Academia|Learning|Computer|touch)\b)(?!(?:[\w-]+\s+){0,3}(?:research|science|sciences|education|field|academia|industry|computing|design|engineering)\b)(?-i:[A-Z])`,
+        String.raw`\bI(?:\s+(?:(?:need|have|want|prefer|plan|hope|would like|would prefer)\s+to|must|should|will)|'d (?:like|prefer) to|'ll)\s+(?:stay|remain|live|be based|be located)\s+(?:in|near|close to)\s+(?:the\s+)?${NOT_A_FIELD}(?-i:[A-Z])`,
         String.raw`\bI(?:'m| am)\s+(?:\w+\s+)?geographically\s+(?:flexible|constrained|limited|restricted|mobile)\b`,
         String.raw`\btwo[- ]body problem\b`,
         String.raw`\bI(?:'m| am| will be|'ll be)\s+(?:\w+\s+)?moving\s+to\s+(?!(?:Astro|Obsidian|Notion|Linux|Hugo|Jekyll|Rust|Python|Go|React|Vue|Svelte|Next|Vercel|Netlify|Cloudflare|GitHub|GitLab|Zotero|Logseq|Mastodon|Bluesky|Substack|Ghost|WordPress)\b)(?-i:[A-Z][a-z]+)(?:\s+(?-i:[A-Z][a-z]+))?\s+(?:in|this|next|after|by)\s+(?:${MONTH_OR_SEASON}|\d{4}|year\b|month\b|week\b)`,
         String.raw`\bI\s+can\s+only\s+work\s+(?:\d+\s+hours|remotely|part[- ]time)\b|\bI(?:'m| am| will be|'ll be)\s+out\s+of\s+the\s+country\b`,
-        String.raw`\bI(?:'m| am)\s+open\s+to\s+remote\b|\bI can only work remotely\b|\bremote[- ]only\s+(?:roles?|positions?|jobs?)\b`,
+        String.raw`\bI(?:'m| am)\s+(?:only\s+)?open\s+to\s+remote\b|\bI can only work remotely\b|\bremote[- ]only\s+(?:roles?|positions?|jobs?)\b`,
+        // Where one will work or lives: "I'm only considering jobs on the East Coast", "He prefers
+        // roles on the East Coast", "I'm staying in Florida after graduation", "I'm based in
+        // Gainesville", "I live in Gainesville". Not "I prefer roles in Learning Sciences labs", "I'm
+        // based in the ELX Lab", "I live in Python notebooks", "I live in Obsidian and Zotero".
+        String.raw`\bI(?:'m|'d| am| can| will| would)?\s+(?:only\s+)?(?:considering|consider|looking at|look at|take|taking|accept|accepting|prefer|preferring|targeting)\s+(?:[\w-]+\s+){0,2}?(?:jobs?|roles?|positions?|offers?)\s+(?:on|in|near|around|within)\s+(?:the\s+)?${NOT_A_FIELD}(?-i:[A-Z])`,
+        String.raw`\bI(?:'m| am)\s+(?:currently\s+|now\s+|still\s+)?(?:based|located|living|staying|back)\s+in\s+(?!the\b)${NOT_A_TOOL}${NOT_A_FIELD}(?!(?:[\w-]+\s+){0,3}(?:lab|Lab)\b)(?-i:[A-Z][a-z]+)`,
+        String.raw`\bI\s+(?:currently\s+|now\s+|still\s+)?(?:live|reside)\s+(?:in|near)\s+(?!the\b)${NOT_A_TOOL}(?-i:[A-Z][a-z]+)`,
         String.raw`\bI(?:'d)?\s+(?:prefer|want|need|am looking for|'m looking for)\s+(?:a\s+)?(?:fully\s+)?(?:remote|hybrid|on-?site)(?:\s+or\s+(?:remote|hybrid|on-?site))?\s+(?:roles?|positions?|jobs?|work)\b`,
         String.raw`\bmy\s+(?:(?:earliest|expected|preferred|possible)\s+)?start date\b|\bmy notice period\b`,
         String.raw`${OWNER_POSSESSIVE}(?:availability|start date|relocation)\b`,
@@ -1545,13 +1947,14 @@ const AVAILABILITY_RULES: TermRule[] = [
       [
         zhAfterI(
           [
-            String.raw`(?:明年|今年|下个月|下半年|年初|年底|毕业后?|[\d一二两三四五六七八九十]+\s*月|20\d{2}\s*年)${ZH_SELF_GAP(8)}(?:(?:可以|就|会|将|要|能)?\s*(?:入职|到岗|开始工作|上岗|上班|开始全职|onboard)|就?可以工作)`,
-            String.raw`(?:不能|无法|没法|不可以|暂时不能)(?:离开|出)(?:美国|佛州|佛罗里达|境|国)`,
+            String.raw`(?:明年|今年|下个月|下半年|年初|年底|毕业后?|[\d一二两三四五六七八九十]{1,3}\s*月|20\d{2}\s*年)${ZH_SELF_GAP(8)}(?:(?:可以|就|会|将|要|能)?\s*(?:入职|到岗|开始工作|上岗|上班|开始全职|onboard)|就?可以工作)`,
+            String.raw`(?:不能|无法|没法|不可以|暂时不能|不想|暂时不想|不考虑|不打算)(?:离开|出)(?:美国|佛州|佛罗里达|境|国)`,
             String.raw`(?:不能|无法|没法|不可以|不敢)(?:回国|回美国|回中国|入境)`,
-            String.raw`(?:愿意|可以|能|打算|准备|会|要)(?:(?!把|将)${ZH_CLAUSE}){0,6}?(?:搬到|搬去)${ZH_NOT_PLACE}`,
+            String.raw`(?:愿意|可以|能|打算|准备|会|要|计划|决定|想|下个月|明年|今年|年底|毕业后?)(?:(?!把|将)${ZH_CLAUSE}){0,6}?(?:搬到|搬去)${ZH_NOT_PLACE}`,
+            String.raw`(?:去|到)${ZH_CLAUSE}{0,12}?(?:当|做|任)\s*(?:\bAP\b|助理教授|博后|postdoc|faculty)(?!\s*的)`,
             String.raw`(?:需要|希望|想|得|要|必须|只能|打算|准备|会)(?:继续)?(?:留在|待在|呆在)\s*(?:美国|国内|中国|北美|佛州|佛罗里达|东海岸|西海岸|湾区|盖村|盖恩斯维尔|[A-Z][a-z]+|[一-龥]{1,4}(?:州|市|城|村|岛))`,
             String.raw`(?:只能|只考虑|只看|只投|只找|只接受)${ZH_CLAUSE}{0,10}?(?:附近|周边|本地|的(?:工作|职位|岗位)|远程(?!参会|会议|开会|答辩|上课|教学))`,
-            String.raw`(?:准备|打算|决定|计划|会|要|想|倾向于)${ZH_CLAUSE}{0,4}?回国(?!看看|过年|探亲|玩|旅游|开会|参加|参会|讲座|做报告)`,
+            String.raw`(?:准备|打算|决定|计划|会|要|想|倾向于|不考虑|不打算)${ZH_CLAUSE}{0,4}?回国(?!看看|过年|探亲|玩|旅游|开会|参加|参会|讲座|做报告)`,
             String.raw`(?:能|可以)?\s*(?:入职|到岗|onboard|上班)\s*的?(?:最早)?(?:时间|日期)`,
             String.raw`(?:20\d{2}\s*年|明年|今年)${ZH_CLAUSE}{0,6}?(?:之后|以后)(?:都)?(?:有空|有时间)`,
             String.raw`(?:明年|今年|下学期|20\d{2}\s*年)${ZH_CLAUSE}{0,8}?(?:去|在|到)${ZH_CLAUSE}{0,12}?(?:当|做|任)\s*(?:\bAP\b|助理教授|教授|博后|postdoc|faculty)`,
@@ -1565,26 +1968,28 @@ const AVAILABILITY_RULES: TermRule[] = [
         ),
         String.raw`${ZH_ALONE_BEFORE}(?:最早)?(?:可)?(?:入职|到岗|上岗)(?:时间|日期)\s*:\s*(?:20\d{2}|\d{1,2}\s*月|明年|今年|随时|立即|马上|下个?月|年初|年底|毕业)`,
         String.raw`(?:随时|立即|马上)(?:可以|能)?(?:入职|到岗|上岗)`,
-        String.raw`(?:[\d一二两三四五六七八九十]+\s*月|明年|今年)${ZH_CLAUSE}{0,4}?(?:可以|就可以|能)\s*(?:入职|到岗|开始工作|上岗|上班|开始全职|onboard)`,
+        String.raw`(?:(?<![\d一二两三四五六七八九十])[\d一二两三四五六七八九十]{1,3}\s*月|明年|今年)${ZH_CLAUSE}{0,4}?(?:可以|就可以|能)\s*(?:入职|到岗|开始工作|上岗|上班|开始全职|全职(?=\s*(?:了|工作|上班|入职|$|[,。!?;\n]))|onboard)`,
         String.raw`回不去(?:美国|国内|中国)`,
         String.raw`(?:才能|才可以)离开(?:美国|佛州|佛罗里达)`,
-        String.raw`(?:接受|可以)\s*(?:relocate|remote)\b`,
+        String.raw`(?:接受|可以|不能|没法|无法|愿意|不愿意|不接受)\s*(?:relocate|remote)\b(?!\s*(?:这个|那个|文件|the|it|this))`,
         String.raw`${ZH_ALONE_BEFORE}(?:期望|意向)(?:工作)?(?:地点|城市)\s*:`,
         String.raw`${ZH_ALONE_BEFORE}工作(?:地点|城市)\s*:\s*(?:只|仅|限|希望|期望|倾向|优先)`,
       ],
       'gm',
     ),
+    accept: zhOwnClause,
   },
 ];
 
 // ------------------------------------------------ participant data
 
-const QUOTE_OPEN = String.raw`["“‘'«「『]`;
+/** An opening quote, also escaped inside a JSON string (\"…). */
+const QUOTE_OPEN = String.raw`\\?["“‘'«「『]`;
 const QUOTE_CLOSE = String.raw`["”’'»」』]`;
-const SAID = String.raw`(?:said|says|noted|explained|described|recalled|reported|shared|mentioned|stated|told us|commented|added|wrote|remarked|put it|emphasi[sz]ed|admitted|complained)`;
-const PAST_SAID = String.raw`(?:said|noted|explained|described|recalled|shared|admitted|complained|remarked|commented|told (?:us|me)|put it)`;
+const SAID = String.raw`(?:said|says|noted|explained|described|recalled|reported|shared|mentioned|stated|told\s+(?:us|me|him|her|them)|commented|added|wrote|remarked|put it|emphasi[sz]ed|admitted|complained)`;
+const PAST_SAID = String.raw`(?:said|noted|explained|described|recalled|shared|admitted|complained|remarked|commented|told\s+(?:us|me|him|her)|put it)`;
 const ZH_SAID = String.raw`(?:说|提到|表示|告诉我|回忆|解释|写道|的原话是)`;
-const ZH_SAID_MORE = String.raw`(?:说|提到|表示|告诉我们?|回忆|解释|写道|原话是|讲)`;
+const ZH_SAID_MORE = String.raw`(?:说|提到|表示|告诉我们?|回忆|解释|写道|原话(?:是)?|讲|强调|吐槽|抱怨|感叹|补充)`;
 /**
  * A participant label "P7", not a figure or part label ("图 P2", "Phase P1"), an object key, or a
  * part of a video series ("B站这个合集很好：P1：“环境配置…”").
@@ -1610,23 +2015,30 @@ const PARTICIPANT_RULES: TermRule[] = [
       [
         String.raw`["”'»」]\s*\(\s*P\d{1,3}\b`,
         String.raw`\[P\d{1,3}\]\s*[:：]?\s*${QUOTE_OPEN}`,
-        String.raw`${P_LABEL}\s*\([^)\n]{1,30}\)\s*(?:,?\s*${SAID}(?:\s+that)?)?\s*[:：—–,]?\s*${QUOTE_OPEN}`,
+        String.raw`${P_LABEL}\s*\([^)\n]{1,30}\)\s*(?:,?\s*(?:${SAID}(?:\s+that)?|(?:跟我|对我)?${ZH_SAID_MORE}(?:道|说)?))?\s*[:：—–,]?\s*${QUOTE_OPEN}`,
         String.raw`${P_LABEL}\s*(?:${SAID}(?:\s+that)?\s*[,:]?|\s*${ZH_SAID}\s*,?\s*:?)\s*${QUOTE_OPEN}`,
         String.raw`${P_LABEL}\s*[:：—–]\s*${QUOTE_OPEN}(?![^"”’'»」』\n]{1,60}${QUOTE_CLOSE}\s*(?:这一?集|这集|这一?P|这个视频|讲得))[^"”’'»」』\n]{5,}`,
         String.raw`${P_LABEL}\s*[:：]\s*I\b`,
         String.raw`${P_LABEL}\s*[:：]\s*我${ZH_CLAUSE}{4,}[。!?]`,
         String.raw`${P_LABEL}${ZH_CLAUSE}{0,12}?${ZH_SAID_MORE}(?:道|说)?\s*[,:]?\s*${QUOTE_OPEN}`,
-        String.raw`\b${SPEAKER}\s+[A-Z]?\d{1,3}\s*(?:\([^)\n]{1,30}\)\s*)?,?\s*(?:${SAID}(?:\s+that)?\s*[,:]?|[:：])\s*${QUOTE_OPEN}`,
+        String.raw`\b(?:${SPEAKER}|Reviewer)[\s_-]+[A-Z]?\d{1,3}\s*(?:\([^)\n]{1,30}\)\s*)?,?\s*(?:${SAID}(?:\s+that)?\s*[,:]?|[:：])\s*${QUOTE_OPEN}`,
         String.raw`\b(?:Participant|Interviewee|Respondent)\s+\d{1,3}\s*[:：]`,
         String.raw`\b[Pp]articipant(?:[\s_-]?(?:ID|Id|id)|\s?#)\s*["']?\s*[:#=]?\s*["']?[A-Z]{0,3}-?\d+\b`,
-        String.raw`${QUOTE_CLOSE}\s*[—–-]{1,2}\s*(?:P\d{1,3}\b|${SPEAKER}\s+[A-Z]?\d{1,3}\b)`,
+        String.raw`${QUOTE_CLOSE}\s*[—–-]{1,2}\s*(?:${ZH_SPEAKER}\s*)?(?:P\d{1,3}\b|${SPEAKER}\s+[A-Z]?\d{1,3}\b)`,
+        // A role with a code ("One teacher (T3) said, …"), a code before the quote ("Quote (P12,
+        // interview 2): …"), "a quote from a participant: …", "One of my participants wrote: …".
+        // Not "The tutor (T1) said, …", "Quote (Figure 4): …", "One of my favorite books said, …".
+        String.raw`\b(?:participant|teacher|student|parent|child|learner|caregiver|interviewee|respondent|reviewer|mother|father|educator|principal)s?\b[^"\n()]{0,30}?\(\s*[A-Z]{1,2}-?\d{1,3}\s*\)\s*,?\s*(?:${SAID})(?:\s+that)?\s*[,:]?\s*${QUOTE_OPEN}`,
+        String.raw`\(\s*P\d{1,3}\b[^)\n]{0,30}\)\s*[:：—–]\s*${QUOTE_OPEN}`,
+        String.raw`\b(?:quote|quotation|excerpt)\s+from\s+(?:a|one|another|the|my|our)\s+(?:participant|teacher|student|parent|child|interviewee|respondent|reviewer)s?\b[^"\n]{0,20}?[:：,]?\s*${QUOTE_OPEN}`,
+        String.raw`\b(?:[Oo]ne|[Aa]nother|[Ss]ome|[Tt]wo|[Ss]everal)\s+of\s+(?:my|our|his|the)\s+(?:participants|teachers|students|parents|children|kids|learners|interviewees|respondents|reviewers)(?:\s+(?:I|we|he)\s+(?:interviewed|worked with|observed|taught))?\s+(?:${PAST_SAID}|wrote)(?:\s+(?:me|him|us))?(?:\s+that)?\s*[,:]?\s*${QUOTE_OPEN}[^"”’\n]{12,}`,
         String.raw`\b(?:[Oo]ne|[Aa]nother|[Tt]he\s+(?:same|first|second|third|last|other))\s+(?:(?:\d{1,2}-year-old|young|older|novice|veteran|middle[- ]school|high[- ]school|elementary)\s+)?(?:participant|teacher|student|parent|child|learner|interviewee|respondent|caregiver|educator|mother|father)\s+(?:${PAST_SAID})(?:\s+that)?\s*[,:]?\s*${QUOTE_OPEN}[^"”’\n]{12,}`,
         String.raw`"[^"\n]{10,}"\s*,?\s*(?:${PAST_SAID})\s+(?:one|another|a|the\s+same)\s+(?:participant|teacher|student|parent|child|learner|interviewee|respondent)\b`,
         String.raw`${QUOTE_CLOSE}\s*,?\s*(?:${SAID})\s+(?:participant\s+)?P\d{1,3}\b`,
         String.raw`(?:${P_LABEL}|\b(?:[Pp]articipant|Teacher|Student|Parent|Child|Learner)\s+[A-Z]?\d{1,3})\s*\((?=[^)\n]*(?:\b(?:F|M|female|male|woman|man|girl|boy|nonbinary|non-binary|mother|father)\b|\bage[sd]?\s*\d|\b\d{1,2}\s*(?:y\.?o\.?|years?(?:\s+old)?)\b|,\s*\d{2}\s*[,)]))[^)\n]{1,60}\)`,
         String.raw`(?:${P_LABEL}|\b(?:[Pp]articipant|Teacher|Student|Parent|Child|Learner)\s+[A-Z]?\d{1,3})\s*,\s*an?\s+\d{1,2}-year-old\b`,
         String.raw`\|\s*P\d{1,3}\s*\|(?:[^|\n]*\|){0,4}\s*${QUOTE_OPEN}[^"”\n]{10,}`,
-        String.raw`(?:受访者|参与者|被试|访谈对象)\s*[A-Z]?\d{0,3}\s*(?:\([^)\n]{1,24}\))?\s*(?:跟我|对我)?(?:说|提到|表示|告诉我|回忆|解释|写道)(?:道)?\s*[,:]?\s*${QUOTE_OPEN}`,
+        String.raw`(?:受访者|参与者|被试|访谈对象)\s*[A-Z]?\d{0,3}\s*(?:\([^)\n]{1,24}\))?\s*(?:跟我|对我)?(?:说|提到|表示|告诉我|回忆|解释|写道|吐槽|抱怨|强调)(?:道)?\s*[,:]?\s*${QUOTE_OPEN}`,
         String.raw`(?:被试|参与者|受访者)(?:编号|ID|号)\s*:?\s*[A-Z]?\d{1,4}(?!\s*(?:到|至|-|~))`,
         String.raw`(?:参与者|被试|受访者)\s*#\s*\d+(?!\s*(?:到|至|-|~)\s*#?\d)`,
         String.raw`${ZH_SPEAKER}\s*\(?\s*(?:第\s*)?[A-Z]{0,2}\d{1,3}\s*\)?\s*号?${ZH_CLAUSE}{0,8}?${ZH_SAID_MORE}(?:道|说)?\s*[,:]?\s*${QUOTE_OPEN}`,
@@ -1634,8 +2046,9 @@ const PARTICIPANT_RULES: TermRule[] = [
         String.raw`(?:受访者|参与者|被试|访谈对象)\s*[A-Z]\s*[:：]\s*${QUOTE_OPEN}`,
         String.raw`\b[TSMF]\d{1,3}\s*(?:老师|同学|家长|妈妈|爸爸)${ZH_CLAUSE}{0,6}?(?:说|提到|表示|告诉我们?|回忆|写道)(?:道)?\s*[,:]?\s*${QUOTE_OPEN}`,
         String.raw`\(\s*[A-Z]{1,2}\d{1,3}\s*\)\s*(?:跟我|对我)?(?:说|提到|表示|告诉我们?|回忆|写道)(?:道)?\s*[,:]?\s*${QUOTE_OPEN}`,
-        String.raw`(?:访谈|采访)(?:中|里|时|的时候|最后)${ZH_CLAUSE}{0,6}?(?:家长|老师|学生|孩子|妈妈|爸爸|校长|受访者|参与者|一位|有位|有个)${ZH_CLAUSE}{0,8}?(?:说|提到|表示|告诉我们?|回忆|写道|原话是)(?:道|得${ZH_CLAUSE}{0,6})?\s*[,:]?\s*${QUOTE_OPEN}`,
-        String.raw`(?:家长|老师|学生|孩子|妈妈|爸爸|校长)${ZH_CLAUSE}{0,4}?(?:在)?(?:访谈|采访)(?:中|里|时|的时候|最后)${ZH_CLAUSE}{0,6}?(?:说|提到|表示|告诉我们?|回忆|写道|原话是)(?:道)?\s*[,:]?\s*${QUOTE_OPEN}`,
+        String.raw`(?:访谈|采访|焦点小组|座谈会?|问卷|开放题)(?:中|里|时|的时候|最后|过?的)\s*,?\s*${ZH_CLAUSE}{0,6}?(?<![跟对和给向])(?:家长|老师|学生|孩子|妈妈|爸爸|校长|受访者|参与者|一位|有位|有个)${ZH_CLAUSE}{0,8}?(?:说|提到|表示|告诉我们?|回忆|写道|原话是)(?:道|得${ZH_CLAUSE}{0,6})?\s*[,:]?\s*${QUOTE_OPEN}`,
+        String.raw`(?:家长|老师|学生|孩子|妈妈|爸爸|校长)${ZH_CLAUSE}{0,4}?(?:在)?(?:访谈|采访|焦点小组|座谈会?|问卷|开放题|工作坊)(?:中|里|时|的时候|最后)${ZH_CLAUSE}{0,6}?(?:说|提到|表示|告诉我们?|回忆|写道|原话是)(?:道)?\s*[,:]?\s*${QUOTE_OPEN}`,
+        String.raw`(?:有个|有位|一个|一位)${ZH_SPEAKER}${ZH_CLAUSE}{0,6}?原话是?\s*[,:]?\s*${QUOTE_OPEN}`,
         String.raw`(?:受访(?:的|者)|参与(?:研究|实验|项目|访谈)?的)(?:(?!普遍|都|大多|大部分|多数|很多|不少|们|一致)${ZH_CLAUSE}){0,8}?(?:说|提到|表示|告诉我们?|回忆|写道|原话是)(?:道)?\s*[,:]?\s*${QUOTE_OPEN}`,
       ],
       'g',
@@ -1648,7 +2061,7 @@ const PARTICIPANT_RULES: TermRule[] = [
 const COUNT_LEAD_OUT = String.raw`(?<![\d,.])(?<!\b(?:up to|at most|max(?:imum)?|top|first|last|the|produced|generated|checked|verified|returned|lists?|includes?|contains?|added|removed|of)\s)`;
 /** After 我 before a citation count: not someone else's paper ("我查了下这篇的引用量"). */
 const ZH_CITE_GAP = (n: number) =>
-  String.raw`(?:(?!查|搜|翻|看|别人|他|她|们|参考文献|文中|reference|学生|同学|这篇|该论文)${ZH_GAP_CHAR}){0,${n}}?`;
+  String.raw`(?:(?!查|搜|翻|看|别人|他|她|们|参考文献|文中|reference|学生|同学|(?<!我的?)这篇|该论文)${ZH_GAP_CHAR}){0,${n}}?`;
 const CITATION_RULES: TermRule[] = [
   {
     // Exact citation counts and indices: "cited by 120", "has received 45 citations", "cited 87
@@ -1665,7 +2078,8 @@ const CITATION_RULES: TermRule[] = [
           [
             String.raw`(?:被引|引用量|引用数|引用次数|总引用|citations?|引用\s*(?=\d+\s*(?:次|多|个(?!文献)|$|[,。!?;\n])))${ZH_CLAUSE}{0,8}?(?:\d|[一二两三四五六七八九十百千]+\s*(?:次|个|多))`,
             String.raw`(?:引用(?:量|数|次数)?|citations?|被引)\s*(?:刚|才|只有|已经|终于|也)?\s*(?:过|破|超过|涨到|到了|达到|突破|过了)\s*(?:了\s*)?(?:\d|[一二两三四五六七八九十百千]+|三位数|四位数)`,
-            String.raw`(?:有|收到了?|拿到了?|攒了|涨到|积累了)\s*(?:\d+|[一二两三四五六七八九十百千]+)\s*\+?\s*(?:多|余)?\s*(?:个|次)\s*(?:引用|citations?|被引)`,
+            String.raw`(?:引用(?:量|数|次数)?|citations?|被引)${ZH_CLAUSE}{0,8}?(?:到了|涨到|达到)\s*\d`,
+            String.raw`(?:有|收到了?|拿到了?|攒了|涨到|积累了|才|只有|就)\s*(?:\d+|[一二两三四五六七八九十百千]+)\s*\+?\s*(?:多|余)?\s*(?:个|次)\s*(?:引用|citations?|被引)`,
             String.raw`\b(?:h|i10)\s*-?\s*指数\s*(?:是|为|有|:)?\s*\d`,
           ],
           [],
@@ -1673,10 +2087,12 @@ const CITATION_RULES: TermRule[] = [
         ),
         String.raw`\bcited by\s*[:：]?\s*(?:over\s+|more than\s+|nearly\s+|about\s+|~)?\d[\d,]*(?![\d,]*\s+(?:participants?|reviewers?|students?|teachers?|people|respondents?|users?|experts?|interviewees?))`,
         String.raw`\bcited\s+(?:over\s+|more than\s+|nearly\s+|about\s+|~)?\d[\d,]*\+?\s+times\b`,
-        String.raw`(?<![{,"'\w])\bcitations?(?:\s+count)?\s*[:：]\s*\d(?!\d*\s*(?:to|-|–)\s*\d|\d*\s+(?:per|links?|pages?)\b)`,
+        String.raw`(?<![{,"'\w])\bcitations?(?:\s+count)?\s*${LABEL_COLON}\s*\d(?!\d*\s*(?:to|-|–)\s*\d|\d*\s+(?:per|links?|pages?)\b)`,
         String.raw`\btotal\s+citations\s*[:：]?\s*\d`,
         String.raw`\b(?:total\s+)?citations\s*(?:\|\s*|<\/t[dh]>\s*<t[dh][^>]*>\s*|[—–-]\s*)\d[\d,]*(?![\d,]*\s*(?:to|-|–)\s*\d|[\d,]*\s+(?:per|links?|pages?)\b)`,
-        String.raw`(?:\bmy\s+|我的\s*|${OWNER_POSSESSIVE})h[- ]?index\b`,
+        // "my h-index", not a pointer to Scholar ("My h-index is not listed here; see Google
+        // Scholar", "This site does not list his h-index").
+        String.raw`(?<!\b(?:not|never|doesn't|does\s+not|don't|do\s+not)\s+(?:list|show|include|give|publish|display)\s+)(?:\bmy\s+|我的\s*|${OWNER_POSSESSIVE})h[- ]?index\b(?![^.;\n]{0,60}\b(?:not|never|isn't|aren't)\s+(?:shown|listed|on|here|included|given|public)\b)(?![^.;\n]{0,60}\b(?:on|see|at|in)\s+(?:his\s+|my\s+)?Google Scholar\b)`,
         String.raw`(?<![#$\w.=-])h[- ]?index\b(?![-\w])\s*(?:[:：=|]|of|is|was|是|为|才|只有|有|就)?\s*\d`,
         String.raw`\bi10[- ]index\b`,
         String.raw`${COUNT_LEAD_OUT}\b(?:\d{1,3}(?:,\d{3})+|\d{2,})\+?\s+citations\b(?!\s+(?:the|were|are|was|generated|produced|per|across|in (?:the|each|all|our)|from the model))`,
@@ -1684,9 +2100,15 @@ const CITATION_RULES: TermRule[] = [
         String.raw`(?<!(?:这篇|那篇|该论文|》)${ZH_CLAUSE}{0,12})(?:谷歌学术|Google\s*Scholar|Scholar)(?:(?!这篇|那篇|该论文|《)${ZH_CLAUSE}){0,10}?(?:引用|citations?)${ZH_CLAUSE}{0,6}?\d`,
         String.raw`(?<!(?:这篇|那篇|该论文|》)${ZH_CLAUSE}{0,12})(?:谷歌学术|Google\s*Scholar|Scholar)(?:(?!这篇|那篇|该论文|《)${ZH_CLAUSE}){0,10}?\d+\s*(?:多|余)?\s*(?:次|个)?\s*(?:引用|citations?)`,
         String.raw`${ZH_ALONE_BEFORE}(?:被引(?:用)?次数|总被引|引用次数|总引用)\s*:?\s*\d`,
+        // Counts standing as their own clause: "被引 120 次", "引用数终于破百了", "读博五年攒了 400 个引用".
+        // Not "被引 3 万次的经典论文", "这篇论文积累了 3000 个引用", "读博五年攒了 400 本书".
+        String.raw`${ZH_ALONE_BEFORE}被引\s*\d+\s*次?${ZH_ALONE_AFTER}`,
+        String.raw`${ZH_ALONE_BEFORE}(?:引用|被引|citations?)(?:数|量|次数)?\s*(?:终于|刚|已经|也)?\s*(?:破|过|超过|突破)(?:了)?\s*(?:\d|百|千|[一二两三四五六七八九十]+)`,
+        String.raw`${ZH_ALONE_BEFORE}(?:(?!这篇|那篇|该论文|论文|文章|》)${ZH_CLAUSE}){0,8}?(?:攒了|积累了|收获了)\s*\d+\s*(?:多|余)?\s*(?:个|次)\s*(?:引用|citations?)`,
       ],
       'gim',
     ),
+    accept: zhOwnClause,
   },
 ];
 

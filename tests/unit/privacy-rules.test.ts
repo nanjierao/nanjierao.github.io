@@ -445,3 +445,30 @@ describe('third review: regressions and gaps', () => {
     expect(phone && lineOf(normalized, phone.index)).toBe(63);
   });
 });
+
+describe('sixth review: the owner view reports whole words', () => {
+  // The owner's names, built at run time like the corpus does.
+  const owner = 'Jim' + 'my';
+  const given = 'Nan' + 'jie';
+  const surname = 'Ra' + 'o';
+  const matches = (text: string) => findSection15Terms(text).map((f) => [f.index, f.match]);
+
+  it('maps a rewritten match back to the words it came from', () => {
+    expect(matches(`${owner} has asthma.`)).toEqual([[0, `${owner} has asthma`]]);
+    expect(matches(`${owner} and his wife moved here.`)).toEqual([[owner.length + 5, 'his wife']]);
+    expect(matches(`${owner}\nhas two kids.`)).toEqual([[0, `${owner}\nhas two kids`]]);
+    expect(matches(`${given}\n${surname} is married.`)).toEqual([
+      [0, `${given}\n${surname} is married`],
+    ]);
+  });
+
+  it('reads answers in CRLF YAML, doubled apostrophes and JSON escapes', () => {
+    const crlf =
+      'items:\r\n  - q: "Family?"\r\n    a: >-\r\n      Outside the lab,\r\n      He is married.\r\n';
+    expect(matches(crlf).map(([, m]) => m)).toEqual(['He is married']);
+    expect(matches("- q: 'x'\n  a: 'He''s married.'").map(([, m]) => m)).toEqual(["He''s married"]);
+    expect(matches('{"q":"x","a":"Line one.\\nHe is married."}').map(([, m]) => m)).toEqual([
+      'He is married',
+    ]);
+  });
+});
