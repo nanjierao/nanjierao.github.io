@@ -1,0 +1,57 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { UMBRELLA } from '../../data/site.ts';
+import { CONTEXT_LABELS } from '../../content/schemas.ts';
+import { getThemesByContext } from '../../lib/content.ts';
+
+const contexts = await getThemesByContext();
+---
+
+<BaseLayout
+  title="Research"
+  description="Research overview: where an AI system’s knowledge of a person should come from, in personal, embodied and civic contexts."
+>
+  <h1>Research</h1>
+  <p class="lede">{UMBRELLA}</p>
+  <p class="prose">
+    The work falls under three contexts: personal (what systems learn about a student or user),
+    embodied (learning through hands, puppets, avatars and devices), and civic (crowd-sourced urban
+    digital twins).
+  </p>
+
+  {contexts.map(({ context, themes }) => (
+    <section aria-labelledby={`context-${context}`}>
+      <h2 id={`context-${context}`}>{CONTEXT_LABELS[context]}</h2>
+      <ul class="card-grid">
+        {themes.map((theme) => (
+          <li>
+            <article class="card">
+              <h3>
+                <a href={`/research/${theme.id}/`}>{theme.data.title}</a>
+              </h3>
+              <p>{theme.data.summary}</p>
+            </article>
+          </li>
+        ))}
+      </ul>
+      {context === 'personal' && (
+        <>
+          <h3>Also: explanation and recommendation</h3>
+          <ul class="section-list">
+            <li>
+              Explanation types and user motivations in recommender systems (AAAI HCOMP 2020,
+              co-author).
+            </li>
+            <li>
+              Everyday-inspired movie recommendation from personal social media (IFIP INTERACT 2023,
+              co-author).
+            </li>
+          </ul>
+          <p>
+            Both are listed on the <a href="/publications/">publications page</a>.
+          </p>
+        </>
+      )}
+    </section>
+  ))}
+</BaseLayout>

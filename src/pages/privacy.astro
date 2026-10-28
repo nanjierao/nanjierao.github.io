@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+// Placeholder (S1). It describes what the site does today; S5–S8 extend it as the portals and
+// the optional live assistant arrive (SITE_PLAN §11).
+---
+
+<BaseLayout
+  title="Privacy"
+  description="What this site collects (nothing on its own) and what third parties see."
+>
+  <h1>Privacy</h1>
+  <div class="prose">
+    <p class="lede">
+      This site doesn’t collect anything about you on its own. This page will grow as the
+      interactive parts arrive; it describes the site as it is today.
+    </p>
+
+    <h2>What this site does</h2>
+    <ul>
+      <li>No cookies, no analytics, no trackers, and no advertising.</li>
+      <li>Fonts are served from this site, not from a font service.</li>
+      <li>
+        If you switch between the light and dark theme, your choice is saved in your own browser
+        (localStorage) so the next page uses it. It never leaves your device.
+      </li>
+    </ul>
+
+    <h2>What third parties see</h2>
+    <ul>
+      <li>
+        <strong>GitHub Pages</strong> hosts the site. Like any web host, GitHub receives your IP
+        address and browser details when you load a page; see{' '}
+        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">
+          GitHub’s privacy statement
+        </a>
+        .
+      </li>
+      <li>
+        <strong>GitHub activity</strong> on the homepage is refreshed by your browser from GitHub’s
+        public API (api.github.com), so GitHub sees that request too. The result is cached in your
+        browser’s session storage: reused for up to 30 minutes and cleared when you close the tab.
+      </li>
+      <li>
+        <strong>Videos</strong> load nothing from YouTube until you click play. Then the player
+        loads from youtube-nocookie.com, and YouTube’s own policies apply.
+      </li>
+      <li>
+        <strong>The CS-UDT demo</strong> loads map software (unpkg.com), map tiles (OpenStreetMap)
+        and a QR-code library (cdnjs.cloudflare.com). Its citizen client keeps your demo reports,
+        with any location you attach, in this browser’s localStorage, and a relay QR code you show
+        passes a report’s text and location to whoever scans it. The{' '}
+        <a href="/demos/csudt/">demo page</a> has the details.
+      </li>
+    </ul>
+
+    <h2>Questions</h2>
+    <p>
+      The source of this site is public: you can check all of the above in{' '}
+      <a href="https://github.com/nanjierao/nanjierao.github.io">its repository</a>.
+    </p>
+  </div>
+</BaseLayout>

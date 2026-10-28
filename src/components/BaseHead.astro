@@ -1,0 +1,67 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource-variable/source-serif-4';
+import '@fontsource/ibm-plex-mono/400.css';
+import '../styles/global.css';
+import { DEFAULT_DESCRIPTION, PERSON } from '../data/site.ts';
+import { canonicalUrl, jsonLdString } from '../lib/seo.ts';
+
+interface Props {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>;
+  ogType?: 'website' | 'article' | 'profile';
+  /** False on pages without an address of their own (the 404 page). */
+  canonical?: boolean;
+}
+
+const {
+  title,
+  description = DEFAULT_DESCRIPTION,
+  noindex = false,
+  jsonLd,
+  ogType = 'website',
+  canonical: hasCanonical = true,
+} = Astro.props;
+const fullTitle = title ? `${title} — ${PERSON.displayName}` : PERSON.displayName;
+const canonical = canonicalUrl(Astro.url.pathname);
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+{hasCanonical && <link rel="canonical" href={canonical} />}
+{noindex && <meta name="robots" content="noindex" />}
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#151513" media="(prefers-color-scheme: dark)" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="sitemap" href="/sitemap-index.xml" />
+<link
+  rel="alternate"
+  type="application/rss+xml"
+  title={`Blog — ${PERSON.displayName}`}
+  href="/rss.xml"
+/>
+
+<meta property="og:type" content={ogType} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+{hasCanonical && <meta property="og:url" content={canonical} />}
+<meta property="og:site_name" content={PERSON.displayName} />
+<meta property="og:locale" content="en_US" />
+<meta name="twitter:card" content="summary" />
+
+{jsonLd && <script type="application/ld+json" set:html={jsonLdString(jsonLd)} />}
+
+<!-- Apply a saved theme before first paint so the page doesn't flash. -->
+<script is:inline>
+  try {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+  } catch {
+    // Storage blocked: follow the system preference.
+  }
+</script>

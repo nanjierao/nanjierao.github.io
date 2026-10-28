@@ -1,0 +1,83 @@
+---
+// QR target for DTRUE 2026 (D46): https://nanjierao.github.io/demos/csudt/
+// Links the two self-contained demo files in public/demos/csudt/, which are not modified here.
+// S4 turns this into the full explainer.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="CS-UDT demo"
+  description="CS-UDT, a crowd-sourced urban digital twin for hurricane flooding in Jacksonville: a planner dashboard and a zero-install citizen client, running on simulated data."
+>
+  <p class="breadcrumb">
+    <a href="/research/civic-digital-twins/">Civic digital twins</a>
+  </p>
+  <h1>CS-UDT flood digital twin</h1>
+  <div class="prose">
+    <p class="lede">
+      A crowd-sourced urban digital twin for hurricane flooding in Jacksonville. The storm replay is
+      simulated, modeled on Hurricane Irma (Sep 10–12, 2017), and all community content is
+      synthetic. Official station locations are real but approximate, and the citizen client reads
+      your own phone’s sensors and location only if you allow it.
+    </p>
+
+    <ul class="demo-links plain-list">
+      <li>
+        <a class="button button--primary" href="/demos/csudt/csudt_dashboard.html">
+          Planner dashboard
+        </a>
+        <p class="small">
+          The twin’s map view. Press Play to run the simulated replay and watch reports converge
+          into confirmed events. Best on a large screen.
+        </p>
+      </li>
+      <li>
+        <a class="button" href="/demos/csudt/csudt_mobile.html">
+          Citizen client
+        </a>
+        <p class="small">
+          The zero-install client residents would use: report, take quests, verify. Best on a phone.
+        </p>
+      </li>
+    </ul>
+
+    <h2>What the demo loads and asks for</h2>
+    <ul>
+      <li>
+        The dashboard loads MapLibre GL JS from unpkg.com and map tiles from OpenStreetMap (©
+        OpenStreetMap contributors).
+      </li>
+      <li>The citizen client loads qrcode.js from cdnjs.cloudflare.com.</li>
+      <li>
+        The citizen client can ask for your camera (to attach a photo), your location and your
+        motion sensors, each only when you tap the control that uses it.
+      </li>
+      <li>
+        Your demo reports stay in this browser (localStorage) until you clear the site’s data, with
+        any location you attach. A photo is shrunk in the browser before it is stored, which also
+        removes its camera data (such as where it was taken). If storage still fills up, photos stay
+        only until you close the page. The demo sends nothing to this site.
+      </li>
+      <li>
+        If you show a report’s relay QR code, anyone who scans it receives the report’s text and
+        location (not the photo).
+      </li>
+    </ul>
+
+    <p>
+      Background:{' '}
+      <a href="/research/civic-digital-twins/">Civic AI: crowd-sourced urban digital twins</a> ·{' '}
+      <a href="/builds/cs-udt/">CS-UDT build</a>.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .demo-links li {
+    margin-bottom: var(--space-4);
+  }
+
+  .demo-links p {
+    margin: var(--space-2) 0 0;
+  }
+</style>

@@ -1,0 +1,66 @@
+---
+import { PERSON } from '../data/site.ts';
+import ElsewhereLinks from './ElsewhereLinks.astro';
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <p class="legend">
+      <span class="legend__title">Annotations:</span>{' '}
+      <span class="mark mark--grounded">Solid underline</span>: shown in the source ·{' '}
+      <span class="mark mark--inferred">Dotted</span>: inferred
+    </p>
+    <ElsewhereLinks label="Elsewhere" />
+    <ul class="site-footer__links" aria-label="Site">
+      <li>
+        <a href="/privacy/">Privacy</a>
+      </li>
+      <li>
+        <a href="/credits/">Credits</a>
+      </li>
+      <li>
+        <a href="/rss.xml">Blog RSS</a>
+      </li>
+    </ul>
+    <p class="muted">
+      {PERSON.displayName}. This site’s{' '}
+      <a href="https://github.com/nanjierao/nanjierao.github.io">source is public on GitHub</a>.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: var(--space-8);
+    border-top: 1px solid var(--color-rule);
+    padding-block: var(--space-5) var(--space-6);
+    font-size: var(--text-sm);
+  }
+
+  .legend {
+    margin-bottom: var(--space-3);
+  }
+
+  .legend__title {
+    font-weight: 600;
+    margin-right: var(--space-2);
+  }
+
+  .site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: var(--space-2) 0 var(--space-3);
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-footer__links li {
+    margin: 0;
+  }
+
+  .site-footer__links a {
+    display: inline-block;
+    padding-block: var(--space-2);
+  }
+</style>

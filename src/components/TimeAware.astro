@@ -1,0 +1,32 @@
+---
+// Time-aware wording (D26): build-time text, re-checked in the browser by src/scripts/time-aware.ts.
+import { DEFAULT_TIME_ZONE, wordingFor } from '../lib/time.ts';
+
+interface Props {
+  start: string;
+  end?: string;
+  timeZone?: string;
+  upcoming: string;
+  ongoing?: string;
+  past: string;
+}
+
+const { start, end, timeZone = DEFAULT_TIME_ZONE, upcoming, ongoing, past } = Astro.props;
+const text = wordingFor({ start, end, timeZone }, { upcoming, ongoing, past }, new Date());
+---
+
+<span
+  data-time-aware
+  data-start={start}
+  data-end={end}
+  data-time-zone={timeZone}
+  data-upcoming={upcoming}
+  data-ongoing={ongoing}
+  data-past={past}
+>
+  {text}
+</span>
+
+<script>
+  import '../scripts/time-aware.ts';
+</script>

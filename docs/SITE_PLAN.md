@@ -198,6 +198,11 @@ Visitor's browser ──(only if PUBLIC_API_URL is set)──▶ Cloudflare Work
 - No server in the site, no secrets in the repository, and no workflow ever commits to `main`.
   The weekly rebuild only refreshes "Recent"; if GitHub pauses it after 60 quiet days, nothing
   breaks.
+- Build-time data (S1): one CI step fetches GitHub activity and the YouTube feed into the
+  git-ignored `src/generated/` with the read-only token; the Astro action builds with that data
+  (D57). Pull requests run the checks and the build without deploying. The latest-video card
+  shows the channel's thumbnail and the title of the newest video whose title passes the §15
+  and family filters (D54).
 - Knowledge pack for live /ask: built with the site as `/ask/knowledge.json` (published page text
   + the Q&A library, ≤ 20k tokens); the Worker fetches and caches it.
 - MediaPipe WASM files from `node_modules/@mediapipe/tasks-vision/wasm` and the

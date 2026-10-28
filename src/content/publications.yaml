@@ -1,0 +1,187 @@
+# Publications — transcribed from content/facts.md §6 (12 peer-reviewed; firstAuthor = "*").
+# No citation metrics here (facts.md §6, §15): the site links to Google Scholar instead.
+# TODO(jimmy): DOIs/URLs from a Google Scholar BibTeX export (facts.md §6), then fill `url`.
+# TL;DRs (D28) stay hidden while `draft: true`; Jimmy approves each by setting it to false.
+# `verify: true` mirrors a VERIFY mark in facts.md: hidden from the site until Jimmy confirms.
+
+# ── Refereed conference papers ─────────────────────────────────────────────
+- id: icids-2026-hands-as-narrators
+  factsNumber: 1
+  type: conference
+  authors:
+    [
+      'Rao, N.',
+      'Lanzino, A.',
+      'Chenore, R.',
+      'Adhikari, I.',
+      'Brown, S. A.',
+      'Quek, F.',
+      'Chu, S. L.',
+    ]
+  year: 2026
+  title: 'Hands as Narrators: Characterizing Idea Reuptake from Hand Enactment in Story Writing'
+  venue: 'ICIDS 2026'
+  details: 'Springer'
+  notes: ['Full paper, accepted']
+  firstAuthor: true
+  tldr:
+    text: 'Writers who first acted out story ideas with their hands went back to those recordings for about a quarter of their writing time; the paper maps four strategies and five reasons for doing so.'
+    draft: true
+  themes: [embodied-learning]
+
+- id: icalt-2026-interest-extraction
+  factsNumber: 2
+  type: conference
+  authors: ['Rao, N.', 'Huang, Z.', 'Kulkarni, A.', 'Ragan, E.', 'Chu, S. L.']
+  year: 2026
+  title: 'Identifying Student Interests for Interest-Based Learning: A Comparison of Interest Extraction from Browsing History and Social Media Posts'
+  venue: 'IEEE ICALT 2026'
+  notes: ['Full paper']
+  firstAuthor: true
+  tldr:
+    text: 'Browsing history found the right interests more often (69.8% vs. 56.3% confirmed); social-media posts said more about each one.'
+    draft: true
+  themes: [interest-identification, grounding]
+
+- id: interact-2023-everyday-inspired-movies
+  factsNumber: 3
+  type: conference
+  authors: ['Kulkarni, A.', 'Powell, L.', 'Murphy, S.', 'Rao, N.', 'Chu, S. L.']
+  year: 2023
+  title: 'Everyday-Inspired Movies: Towards the Design of Movie Recommender Systems Based on Everyday Life through Personal Social Media'
+  venue: 'IFIP INTERACT 2023'
+  details: 'Springer, pp. 160–169'
+  firstAuthor: false
+
+- id: icalt-2023-context-for-contextualizing
+  factsNumber: 4
+  type: conference
+  authors: ['Rao, N.', 'Li, Q.', 'Murphy, S.', 'Chu, S. L.']
+  year: 2023
+  title: 'The Context for Contextualizing: Design Implications for Adaptive Teacher Support Systems for More Relevant Instruction'
+  venue: 'IEEE ICALT 2023'
+  details: 'pp. 71–73'
+  firstAuthor: true
+  # TODO(jimmy): one-sentence TL;DR (facts.md §6 [4]).
+  themes: [teacher-support]
+
+- id: icalt-2021-visual-efficiency
+  factsNumber: 5
+  type: conference
+  authors: ['Rao, N.', 'Chu, S. L.']
+  year: 2021
+  title: 'Enhancing the Visual Efficiency for Communicating Students’ Personal Relevant Information'
+  venue: 'IEEE ICALT 2021'
+  notes: ['Best Short Paper Nomination']
+  firstAuthor: true
+  # TODO(jimmy): one-sentence TL;DR (facts.md §6 [5]).
+  themes: [teacher-support]
+
+- id: hcii-2021-puppet-system
+  factsNumber: 6
+  type: conference
+  authors: ['Rao, N.', 'Chu, S. L.', 'Chenore, R.']
+  year: 2021
+  title: 'Flexible Low-Cost Digital Puppet System'
+  venue: 'HCI International (HCII 2021)'
+  details: 'Springer LNCS'
+  firstAuthor: true
+  tldr:
+    text: 'A low-cost puppet storytelling system: 3D-printed puppets tracked by a YOLO detector and IMUs, animated live in Unity.'
+    draft: true
+  themes: [embodied-learning]
+
+- id: hcomp-2020-explanation-types
+  factsNumber: 7
+  type: conference
+  authors: ['Li, Q.', 'Chu, S. L.', 'Rao, N.', 'Nourani, M.']
+  year: 2020
+  title: 'Understanding the Effects of Explanation Types and User Motivations on Recommender System Use'
+  venue: 'AAAI HCOMP 2020'
+  firstAuthor: false
+
+- id: chi-2020-self-avatars
+  factsNumber: 8
+  type: conference
+  authors: ['Zarei, N.', 'Chu, S. L.', 'Quek, F.', 'Rao, N. J.', 'Brown, S. A.']
+  year: 2020
+  title: 'Investigating the Effects of Self-Avatars and Story-Relevant Avatars on Children’s Creative Storytelling'
+  venue: 'ACM CHI 2020'
+  firstAuthor: false
+  themes: [embodied-learning]
+
+- id: icids-2019-emotional-priming
+  factsNumber: 9
+  type: conference
+  authors: ['Rao, N.', 'Chu, S. L.', 'Faris, R. W.', 'Ospina, D.']
+  year: 2019
+  title: 'The Effects of Interactive Emotional Priming on Storytelling: An Exploratory Study'
+  venue: 'ICIDS 2019'
+  details: 'Springer, pp. 395–404'
+  firstAuthor: true
+  # TODO(jimmy): one-sentence TL;DR (facts.md §6 [9]).
+  themes: [embodied-learning]
+
+# ── Extended abstracts, posters, workshop papers ───────────────────────────
+- id: dtrue-2026-csudt-framework
+  factsNumber: 10
+  type: extended-abstract
+  authors: ['Rao, N.', 'Verma, J.']
+  year: 2026
+  title: 'A Design Framework for Gamified, LLM-Assisted Crowd-Sourced Urban Digital Twins'
+  venue: 'DTRUE 2026, UF Jacksonville Campus'
+  notes: ['Oral presentation', 'Full paper to appear in EPiC Series in Technology']
+  firstAuthor: true
+  tldr:
+    text: 'A design framework for crowd-sourced urban digital twins, and a flood prototype that confirms an event only when a sensor, a resident, and a social post agree.'
+    draft: true
+  # facts.md §6 [10] and §5.3: VERIFY authors, order and title against the v2 extended abstract.
+  # TODO(jimmy): confirm, then set verify to false so it appears on the site.
+  verify: true
+  themes: [civic-digital-twins]
+
+- id: hcii-2022-information-retrieval
+  factsNumber: 11
+  type: extended-abstract
+  authors: ['Rao, N.', 'Chu, S. L.', 'Jing, Z.', 'Kuang, H.', 'Tang, Y.', 'Dong, Z.']
+  year: 2022
+  title: 'Exploring Information Retrieval for Personalized Teaching Support'
+  venue: 'HCI International 2022 — Late Breaking Posters'
+  details: 'Springer, pp. 191–197'
+  firstAuthor: true
+  # TODO(jimmy): one-sentence TL;DR (facts.md §6 [11]).
+  themes: [teacher-support]
+
+- id: ieeevr-2020-ar-smart-glasses
+  factsNumber: 12
+  type: extended-abstract
+  authors:
+    ['Rao, N.', 'Zhang, L.', 'Chu, S. L.', 'Jurczyk, K.', 'Candelora, C.', 'Su, S.', 'Kozlin, C.']
+  year: 2020
+  title: 'Investigating the Necessity of Meaningful Context Anchoring in Augmented Reality Smart Glasses Interaction for Everyday Learning'
+  venue: 'IEEE VR 2020'
+  notes: ['Workshop paper and poster']
+  firstAuthor: true
+  tldr:
+    text: 'On AR smart glasses, showing information when the learner asked for it led to better learning and task scores; showing it when the camera recognized an object felt more immersive and usable.'
+    draft: true
+  themes: [embodied-learning]
+
+# ── In preparation (D28 "Working papers"): hidden while FLAGS.showWorkingPapers is false ──
+- id: wip-dissertation-synthesis
+  type: in-preparation
+  authors: ['Rao, N.', 'et al.']
+  title: 'Two-study synthesis of the dissertation'
+  venue: 'Target: ACM CHI'
+  firstAuthor: true
+  themes: [interest-identification]
+
+- id: wip-teacher-autonomy-survey
+  type: in-preparation
+  authors: ['Rao, N.']
+  title: 'Teacher autonomy and automation in teacher-support technologies: a survey of 81 studies, updated for 2021–2026 generative-AI systems'
+  venue: 'Target: IEEE TLT'
+  firstAuthor: true
+  themes: [teacher-support]
+# Optional, not listed (facts.md §6): the 2019 Chinese-language paper in 中国数字医学.
+# TODO(jimmy): say whether to add it (D28).

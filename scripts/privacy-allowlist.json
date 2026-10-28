@@ -1,0 +1,17 @@
+[
+  {
+    "file": "migration/cise/HOWTO.md",
+    "fingerprint": "f5b638b3b94ee8ba",
+    "reason": "Placeholder that describes UF's login format, not anyone's address."
+  },
+  {
+    "file": "public/demos/csudt/csudt_dashboard.html",
+    "fingerprint": "28d001dabf52c7cf",
+    "reason": "Public address of the UF Jacksonville campus (the DTRUE 2026 venue) in the simulated demo; not a personal address. The demo files are not edited (S1 step 6)."
+  },
+  {
+    "file": "content/qa-library.yaml",
+    "fingerprint": "214e7446ccf3a2ee",
+    "reason": "Draft note telling the session not to include such details; the answer is still needs-jimmy."
+  }
+]

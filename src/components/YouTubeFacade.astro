@@ -1,0 +1,177 @@
+---
+// Click-to-load YouTube facade (CLAUDE.md: never an autoplaying iframe). Nothing is requested
+// from YouTube until the visitor clicks; then the player loads from youtube-nocookie.com.
+// Without JavaScript the link simply opens the video on YouTube.
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import { watchUrl } from '../lib/youtube.ts';
+
+interface Props {
+  id: string;
+  title: string;
+  start?: number;
+  channel?: string;
+  /** A local image (processed by Astro). Without one the facade shows a plain poster. */
+  poster?: ImageMetadata | null;
+}
+
+const { id, title, start, channel, poster } = Astro.props;
+const startLabel = start
+  ? `starts at ${Math.floor(start / 60)}:${String(start % 60).padStart(2, '0')}`
+  : null;
+const meta = ['YouTube', channel ? `${channel} channel` : null, startLabel]
+  .filter(Boolean)
+  .join(' · ');
+---
+
+<yt-facade class="yt-facade" data-id={id} data-start={start} data-title={title}>
+  <a class="yt-facade__link" href={watchUrl(id, start)}>
+    <span class="yt-facade__media">
+      {poster ? (
+        <Image
+          class="yt-facade__poster"
+          src={poster}
+          alt=""
+          widths={[480, 960]}
+          sizes="(min-width: 48rem) 42rem, 100vw"
+        />
+      ) : (
+        <span class="yt-facade__poster yt-facade__poster--plain" />
+      )}
+      <span class="yt-facade__play" aria-hidden="true">
+        <svg viewBox="0 0 68 48" width="68" height="48">
+          <path
+            d="M66.5 7.7a8.5 8.5 0 0 0-6-6C55.2 0 34 0 34 0S12.8 0 7.5 1.7a8.5 8.5 0 0 0-6 6C0 13 0 24 0 24s0 11 1.5 16.3a8.5 8.5 0 0 0 6 6C12.8 48 34 48 34 48s21.2 0 26.5-1.7a8.5 8.5 0 0 0 6-6C68 35 68 24 68 24s0-11-1.5-16.3Z"
+            fill="#c00"
+          ></path>
+          <path d="M45 24 27 14v20" fill="#fff"></path>
+        </svg>
+      </span>
+    </span>
+    <span class="yt-facade__caption">
+      <span class="yt-facade__title">Play video: {title}</span>{' '}
+      <span class="yt-facade__meta">({meta})</span>
+    </span>
+  </a>
+</yt-facade>
+
+<script>
+  class YouTubeFacade extends HTMLElement {
+    connectedCallback() {
+      const link = this.querySelector<HTMLAnchorElement>('a');
+      const id = this.dataset.id ?? '';
+      if (!link || !/^[A-Za-z0-9_-]{11}$/.test(id)) return;
+      link.addEventListener('click', (event) => {
+        // Let modified clicks open YouTube in a new tab as usual.
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        // Keyboard activation reports detail 0: keep the focus ring on the player only then.
+        this.toggleAttribute('data-kbd', event.detail === 0);
+        const params = new URLSearchParams({ autoplay: '1', rel: '0' });
+        const start = Number(this.dataset.start);
+        if (Number.isInteger(start) && start > 0) params.set('start', String(start));
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube-nocookie.com/embed/${id}?${params}`;
+        iframe.title = this.dataset.title ?? 'YouTube video';
+        iframe.allow =
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+        iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+        iframe.allowFullscreen = true;
+        iframe.className = 'yt-facade__frame';
+        link.replaceWith(iframe);
+        iframe.focus();
+      });
+    }
+  }
+  if (!customElements.get('yt-facade')) customElements.define('yt-facade', YouTubeFacade);
+</script>
+
+<style is:global>
+  /* The 16:9 box holds only the poster and the play button; the caption sits below it, so a
+     long title never covers the thumbnail. The player takes the same 16:9 box. */
+  .yt-facade {
+    display: block;
+    max-width: 42rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+  }
+
+  .yt-facade__media {
+    display: block;
+    position: relative;
+    aspect-ratio: 16 / 9;
+  }
+
+  .yt-facade__frame {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 0;
+  }
+
+  .yt-facade__link {
+    display: block;
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .yt-facade__poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .yt-facade__poster--plain {
+    background: linear-gradient(135deg, var(--color-surface), var(--color-bg));
+  }
+
+  .yt-facade__play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.9;
+  }
+
+  .yt-facade__link:hover .yt-facade__play,
+  .yt-facade__link:focus-visible .yt-facade__play {
+    opacity: 1;
+  }
+
+  /* The poster covers the link's own outline and overflow: hidden clips the iframe's, so the
+     focus ring goes on the container: for the keyboard-focused link, and for the player when it
+     was opened from the keyboard. Mouse and touch users get no ring, as elsewhere. */
+  .yt-facade:has(.yt-facade__link:focus-visible),
+  .yt-facade[data-kbd]:focus-within {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .yt-facade__link:focus-visible,
+  .yt-facade__frame:focus-visible {
+    outline: none;
+  }
+
+  .yt-facade__caption {
+    display: grid;
+    gap: 2px;
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--color-rule);
+    background: var(--color-bg);
+    font-size: var(--text-sm);
+  }
+
+  .yt-facade__title {
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  .yt-facade__meta {
+    color: var(--color-text-muted);
+  }
+</style>

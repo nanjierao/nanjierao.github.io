@@ -1,0 +1,35 @@
+---
+// Talks (facts.md §11): dated talks with time-aware wording (D26), then first-author
+// presentations grouped by venue.
+import TimeAware from './TimeAware.astro';
+import { getTalks } from '../lib/content.ts';
+import { formatDayRange } from '../lib/format.ts';
+
+const talks = await getTalks();
+const dated = talks.filter((talk) => talk.startDate && talk.wording);
+const presentations = talks.filter((talk) => talk.kind === 'first-author-presentation');
+const byVenue = [...new Set(presentations.map((talk) => talk.event))].map((event) => {
+  const years = presentations
+    .filter((talk) => talk.event === event)
+    .map((talk) => talk.year)
+    .sort((a, b) => a - b);
+  return `${event} (${years.join(', ')})`;
+});
+---
+
+<ul class="section-list">
+  {dated.map((talk) => (
+    <li>
+      <TimeAware
+        start={talk.startDate!}
+        end={talk.endDate}
+        timeZone={talk.timeZone}
+        upcoming={talk.wording!.upcoming}
+        ongoing={talk.wording!.ongoing}
+        past={talk.wording!.past}
+      />
+      {talk.location && `, ${talk.location}`}, {formatDayRange(talk.startDate!, talk.endDate)}.
+    </li>
+  ))}
+  <li>First-author presentations: {byVenue.join('; ')}.</li>
+</ul>

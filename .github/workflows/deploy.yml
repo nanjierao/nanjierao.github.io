@@ -1,0 +1,94 @@
+# Build, check and publish https://nanjierao.github.io (the official Astro → GitHub Pages path:
+# withastro/action + actions/deploy-pages, versions from the Astro docs).
+#
+# - Push to main: check, build, deploy. Merging a pull request publishes the site.
+# - Pull requests: the same checks and build, no deploy.
+# - Weekly schedule: rebuild and redeploy only, to refresh "Recent" (GitHub activity, latest
+#   video) and time-aware wording (D26, D50). GitHub pauses schedules after 60 days without
+#   repository activity; nothing breaks if it does.
+# - No step ever commits to the repository (D40).
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 9 * * 1' # Mondays 09:17 UTC
+
+permissions:
+  contents: read
+
+# Pull requests are keyed by number, so a fork's "main" branch can't join (or cancel) the
+# production group. A running production deploy is never cancelled; a newer run replaces one
+# that is still waiting.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('pages-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          # Nothing later needs git credentials; don't leave the token in .git/config.
+          persist-credentials: false
+
+      - name: Set up Node
+        id: node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check (astro check + tsc)
+        run: npm run check
+
+      - name: Lint and formatting
+        run: npm run lint
+
+      - name: Unit and content tests
+        run: npm run test
+
+      - name: Privacy check (repository)
+        run: npm run check:privacy -- --repo
+
+      # Fetch GitHub activity and the YouTube feed here: only this step gets the read-only token
+      # in its environment (checkout doesn't persist it), not the dependency installs.
+      - name: Fetch GitHub activity and the latest video
+        run: npm run fetch:external
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Installs, builds (keeping the data fetched above), runs the privacy check on dist/
+      # (npm postbuild) and uploads the Pages artifact.
+      - name: Build and upload the site
+        uses: withastro/action@v6
+        with:
+          # The action sets up Node itself; use the same version as the checks (.nvmrc).
+          node-version: ${{ steps.node.outputs.node-version }}
+        env:
+          EXTERNAL_DATA: keep
+
+  deploy:
+    # Only main deploys: pull requests and runs started by hand on other branches just build.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

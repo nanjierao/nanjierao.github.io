@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PublicationList from '../components/PublicationList.astro';
+import { ELSEWHERE } from '../data/site.ts';
+import { getPublications, getWorkingPapers } from '../lib/content.ts';
+
+const publications = await getPublications();
+const conference = publications.filter((pub) => pub.type === 'conference');
+const extended = publications.filter((pub) => pub.type === 'extended-abstract');
+const workingPapers = await getWorkingPapers();
+const scholar = ELSEWHERE.find((link) => link.id === 'scholar')!;
+---
+
+<BaseLayout
+  title="Publications"
+  description="Peer-reviewed publications by Nanjie Rao: conference papers, extended abstracts, posters and workshop papers."
+>
+  <h1>Publications</h1>
+  <p class="lede">
+    Peer-reviewed work, newest first. My name is in bold. Citation counts are on{' '}
+    <a href={scholar.href}>Google Scholar</a>.
+  </p>
+
+  <section aria-labelledby="pubs-conference">
+    <h2 id="pubs-conference">Refereed conference papers</h2>
+    <PublicationList publications={conference} />
+  </section>
+
+  <section aria-labelledby="pubs-extended">
+    <h2 id="pubs-extended">Extended abstracts, posters, and workshop papers</h2>
+    <PublicationList publications={extended} />
+  </section>
+
+  {workingPapers.length > 0 && (
+    <section aria-labelledby="pubs-working">
+      <h2 id="pubs-working">Working papers</h2>
+      <PublicationList publications={workingPapers} />
+    </section>
+  )}
+</BaseLayout>

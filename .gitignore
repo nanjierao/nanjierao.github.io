@@ -1,0 +1,29 @@
+# Dependencies and build output
+node_modules/
+dist/
+.astro/
+
+# Data fetched during the build (GitHub activity, YouTube feed); never committed (D40, D50)
+src/generated/
+
+# Cloudflare Worker local state and secrets (never commit keys)
+.wrangler/
+.dev.vars
+.env*
+!.env.example
+
+# Test and audit output
+playwright-report/
+test-results/
+blob-report/
+coverage/
+lighthouse-*/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Git worktrees that Claude Code sessions create for parallel work
+.claude/worktrees/

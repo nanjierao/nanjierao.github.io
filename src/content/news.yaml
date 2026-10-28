@@ -1,0 +1,32 @@
+# Dated news for "Recent" on the homepage (newest first by date; the homepage shows three).
+# Dates are only as precise as content/facts.md. Time-aware items (D26) use `event`.
+
+- id: dtrue-2026
+  date: '2026-11-19'
+  event:
+    start: '2026-11-19'
+    end: '2026-11-20'
+    timeZone: America/New_York
+    upcoming: 'Upcoming oral presentation at DTRUE 2026 (UF Jacksonville campus, Nov 19–20, 2026): our design framework and flood prototype for crowd-sourced urban digital twins.'
+    ongoing: 'Oral presentation at DTRUE 2026 (UF Jacksonville campus, Nov 19–20, 2026): our design framework and flood prototype for crowd-sourced urban digital twins.'
+    past: 'Presented at DTRUE 2026 (UF Jacksonville campus, Nov 19–20, 2026): our design framework and flood prototype for crowd-sourced urban digital twins.'
+  link: { href: /research/civic-digital-twins/, label: Civic digital twins }
+  facts: ['5.3', '11']
+
+- id: oral-defense
+  date: '2026-10'
+  text: 'Passed my oral defense. Dissertation: Toward Scalable Interest-Based Learning: Comparing Data Sources for AI-Based Automated Identification of Students’ Personal Interests.'
+  link: { href: /research/interest-identification/, label: Interest identification }
+  facts: ['2', '4']
+
+- id: icids-2026
+  date: '2026'
+  text: 'Full paper accepted at ICIDS 2026: Hands as Narrators, on how writers return to recorded hand enactments while writing a story.'
+  link: { href: /research/embodied-learning/, label: Embodied and creative learning }
+  facts: ['5.4', '6']
+
+- id: icalt-2026
+  date: '2026'
+  text: 'Full paper at IEEE ICALT 2026 comparing interest extraction from browsing history and social-media posts: students confirmed 69.8% of the interests found in their browsing history and 56.3% of those found in their posts.'
+  link: { href: /research/interest-identification/, label: Interest identification }
+  facts: ['5.1', '6']

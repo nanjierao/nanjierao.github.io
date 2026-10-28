@@ -1,0 +1,47 @@
+---
+// Latest YouTube video (D50), read from the channel's RSS feed at build time. Hidden when the
+// feed was unavailable. The thumbnail and the title each follow a FLAGS switch (D54: both on).
+import { ELSEWHERE, FLAGS } from '../data/site.ts';
+import { getGeneratedImage } from '../lib/external.ts';
+import type { ExternalData } from '../lib/external-types.ts';
+import { formatDay, isoDay } from '../lib/format.ts';
+import YouTubeFacade from './YouTubeFacade.astro';
+
+interface Props {
+  youtube: NonNullable<ExternalData['youtube']>;
+}
+
+const { latest, thumbnail } = Astro.props.youtube;
+const poster = FLAGS.showLatestVideoThumbnail ? getGeneratedImage(thumbnail) : null;
+const channel = ELSEWHERE.find((link) => link.id === 'youtube');
+// D54: the title shows while its flag is on (fetch-external.ts already filtered it).
+const title = FLAGS.showLatestVideoTitle && latest.title ? latest.title : 'Latest video on YouTube';
+---
+
+<p class="latest-video__title">
+  <a href={latest.url}>{title}</a>{' '}
+  <span class="muted small">
+    · <time datetime={isoDay(latest.published)}>{formatDay(latest.published)}</time>
+  </span>
+</p>
+<YouTubeFacade id={latest.id} title={title} poster={poster} />
+{channel && (
+  <p class="small latest-video__more">
+    <a href={channel.href}>More on YouTube</a>
+  </p>
+)}
+
+<style>
+  .latest-video__title {
+    margin-bottom: var(--space-3);
+  }
+
+  .latest-video__more {
+    margin: var(--space-3) 0 0;
+  }
+
+  .latest-video__more a {
+    display: inline-block;
+    padding-block: var(--space-2);
+  }
+</style>

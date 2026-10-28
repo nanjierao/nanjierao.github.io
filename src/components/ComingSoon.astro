@@ -1,0 +1,31 @@
+---
+// Placeholder for the three portals (S5–S7). Kept out of search engines and the sitemap.
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} noindex>
+  <p class="eyebrow">Coming soon</p>
+  <h1>{title}</h1>
+  <div class="prose">
+    <p class="lede">{description}</p>
+    <p>This part of the site is still being built. Meanwhile:</p>
+    <ul>
+      <li>
+        <a href="/research/">Research</a>
+      </li>
+      <li>
+        <a href="/builds/">Builds</a>
+      </li>
+      <li>
+        <a href="/publications/">Publications</a>
+      </li>
+    </ul>
+  </div>
+</BaseLayout>

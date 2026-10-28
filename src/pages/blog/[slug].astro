@@ -1,0 +1,95 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, type Post } from '../../lib/content.ts';
+import { formatDay, isoDay } from '../../lib/format.ts';
+
+export const getStaticPaths = (async () => {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const { title, title_en, summary_en, date, lang, zhihu_url, tags } = post.data;
+const { Content } = await render(post);
+---
+
+<BaseLayout title={title_en} description={summary_en} ogType="article">
+  <article class="post">
+    <header class="post__header">
+      <p class="breadcrumb">
+        <a href="/blog/">Blog</a>
+      </p>
+      <h1>{title_en}</h1>
+      <p class="post__summary">
+        <span class="post__summary-label">In English:</span>
+        {summary_en}
+      </p>
+      <p class="muted small">
+        <time datetime={isoDay(date)}>{formatDay(date)}</time>
+        {' · '}Written in Chinese · <a href={zhihu_url}>Original on Zhihu</a>
+      </p>
+      {tags.length > 0 && (
+        <ul class="tag-list" aria-label="Tags">
+          {tags.map((tag) => (
+            <li>{tag}</li>
+          ))}
+        </ul>
+      )}
+    </header>
+
+    <div class="post__body prose" lang={lang}>
+      <p class="post__title-zh">{title}</p>
+      <Content />
+    </div>
+
+    <footer class="post__footer">
+      <p>
+        <a href={zhihu_url} lang="zh-CN">
+          在知乎阅读原文并参与讨论
+        </a>
+        <span class="muted"> (Read and discuss the original on Zhihu.)</span>
+      </p>
+    </footer>
+  </article>
+</BaseLayout>
+
+<style>
+  .post__header {
+    max-width: var(--measure);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-rule);
+    margin-bottom: var(--space-5);
+  }
+
+  .post__summary {
+    font-size: var(--text-lg);
+  }
+
+  .post__summary-label {
+    font-weight: 600;
+  }
+
+  .post__title-zh {
+    margin: 0 0 var(--space-5);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    line-height: var(--leading-tight);
+  }
+
+  .post__body :global(img) {
+    border-radius: var(--radius);
+  }
+
+  .post__footer {
+    max-width: var(--measure);
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-rule);
+  }
+</style>
