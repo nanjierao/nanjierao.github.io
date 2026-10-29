@@ -13,6 +13,12 @@
   link: { href: /research/civic-digital-twins/, label: Civic digital twins }
   facts: ['5.3', '11']
 
+- id: academic-revision-checklist
+  date: '2026-10-29'
+  text: 'Published academic-revision-checklist, an open checklist for revising academic English: 66 rules and a 16-item quick list from five weeks and more than 60 revision rounds of my dissertation. It also works as a Claude Code skill.'
+  link: { href: /builds/academic-revision-checklist/, label: Academic revision checklist }
+  facts: ['7']
+
 - id: oral-defense
   date: '2026-10'
   text: 'Passed my oral defense. Dissertation: Toward Scalable Interest-Based Learning: Comparing Data Sources for AI-Based Automated Identification of Students’ Personal Interests.'
