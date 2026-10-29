@@ -12,7 +12,7 @@ character:
 stories:
   - id: long-distance-hand
     title: "The Long-Distance Hand"
-    about: { text: "Telepresence robot, ANA Avatar XPRIZE semifinals (2021)", link: /builds/xprize-avatar/ }
+    about: { text: "Telepresence robot, ANA Avatar XPRIZE semifinals (2021)", link: /builds/xprize-avatar-robot/ }
     lines:
       - "Pip wants to shake hands with a friend who lives very far away."
       - "So Pip borrows a robot. When Pip moves, the robot moves."

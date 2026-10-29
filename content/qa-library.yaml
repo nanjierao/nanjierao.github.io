@@ -201,7 +201,7 @@ items:
       Miami (September 2021), among 37 teams from 15 countries. When the power converter failed
       the night before testing, he re-scoped the robot to keep the scored manipulation task. The
       team reached the semifinals.
-    sources: [/builds/xprize-avatar/]
+    sources: [/builds/xprize-avatar-robot/]
     audience: [industry, general]
     status: ready
   - id: llm-skills
