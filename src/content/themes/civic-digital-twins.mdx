@@ -1,0 +1,79 @@
+---
+title: 'Civic AI: crowd-sourced urban digital twins'
+context: civic
+order: 3
+summary: Our design framework for gamified, LLM-assisted crowd-sourced urban digital twins, and a flood prototype for Jacksonville that confirms an event when three channels agree.
+facts: ['5.3']
+publications: [dtrue-2026-csudt-framework]
+builds: [cs-udt]
+# This work is coauthored (D46). The author list, order and title stay off the site until Jimmy
+# checks them against the v2 extended abstract (facts.md §5.3, §6 [10] VERIFY).
+# TODO(jimmy): verify, then name the coauthor here.
+# facts.md §5.3 says "Everything in the demo is labeled SIMULATED", but the demo labels its
+# station locations and the phone's sensors as real; the page uses the narrower wording.
+# TODO(jimmy): correct that sentence in facts.md §5.3.
+---
+
+import DimensionGrid from '../../components/figures/DimensionGrid.astro';
+import Figure from '../../components/figures/Figure.astro';
+import Flow from '../../components/figures/Flow.astro';
+import ReplayTimeline from '../../components/figures/ReplayTimeline.astro';
+
+This work is coauthored.
+
+## Sense–Engage–Govern
+
+A design framework for gamified, LLM-assisted crowd-sourced urban digital twins. It has three
+tiers and six dimensions, each a spectrum with a named tension, plus a privacy boundary. It draws
+on value-sensitive design, contextual integrity, and self-determination theory.
+
+<Figure title="Six design dimensions, each a spectrum with a named tension">
+  <DimensionGrid />
+</Figure>
+
+## CS-UDT: a flood prototype for Jacksonville
+
+Residents take part from a zero-install browser client, so they need no app. An LLM pipeline
+parses citizen reports and social posts into hazard events, and a convergence rule decides what
+counts as confirmed:
+
+<Figure title="How the prototype confirms a flood event">
+  <Flow
+    label="How the prototype confirms a flood event"
+    steps={[
+      {
+        title: 'Three channels',
+        items: ['Official sensor anomaly', 'Citizen report', 'Social post'],
+      },
+      {
+        title: 'Matched by place',
+        items: [{ term: 'The same map cell' }],
+      },
+      {
+        title: 'What happens',
+        items: [
+          {
+            term: 'Two channels agree',
+            detail: 'nearby residents get a one-tap verification quest',
+          },
+          { term: 'All three agree', detail: 'the event is confirmed' },
+        ],
+      },
+    ]}
+  />
+</Figure>
+
+<Figure
+  title="Simulated replay modeled on Hurricane Irma (Sep 10–12, 2017)"
+  note="At the storm’s peak: four confirmed cells and three open quests. The replay is simulated and all community content is synthetic."
+>
+  <ReplayTimeline />
+</Figure>
+
+[Open the CS-UDT demo](/demos/csudt/) (simulated data).
+
+## Where it appears
+
+- Oral presentation: DTRUE 2026, UF Jacksonville campus, Nov 19–20, 2026 (coauthored extended
+  abstract).
+- Full paper: EPiC Series in Technology (to appear).

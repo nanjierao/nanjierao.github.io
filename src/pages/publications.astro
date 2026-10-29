@@ -1,6 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PublicationList from '../components/PublicationList.astro';
+import Figure from '../components/figures/Figure.astro';
+import PubTimeline from '../components/figures/PubTimeline.astro';
+import Stats from '../components/figures/Stats.astro';
 import { ELSEWHERE } from '../data/site.ts';
 import { getPublications, getWorkingPapers } from '../lib/content.ts';
 
@@ -9,6 +12,19 @@ const conference = publications.filter((pub) => pub.type === 'conference');
 const extended = publications.filter((pub) => pub.type === 'extended-abstract');
 const workingPapers = await getWorkingPapers();
 const scholar = ELSEWHERE.find((link) => link.id === 'scholar')!;
+// Counted from the listed items and labeled that way: facts.md §6 has 12, but DTRUE 2026 [10]
+// stays hidden while it is marked VERIFY. TODO(jimmy): verify it and the counts include it.
+const published = [...conference, ...extended];
+const years = published.map((pub) => pub.year!);
+const stats = [
+  { value: String(published.length), label: 'peer-reviewed publications listed below' },
+  {
+    value: String(published.filter((pub) => pub.firstAuthor).length),
+    label: 'of them first-authored',
+  },
+  { value: String(new Set(published.map((pub) => pub.venueShort)).size), label: 'venues' },
+  { value: `${Math.min(...years)}–${Math.max(...years)}`, label: 'years' },
+];
 ---
 
 <BaseLayout
@@ -20,6 +36,12 @@ const scholar = ELSEWHERE.find((link) => link.id === 'scholar')!;
     Peer-reviewed work, newest first. My name is in bold. Citation counts are on{' '}
     <a href={scholar.href}>Google Scholar</a>.
   </p>
+
+  <Stats stats={stats} />
+
+  <Figure title="Publications by year and venue">
+    <PubTimeline publications={published} />
+  </Figure>
 
   <section aria-labelledby="pubs-conference">
     <h2 id="pubs-conference">Refereed conference papers</h2>

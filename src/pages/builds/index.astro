@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BuildCard from '../../components/BuildCard.astro';
+import BuildMatrix from '../../components/figures/BuildMatrix.astro';
+import Figure from '../../components/figures/Figure.astro';
 import RepoList from '../../components/RepoList.astro';
 import { getBuilds } from '../../lib/content.ts';
 import { getExternalData } from '../../lib/external.ts';
@@ -18,6 +20,10 @@ const external = getExternalData();
     Systems I have built or helped build across software and hardware, from study platforms and LLM
     pipelines to puppets, AR glasses apps and a humanoid telepresence robot.
   </p>
+
+  <Figure title="At a glance: what each build involved">
+    <BuildMatrix builds={builds} />
+  </Figure>
 
   <section aria-labelledby="builds-heading">
     <h2 id="builds-heading" class="visually-hidden">

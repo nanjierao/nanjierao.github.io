@@ -1,6 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Stats from '../components/figures/Stats.astro';
 import { EARLIER_TEACHING, TEACHING_ASSISTANT, TEACHING_INTERESTS } from '../data/cv.ts';
+
+// facts.md §8.
+const stats = [
+  { value: 'about 150', label: 'students across my COP 3530 discussion sections (Fall 2026)' },
+  { value: '2', label: 'graduate courses co-taught: HCI and Research Methods' },
+];
 ---
 
 <BaseLayout
@@ -12,15 +19,31 @@ import { EARLIER_TEACHING, TEACHING_ASSISTANT, TEACHING_INTERESTS } from '../dat
     {TEACHING_ASSISTANT.role}, {TEACHING_ASSISTANT.where}, {TEACHING_ASSISTANT.when}.
   </p>
 
+  <Stats stats={stats} />
+
   <section aria-labelledby="uf-heading">
     <h2 id="uf-heading">University of Florida</h2>
-    <ul class="section-list">
-      {TEACHING_ASSISTANT.items.map((item) => (
-        <li>
-          <strong>{item.course}.</strong> {item.details}
-        </li>
-      ))}
-    </ul>
+    <div class="table-wrap teaching-table">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Course</th>
+            <th scope="col">Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          {TEACHING_ASSISTANT.items.map((item) => (
+            <tr>
+              <th scope="row">
+                {item.course}
+                {item.term && <span class="teaching-table__term">{item.term}</span>}
+              </th>
+              <td>{item.details}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <section aria-labelledby="earlier-heading">
@@ -34,10 +57,32 @@ import { EARLIER_TEACHING, TEACHING_ASSISTANT, TEACHING_INTERESTS } from '../dat
 
   <section aria-labelledby="interests-heading">
     <h2 id="interests-heading">Teaching interests</h2>
-    <ul class="section-list">
+    <ul class="tag-list teaching-interests">
       {TEACHING_INTERESTS.map((item) => (
         <li>{item}</li>
       ))}
     </ul>
   </section>
 </BaseLayout>
+
+<style>
+  .teaching-table {
+    max-width: 56rem;
+  }
+
+  .teaching-table th[scope='row'] {
+    width: 40%;
+  }
+
+  .teaching-table__term {
+    display: block;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  .teaching-interests li {
+    font-size: var(--text-base);
+    padding: var(--space-1) var(--space-3);
+    color: var(--color-text);
+  }
+</style>

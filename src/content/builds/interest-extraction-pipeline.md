@@ -9,6 +9,7 @@ datasheet:
   - { label: Prompting, value: 'Five-step extraction prompt; no cross-call retention' }
   - { label: Use, value: 'Used by 77 participants' }
 tags: [LLM pipeline, study platform]
+areas: [ai, web, study]
 themes: [interest-identification, grounding]
 facts: ['7', '5.1']
 # TODO(jimmy): a diagram of the pipeline (facts.md §7 media).

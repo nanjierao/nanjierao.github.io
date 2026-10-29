@@ -1,0 +1,53 @@
+---
+// Key numbers as large figures with a short label. A description list: the label is the term,
+// the number its value; CSS shows the number first.
+import type { Stat } from '../../data/figures.ts';
+
+interface Props {
+  stats: Stat[];
+}
+
+const { stats } = Astro.props;
+---
+
+<dl class="stats">
+  {stats.map((stat) => (
+    <div class="stats__item">
+      <dt class="stats__label">{stat.label}</dt>
+      <dd class="stats__value">{stat.value}</dd>
+    </div>
+  ))}
+</dl>
+
+<style>
+  .stats {
+    display: grid;
+    gap: var(--space-3) var(--space-5);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+    margin: var(--space-4) 0 var(--space-5);
+  }
+
+  .stats__item {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    padding-top: var(--space-2);
+    border-top: 3px solid var(--color-series-a);
+  }
+
+  .stats__value {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: clamp(1.6rem, 1.3rem + 1vw, 2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stats__label {
+    margin-top: var(--space-1);
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    color: var(--color-text-muted);
+  }
+</style>

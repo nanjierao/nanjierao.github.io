@@ -1,0 +1,62 @@
+---
+title: Embodied and creative learning
+context: embodied
+order: 4
+summary: Hand enactment, puppets, avatars and AR glasses in storytelling and everyday learning, and the systems I built or helped build along the way.
+facts: ['5.4', '7']
+publications:
+  [
+    icids-2026-hands-as-narrators,
+    hcii-2021-puppet-system,
+    icids-2019-emotional-priming,
+    chi-2020-self-avatars,
+    ieeevr-2020-ar-smart-glasses,
+  ]
+builds: [gaze-log-platform, puppet-system, ar-smart-glasses, xprize-avatar-robot]
+---
+
+import Stats from '../../components/figures/Stats.astro';
+
+## Hands as Narrators (ICIDS 2026)
+
+A full paper on how writers use hand enactment in story writing. I built a remote web platform
+that logged every video scrub and keystroke alongside a WebGazer.js gaze stream, for a two-part
+study.
+
+<Stats
+  stats={[
+    { value: '24', label: 'participants' },
+    { value: 'about ¼', label: 'of writing time went to returning to recorded hand enactments' },
+    { value: '4', label: 'strategies the paper describes' },
+    { value: '5', label: 'behaviorally inferred reasons' },
+  ]}
+/>
+
+The paper ends with design implications for authoring tools.
+
+## Puppets, avatars and emotion in storytelling
+
+- A flexible, low-cost digital puppet system, built for the NSF project _To Enact, To Tell, To
+  Write_ (HCII 2021). See the [puppet system build](/builds/puppet-system/).
+- Interactive emotional priming and storytelling: an exploratory study (ICIDS 2019).
+- Self-avatars and story-relevant avatars in children’s creative storytelling (ACM CHI 2020,
+  co-author).
+
+## AR smart glasses for everyday learning (IEEE VR 2020)
+
+A Latin-square, within-subjects study with 25 participants compared two ways for the glasses to
+show information. See the [AR smart-glasses build](/builds/ar-smart-glasses/).
+
+<div class="table-wrap">
+
+| Display shown on…                  | Produced                        |
+| ---------------------------------- | ------------------------------- |
+| spoken request (speech-triggered)  | better learning and task scores |
+| object detection (object-anchored) | higher immersion and usability  |
+
+</div>
+
+## A humanoid telepresence robot
+
+I was the on-site leader of Team Limitless, whose humanoid telepresence robot reached the
+semifinals of the ANA Avatar XPRIZE in 2021. See the [robot build](/builds/xprize-avatar-robot/).

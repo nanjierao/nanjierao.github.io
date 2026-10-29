@@ -39,8 +39,11 @@ function readMarkdown(path: string): { data: unknown; body: string } {
 
 function markdownDir(dir: string): Array<{ id: string; data: unknown; body: string }> {
   return readdirSync(join(CONTENT, dir))
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => ({ id: name.replace(/\.md$/, ''), ...readMarkdown(join(CONTENT, dir, name)) }));
+    .filter((name) => /\.mdx?$/.test(name))
+    .map((name) => ({
+      id: name.replace(/\.mdx?$/, ''),
+      ...readMarkdown(join(CONTENT, dir, name)),
+    }));
 }
 
 const publications = z.array(publicationSchema).parse(readYaml('publications.yaml'));

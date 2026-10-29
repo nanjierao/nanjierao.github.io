@@ -11,6 +11,7 @@ datasheet:
   - { label: Evaluation, value: 'Perception study with 23 MTurk workers' }
   - { label: Deployment, value: 'Supported on site with elementary-school teachers' }
 tags: [Unity, computer vision, IMU, 3D printing]
+areas: [sensing, spatial, hardware, study]
 video: { id: OX2zRUeDojg, title: Unity puppet storytelling system }
 # TODO(jimmy): confirm whose hands hold the puppets in this photo (D31, D53).
 images:

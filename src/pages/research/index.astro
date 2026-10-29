@@ -1,5 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Figure from '../../components/figures/Figure.astro';
+import Flow from '../../components/figures/Flow.astro';
 import { UMBRELLA } from '../../data/site.ts';
 import { CONTEXT_LABELS } from '../../content/schemas.ts';
 import { getThemesByContext } from '../../lib/content.ts';
@@ -12,7 +14,32 @@ const contexts = await getThemesByContext();
   description="Research overview: where an AI system’s knowledge of a person should come from, in personal, embodied and civic contexts."
 >
   <h1>Research</h1>
-  <p class="lede">{UMBRELLA}</p>
+  <p class="visually-hidden">{UMBRELLA}</p>
+
+  <div class="research-map">
+    <Figure title="The question behind the work">
+      <Flow
+        label="The question behind the work"
+        steps={[
+          {
+            title: 'An AI system that adapts to a person first needs to know something about them',
+            items: [
+              { term: 'By asking', detail: 'what the person tells it' },
+              { term: 'By reading records', detail: 'what the person already produced' },
+            ],
+          },
+          {
+            title: 'My research asks',
+            items: [
+              { term: 'Which to rely on?' },
+              { term: 'How accurate and well grounded is the result?' },
+              { term: 'What does it cost in privacy?' },
+            ],
+          },
+        ]}
+      />
+    </Figure>
+  </div>
   <p class="prose">
     The work falls under three contexts: personal (what systems learn about a student or user),
     embodied (learning through hands, puppets, avatars and devices), and civic (crowd-sourced urban
@@ -55,3 +82,9 @@ const contexts = await getThemesByContext();
     </section>
   ))}
 </BaseLayout>
+
+<style>
+  .research-map {
+    max-width: 48rem;
+  }
+</style>

@@ -9,6 +9,7 @@ datasheet:
   - { label: Robot, value: 'Humanoid robot driven over Wi-Fi' }
   - { label: Recognition, value: 'Outstanding Thesis Award (top 1% of undergraduates), HUST' }
 tags: [robotics, Kinect]
+areas: [sensing, spatial]
 themes: []
 facts: ['7', '4']
 # TODO(jimmy): media (facts.md §7).

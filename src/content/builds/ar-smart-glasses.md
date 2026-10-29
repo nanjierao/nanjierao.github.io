@@ -9,6 +9,7 @@ datasheet:
   - { label: Study, value: 'N = 25' }
   - { label: Reliability, value: '92.9% inter-rater agreement on task performance' }
 tags: [AR, Android, study]
+areas: [sensing, spatial, study]
 video: { id: 9AHrOjfYdMc, title: AR smart-glasses apps }
 themes: [embodied-learning]
 facts: ['7', '5.4']

@@ -37,6 +37,8 @@ Shipped or used to build pages (also on `/credits`):
 | `@fontsource-variable/inter`, `@fontsource-variable/source-serif-4`, `@fontsource/ibm-plex-mono` | 5.3.0, 5.3.1, 5.3.0 | OFL-1.1 | Self-hosted fonts (SITE_PLAN §8 baseline). |
 | `fast-xml-parser` | 5.11.2 | MIT | Parses the YouTube RSS feed in the build script. |
 | `sharp` | 0.35.5 | Apache-2.0 | Already Astro's image service; declared so the privacy check can read image metadata (EXIF/XMP/IPTC). |
+| `d3-cloud` (+ its `d3-dispatch` 1.0.6, BSD-3-Clause) | 1.2.9 | BSD-3-Clause | Homepage word cloud (visual pass, 28 Oct 2026): about 4 KB gzipped, loaded only on `/`. Places the same links the page already has, so the cloud stays keyboard- and screen-reader-friendly. |
+| `@astrojs/mdx` | 8.1.1 | MIT | Research pages are MDX so figures can sit inside the text. Official Astro integration. |
 
 Development and CI only (never reach visitors):
 
@@ -49,9 +51,21 @@ Development and CI only (never reach visitors):
 | `vitest` | 5.0.5 | MIT | Unit and content tests. |
 | `@playwright/test` | 1.64.1 | Apache-2.0 | End-to-end tests (uses the session's pre-installed Chromium when present). |
 | `@axe-core/playwright` (+ `axe-core`) | 4.14.0 | **MPL-2.0** | Accessibility checks; requested by name in the S1 prompt. MPL-2.0 is OSI-approved file-level copyleft; it is a dev dependency and nothing of it is shipped or modified. |
-| `yaml` | 2.9.1 | ISC | Reads content YAML in the content tests. |
+| `yaml` | 2.9.1 | ISC | Reads content YAML in the content tests and `content/wordcloud.yaml` at build time. |
+| `@types/d3-cloud` | 1.2.9 | MIT | Types for the word-cloud script. |
 
 Compared and not used:
+
+- **Charts and diagrams (visual pass, 28 Oct 2026).** Observable Plot 0.6 (ISC) renders good
+  SVG but needs a DOM shim to run at build time and draws at fixed pixel sizes; Chart.js 4
+  (MIT) draws on a canvas in the browser (about 70 KB gzipped, and a canvas is opaque to
+  screen readers); Mermaid (MIT) is heavy and its diagrams don't take the site's tokens. The
+  figures here are a handful of bars, splits and flows, so `src/components/figures/` renders
+  them as plain HTML and CSS at build time: no JavaScript, text a screen reader can read,
+  light and dark from the same tokens, and layouts that reflow on a phone.
+- **Word cloud.** `wordcloud` (wordcloud2.js, MIT) draws on a canvas, so its words aren't links
+  a keyboard can reach; `TagCloud` (MIT) spins a 3D sphere that moves on its own. `d3-cloud`
+  only computes positions, which lets the page place its own links.
 
 - **YouTube facade.** `lite-youtube-embed` 0.3.4 (Apache-2.0) and `@justinribeiro/lite-youtube`
   1.9.0 (MIT) both load the poster from `i.ytimg.com` as soon as the page renders, and the first

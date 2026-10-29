@@ -55,6 +55,7 @@ export const STATUS = {
 
 export interface TeachingItem {
   course: string;
+  term?: string;
   details: string;
 }
 
@@ -65,12 +66,14 @@ export const TEACHING_ASSISTANT = {
   when: 'Aug 2018 – present',
   items: [
     {
-      course: 'COP 3530 Data Structures & Algorithms (Fall 2026)',
+      course: 'COP 3530 Data Structures & Algorithms',
+      term: 'Fall 2026',
       details:
         'Weekly discussion sections for about 150 students in total; office hours in person and on Zoom at the same time.',
     },
     {
-      course: 'CIS 4360 Computer & Information Security (Spring 2026)',
+      course: 'CIS 4360 Computer & Information Security',
+      term: 'Spring 2026',
       details: 'Grading cycles; built a Canvas API gradebook workflow.',
     },
     {
@@ -135,5 +138,86 @@ export const SKILLS: Array<{ area: string; items: string }> = [
     area: 'Software and hardware',
     items:
       'TypeScript/JavaScript (React), Node.js, Flask, Java/Android, C/C++, C#; Docker Compose, Git; microcontrollers (TI, micro:bit, Jetson), PCB CAD, FPGA, soldering, 3D printing',
+  },
+];
+
+export interface TimelineItem {
+  label: string;
+  /** "YYYY" or "YYYY-MM". */
+  start: string;
+  /** Same format, or "present" (the build date); leave out for a single point in time. */
+  end?: string;
+  /** The dates as text, as facts.md gives them. */
+  when: string;
+}
+
+/** The CV timeline (facts.md §4, §7–§10). Dates only as precise as facts.md. */
+export const TIMELINE: Array<{ group: string; items: TimelineItem[] }> = [
+  {
+    group: 'Education',
+    items: [
+      { label: 'Bachelor’s degree, HUST', start: '2012-09', end: '2016-06', when: '2012–2016' },
+      {
+        label: 'Electrical engineering coursework, University of Houston',
+        start: '2016-08',
+        end: '2016-12',
+        when: '2016',
+      },
+      {
+        label: 'Electrical engineering coursework, Texas A&M',
+        start: '2017-01',
+        end: '2018-05',
+        when: '2017–2018',
+      },
+      {
+        label: 'Ph.D., Human-Centered Computing, UF',
+        start: '2018-08',
+        end: '2026-12',
+        when: '2018–2026',
+      },
+    ],
+  },
+  {
+    group: 'Teaching',
+    items: [
+      {
+        label: 'Tutor: English, mathematics, science',
+        start: '2012',
+        end: '2016',
+        when: '2012–2016',
+      },
+      {
+        label: 'Teaching assistant, UF CISE',
+        start: '2018-08',
+        end: 'present',
+        when: '2018–present',
+      },
+    ],
+  },
+  {
+    group: 'Building and leading',
+    items: [
+      {
+        label: 'Founder and team lead, Galaxy Studio',
+        start: '2012',
+        end: '2016',
+        when: '2012–2016',
+      },
+      { label: 'ANA Avatar XPRIZE semifinalist', start: '2021-09', when: '2021' },
+      { label: 'Internship, The Teaching Lab', start: '2022', when: '2022' },
+    ],
+  },
+  {
+    group: 'Honors',
+    items: [
+      { label: 'Outstanding Thesis Award (top 1%), HUST', start: '2016', when: '2016' },
+      { label: 'Best Short Paper Nomination, IEEE ICALT', start: '2021', when: '2021' },
+      {
+        label: 'CISE Gartner Group Graduate Fellowship, four times',
+        start: '2021',
+        end: '2024',
+        when: '2021–2024',
+      },
+    ],
   },
 ];

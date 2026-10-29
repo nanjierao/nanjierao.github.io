@@ -139,6 +139,10 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   Accessibility 100, Best Practices ≥ 95, SEO 100; ≤ 50 KB gzipped JS; LCP < 2.0 s; CLS < 0.05.
   Demo pages may exceed the JS budget but must lazy-load it.
 - Videos as click-to-load YouTube facades on youtube-nocookie.com, never autoplaying iframes.
+- Prefer a figure or a table to a paragraph of numbers (D59). Figures are build-time HTML/CSS
+  components in `src/components/figures/` (no JavaScript); research pages are MDX so figures
+  sit in the text. Figure numbers live in `src/data/figures.ts`, and tests check that every
+  number a figure, theme page or word-cloud blurb shows is in `content/facts.md`.
 
 ## Images and media (D31)
 

@@ -1,0 +1,134 @@
+---
+// A left-to-right diagram of steps (top-to-bottom on a phone). Each step is a box with a title
+// and a short list; the arrows between steps are drawn in CSS and hidden from screen readers,
+// which read the steps as an ordered list.
+export interface FlowItem {
+  term: string;
+  detail?: string;
+}
+
+export interface FlowStep {
+  title: string;
+  items: Array<string | FlowItem>;
+  note?: string;
+}
+
+interface Props {
+  steps: FlowStep[];
+  /** Accessible name for the list, e.g. "From sources to measures". */
+  label: string;
+}
+
+const { steps, label } = Astro.props;
+const item = (entry: string | FlowItem): FlowItem =>
+  typeof entry === 'string' ? { term: entry } : entry;
+---
+
+<ol class="flow" aria-label={label} style={`--steps: ${steps.length}`}>
+  {steps.map((step) => (
+    <li class="flow__step">
+      <p class="flow__title">{step.title}</p>
+      <ul class="flow__items">
+        {step.items.map((entry) => {
+          const { term, detail } = item(entry);
+          return (
+            <li class="flow__item">
+              <span class="flow__term">{term}</span>
+              {detail && <span class="flow__detail">{detail}</span>}
+            </li>
+          );
+        })}
+      </ul>
+      {step.note && <p class="flow__note">{step.note}</p>}
+    </li>
+  ))}
+</ol>
+
+<style>
+  .flow {
+    --arrow: 1.75rem;
+    display: grid;
+    gap: var(--arrow);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 40rem) {
+    .flow {
+      grid-template-columns: repeat(var(--steps), minmax(0, 1fr));
+    }
+  }
+
+  .flow__step {
+    position: relative;
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-rule);
+    border-top: 3px solid var(--color-series-a);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+  }
+
+  /* Arrow to the next step: below on a phone, to the right on wider screens. */
+  .flow__step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: calc(-1 * var(--arrow) + 0.35rem);
+    width: 0.7rem;
+    height: 0.7rem;
+    border-right: 2px solid var(--color-text-muted);
+    border-bottom: 2px solid var(--color-text-muted);
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  @media (min-width: 40rem) {
+    .flow__step:not(:last-child)::after {
+      left: auto;
+      right: calc(-1 * var(--arrow) + 0.45rem);
+      bottom: auto;
+      top: 50%;
+      transform: translateY(-50%) rotate(-45deg);
+    }
+  }
+
+  .flow__title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    color: var(--color-text-muted);
+  }
+
+  .flow__items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .flow__item {
+    margin: 0 0 var(--space-2);
+    line-height: 1.35;
+  }
+
+  .flow__item:last-child {
+    margin-bottom: 0;
+  }
+
+  .flow__term {
+    font-weight: 600;
+  }
+
+  .flow__detail {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .flow__note {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+</style>

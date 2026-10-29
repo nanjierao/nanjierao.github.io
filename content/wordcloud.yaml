@@ -1,48 +1,53 @@
-# Homepage word cloud — DRAFT for Jimmy to edit.
-# weight: 1 (small) … 5 (largest). portal: hands (left, technical) | ask (middle, research) | life (right, life & learning)
-# blurb: ≤ 15 words, shown on hover/focus; must be true per content/facts.md. link: page it opens.
+# Homepage word cloud (D03, D04). Jimmy edits freely; the build checks the rest.
+# weight: 1 (small) … 5 (largest). portal: ask (research) | hands (building and sensing) |
+# life (teaching and life). The portal names match the planned homepage portals (SITE_PLAN §4).
+# blurb: ≤ 15 words, shown on hover or focus; must be true per content/facts.md. Leave it out
+# rather than write a TODO. link: a page on this site that exists today (tests check both).
+# Held back until facts.md supports them:
+#   "progress, not perfection" (a line from the dissertation's acknowledgments): TODO(jimmy) add
+#     it to facts.md if you want it here.
+#   "your interests" → /life/: returns when the Life & You portal exists (S7).
+# ballroom dancing and soccer have no blurb yet: TODO(jimmy) one line each, if you like.
 words:
-  # ── Research core (ask) ───────────────────────────────────────────────
-  - { text: "interest-based learning", weight: 5, portal: ask,  link: /research/interest-identification/, blurb: "Teaching through what each learner already cares about — my dissertation's starting point." }
-  - { text: "LLM tutors",              weight: 4, portal: ask,  link: /research/interest-identification/, blurb: "What an AI tutor must know about a student, and where it comes from." }
-  - { text: "asking vs. reading records", weight: 4, portal: ask, link: /research/interest-identification/, blurb: "Ask the learner, or read the traces they already leave? I compared both." }
-  - { text: "browsing history",        weight: 3, portal: ask,  link: /research/interest-identification/, blurb: "Highest precision source in my ICALT 2026 study: 69.8% of proposed interests confirmed." }
-  - { text: "social media posts",      weight: 3, portal: ask,  link: /research/interest-identification/, blurb: "Carried more grounded detail per confirmed interest than browsing history." }
-  - { text: "Accuracy · Depth · Richness · Phase", weight: 3, portal: ask, link: /research/interest-identification/, blurb: "The four constructs my dissertation uses to judge interest identification." }
-  - { text: "grounded vs. inferred",   weight: 4, portal: ask,  link: /research/grounding/, blurb: "Checking each claim a model makes about a person against that person's own data." }
-  - { text: "privacy by design",       weight: 3, portal: ask,  link: /research/interest-identification/, blurb: "Self-curation, sensitive-content filtering, non-retention — built into my study pipeline." }
-  - { text: "urban digital twins",     weight: 3, portal: ask,  link: /research/civic-digital-twins/, blurb: "A design framework and flood prototype, oral talk at DTRUE 2026." }
-  - { text: "crowd-sourced sensing",   weight: 2, portal: ask,  link: /demos/csudt/, blurb: "Sensors, residents, and posts must agree before a flood event is confirmed." }
-  - { text: "teacher support tools",   weight: 2, portal: ask,  link: /research/teacher-support/, blurb: "A survey of 81 studies on teacher autonomy vs. automation." }
-  - { text: "recommender explanations", weight: 1, portal: ask, link: /publications/, blurb: "How explanation types and motivations shape recommender use (AAAI HCOMP 2020)." }
-  - { text: "HCI",                     weight: 5, portal: ask,  link: /research/, blurb: "Ph.D. in Human-Centered Computing, University of Florida (December 2026)." }
-  - { text: "mixed methods",           weight: 2, portal: ask,  link: /research/, blurb: "Qualitative coding with a second coder, plus GEE, bootstrap, and jackknife." }
-  - { text: "coding schemes",          weight: 2, portal: ask,  link: /research/interest-identification/, blurb: "28 codes in four categories measure what a tutor learns about an interest." }
-  - { text: "four-phase interest model", weight: 2, portal: ask, link: /research/interest-identification/, blurb: "Hidi & Renninger (2006), behind my Phase construct: from situational to individual interest." }
-  # ── Building & sensing (hands) ────────────────────────────────────────
-  - { text: "hand enactment",          weight: 4, portal: hands, link: /hands/, blurb: "How writers return to recorded hand performances (ICIDS 2026, N = 24)." }
-  - { text: "idea reuptake",           weight: 2, portal: hands, link: /research/embodied-learning/, blurb: "Our term (ICIDS 2026) for how storytellers fold hand-enacted ideas back into writing." }
-  - { text: "embodied cognition",      weight: 2, portal: hands, link: /research/embodied-learning/, blurb: "With distributed cognition, the lens behind my hand-enactment study (ICIDS 2026)." }
-  - { text: "digital puppets",         weight: 4, portal: hands, link: /builds/puppet-system/, blurb: "NSF-funded, low-cost puppet storytelling system for classrooms (HCII 2021)." }
-  - { text: "motion tracking",         weight: 3, portal: hands, link: /hands/, blurb: "YOLO vision plus IMU sensors streaming into Unity in real time." }
-  - { text: "eye tracking",            weight: 3, portal: hands, link: /builds/, blurb: "Webcam gaze (WebGazer.js) and Tobii Pro Glasses 3 in my studies." }
-  - { text: "AR smart glasses",        weight: 3, portal: hands, link: /builds/ar-smart-glasses/, blurb: "Two Vuzix Blade apps, compared in a 25-person study (IEEE VR 2020)." }
-  - { text: "telepresence robot",      weight: 3, portal: hands, link: /builds/xprize-avatar/, blurb: "On-site team lead, ANA Avatar XPRIZE semifinals, 2021." }
-  - { text: "activity recognition",    weight: 2, portal: hands, link: /builds/, blurb: "Recognizing soldering and breadboarding from first-person gaze video." }
-  - { text: "Unity 3D",                weight: 2, portal: hands, link: /builds/puppet-system/, blurb: "Real-time puppet animation driven by external tracking." }
-  - { text: "Kinect",                  weight: 1, portal: hands, link: /builds/, blurb: "Undergraduate thesis: a humanoid robot imitating human actions." }
-  - { text: "FPGA",                    weight: 1, portal: hands, link: /cv/, blurb: "Electrical-engineering training before HCI." }
-  - { text: "soldering",               weight: 2, portal: hands, link: /builds/, blurb: "The lab's go-to person for hardware assembly." }
-  - { text: "PCB design",              weight: 1, portal: hands, link: /cv/, blurb: "Hardware design from my optical and electrical engineering B.S." }
-  - { text: "wearables",               weight: 2, portal: hands, link: /builds/, blurb: "A wearable baby thermometer, later commercialized and sold in the U.S." }
-  - { text: "3D printing",             weight: 1, portal: hands, link: /builds/puppet-system/, blurb: "3D-printed puppets tracked by vision and IMUs." }
-  # ── Life & learning (life) ───────────────────────────────────────────
-  - { text: "teaching data structures", weight: 3, portal: life, link: /teaching/, blurb: "Leading COP 3530 discussion sections for about 150 students." }
-  - { text: "office hours",            weight: 2, portal: life, link: /teaching/, blurb: "In person and on Zoom at the same time." }
-  - { text: "after-school English",    weight: 1, portal: life, link: /teaching/, blurb: "Taught six elementary-school students for a year and a half." }
-  - { text: "Go (weiqi)",              weight: 3, portal: life, link: /life/, blurb: "Certified rank-2 master, on a board with about 2 × 10¹⁷⁰ legal positions." }  # Tromp (2016), legal 19×19 positions
-  - { text: "ballroom dancing",        weight: 2, portal: life, link: /life/, blurb: "TODO(jimmy): one line." }
-  - { text: "soccer",                  weight: 2, portal: life, link: /life/, blurb: "TODO(jimmy): one line." }
-  - { text: "Galaxy Studio",           weight: 2, portal: life, link: /builds/, blurb: "Student hardware studio I founded at HUST: 8 national awards." }
-  - { text: "progress, not perfection", weight: 3, portal: life, link: /life/, blurb: "A line from my dissertation's acknowledgments." }
-  - { text: "your interests",          weight: 4, portal: life, link: /life/, blurb: "Try it: see what an AI tutor would learn about you — with your consent." }
+  # ── Research (ask) ────────────────────────────────────────────────────
+  - { text: 'interest-based learning', weight: 5, portal: ask, link: /research/interest-identification/, blurb: 'Teaching through what each learner already cares about: my dissertation’s starting point.' }
+  - { text: 'LLM tutors', weight: 4, portal: ask, link: /research/interest-identification/, blurb: 'What an AI tutor must know about a student, and where it comes from.' }
+  - { text: 'asking vs. reading records', weight: 4, portal: ask, link: /research/interest-identification/, blurb: 'Ask the learner, or read the records they already produce? I compared both.' }
+  - { text: 'browsing history', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'Higher precision than posts in my ICALT 2026 study: 69.8% of its interests confirmed.' }
+  - { text: 'social media posts', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'Carried more grounded detail per confirmed interest than browsing history.' }
+  - { text: 'Accuracy · Depth · Richness · Phase', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'The four constructs my dissertation uses to judge interest identification.' }
+  - { text: 'grounded vs. inferred', weight: 4, portal: ask, link: /research/grounding/, blurb: 'Checking each claim a model makes about a person against their own material.' }
+  - { text: 'privacy by design', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'Self-curation, sensitive-content filtering and non-retention, built into my study protocol.' }
+  - { text: 'urban digital twins', weight: 3, portal: ask, link: /research/civic-digital-twins/, blurb: 'A design framework and a flood prototype; oral presentation at DTRUE 2026.' }
+  - { text: 'crowd-sourced sensing', weight: 2, portal: ask, link: /demos/csudt/, blurb: 'Sensors, residents and posts must agree before a flood event is confirmed.' }
+  - { text: 'teacher support tools', weight: 2, portal: ask, link: /research/teacher-support/, blurb: 'Three teacher-facing papers: IEEE ICALT 2021, HCII 2022, IEEE ICALT 2023.' }
+  - { text: 'recommender explanations', weight: 1, portal: ask, link: /publications/, blurb: 'How explanation types and user motivations shape recommender use (AAAI HCOMP 2020).' }
+  - { text: 'HCI', weight: 5, portal: ask, link: /research/, blurb: 'Ph.D., Human-Centered Computing, University of Florida, December 2026.' }
+  - { text: 'mixed methods', weight: 2, portal: ask, link: /research/, blurb: 'Qualitative coding with a second coder, plus GEE, bootstrap and jackknife.' }
+  - { text: 'coding schemes', weight: 2, portal: ask, link: /research/interest-identification/, blurb: '28 codes in four categories measure what a tutor learns about an interest.' }
+  - { text: 'interest phases', weight: 2, portal: ask, link: /research/interest-identification/, blurb: 'My Phase construct: where an interest is in its development, situational or individual.' }
+  # ── Building and sensing (hands) ──────────────────────────────────────
+  - { text: 'hand enactment', weight: 4, portal: hands, link: /research/embodied-learning/, blurb: 'How writers return to recorded hand enactments (ICIDS 2026, N = 24).' }
+  - { text: 'idea reuptake', weight: 2, portal: hands, link: /research/embodied-learning/, blurb: 'Hands as Narrators (ICIDS 2026) characterizes idea reuptake from hand enactment.' }
+  - { text: 'embodied learning', weight: 2, portal: hands, link: /research/embodied-learning/, blurb: 'Hands, puppets, avatars and AR glasses in storytelling and everyday learning.' }
+  - { text: 'digital puppets', weight: 4, portal: hands, link: /builds/puppet-system/, blurb: 'A low-cost digital puppet system for an NSF storytelling project (HCII 2021).' }
+  - { text: 'motion tracking', weight: 3, portal: hands, link: /builds/puppet-system/, blurb: 'YOLO vision plus IMU sensors driving puppets in Unity in real time.' }
+  - { text: 'eye tracking', weight: 3, portal: hands, link: /builds/gaze-log-platform/, blurb: 'Webcam gaze (WebGazer.js) and Tobii Pro Glasses 3 in my builds.' }
+  - { text: 'AR smart glasses', weight: 3, portal: hands, link: /builds/ar-smart-glasses/, blurb: 'Two Vuzix Blade apps, compared in a 25-person study (IEEE VR 2020).' }
+  - { text: 'telepresence robot', weight: 3, portal: hands, link: /builds/xprize-avatar-robot/, blurb: 'On-site leader of Team Limitless, ANA Avatar XPRIZE semifinalist (2021).' }
+  - { text: 'activity recognition', weight: 2, portal: hands, link: /builds/cte-activity-recognition/, blurb: 'Breadboarding and soldering filmed with Tobii glasses; GPT-4o summarized activities from frames.' }
+  - { text: 'Unity 3D', weight: 2, portal: hands, link: /builds/puppet-system/, blurb: 'Real-time puppet animation driven by external tracking.' }
+  - { text: 'Kinect', weight: 1, portal: hands, link: /builds/robot-imitation-thesis/, blurb: 'Undergraduate thesis: a humanoid robot imitating human actions.' }
+  - { text: 'FPGA', weight: 1, portal: hands, link: /cv/, blurb: 'Part of my hardware toolkit, with PCB CAD and microcontrollers.' }
+  - { text: 'soldering', weight: 2, portal: hands, link: /builds/, blurb: 'Hands-on hardware: soldering, PCB CAD and 3D printing.' }
+  - { text: 'PCB design', weight: 1, portal: hands, link: /cv/, blurb: 'PCB CAD, part of my hardware toolkit.' }
+  - { text: 'wearables', weight: 2, portal: hands, link: /builds/baby-thermometer/, blurb: 'A wearable baby thermometer, later commercialized and sold in the U.S.' }
+  - { text: '3D printing', weight: 1, portal: hands, link: /builds/puppet-system/, blurb: '3D-printed puppets tracked by vision and IMUs.' }
+  # ── Teaching and life (life) ──────────────────────────────────────────
+  - { text: 'teaching data structures', weight: 3, portal: life, link: /teaching/, blurb: 'COP 3530 discussion sections for about 150 students in total (Fall 2026).' }
+  - { text: 'office hours', weight: 2, portal: life, link: /teaching/, blurb: 'In person and on Zoom at the same time.' }
+  - { text: 'after-school English', weight: 1, portal: life, link: /teaching/, blurb: 'Taught a class of six elementary-school students for a year and a half.' }
+  - { text: 'Go (weiqi)', weight: 3, portal: life, link: /about/, blurb: 'Certified rank-2 master.' }
+  - { text: 'ballroom dancing', weight: 2, portal: life, link: /about/ }
+  - { text: 'soccer', weight: 2, portal: life, link: /about/ }
+  - { text: 'Galaxy Studio', weight: 2, portal: life, link: /cv/, blurb: 'The student hardware and software studio I founded at HUST: 8 national awards.' }

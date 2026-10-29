@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import sharp from 'sharp';
+import { parse as parseYaml } from 'yaml';
 
 const PAGES = [
   '/',
@@ -454,5 +455,96 @@ test.describe('CS-UDT phone demo', () => {
     await expect(page.locator('#toast')).toContainText("Couldn't save in this browser");
     await expect(page.locator('#feedList .feeditem').first()).toContainText('@You');
     await expect(page.locator('#feedList .feeditem').first().locator('img')).toHaveCount(1);
+  });
+});
+
+test.describe('homepage word cloud', () => {
+  const words = (
+    parseYaml(readFileSync(new URL('../../content/wordcloud.yaml', import.meta.url), 'utf8')) as {
+      words: Array<{ text: string; blurb?: string }>;
+    }
+  ).words;
+
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1024, height: 768 },
+    { width: 800, height: 900 },
+  ]) {
+    test(`packs every word inside the cloud at ${viewport.width} px`, async ({ page }) => {
+      await isolate(page);
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+      await expect(page.locator('[data-wordcloud]')).toHaveClass(/is-cloud/);
+      const { box, rects } = await page.evaluate(() => {
+        const cloud = document.querySelector('[data-cloud]')!.getBoundingClientRect();
+        return {
+          box: { x: cloud.x, y: cloud.y, right: cloud.right, bottom: cloud.bottom },
+          rects: [...document.querySelectorAll('.wc__word a')].map((link) => {
+            const r = link.getBoundingClientRect();
+            return { text: link.textContent ?? '', x: r.x, y: r.y, w: r.width, h: r.height };
+          }),
+        };
+      });
+      expect(rects).toHaveLength(words.length);
+      for (const r of rects) {
+        expect(r.w, r.text).toBeGreaterThan(0);
+        expect(r.x, r.text).toBeGreaterThanOrEqual(box.x - 1);
+        expect(r.y, r.text).toBeGreaterThanOrEqual(box.y - 1);
+        expect(r.x + r.w, r.text).toBeLessThanOrEqual(box.right + 1);
+        expect(r.y + r.h, r.text).toBeLessThanOrEqual(box.bottom + 1);
+      }
+      // d3-cloud packs glyphs, so link boxes may touch where ascenders and descenders sit, but
+      // every word can still be pointed at: the middle of each word hits that word.
+      const hits = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLAnchorElement>('.wc__word a')].map((link) => {
+          link.scrollIntoView({ block: 'center', behavior: 'instant' });
+          const r = link.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return { text: link.textContent ?? '', ok: Boolean(hit && link.contains(hit)) };
+        }),
+      );
+      for (const { text, ok } of hits) expect(ok, text).toBe(true);
+    });
+  }
+
+  test('keeps three lists of 24 px targets on a phone', async ({ page }) => {
+    await isolate(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator('[data-wordcloud]')).not.toHaveClass(/is-cloud/);
+    await expect(page.locator('.wc__group-title').first()).toBeVisible();
+    for (const link of await page.locator('.wc__word a').all()) {
+      const box = (await link.boundingBox())!;
+      expect(box.height).toBeGreaterThanOrEqual(24);
+      expect(box.x + box.width).toBeLessThanOrEqual(390);
+    }
+  });
+
+  test('shows the blurb on focus and gives it to screen readers', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/');
+    const word = words.find((w) => w.text === 'grounded vs. inferred')!;
+    const link = page.getByRole('link', { name: word.text, exact: true });
+    await expect(link).toHaveAccessibleDescription(word.blurb!);
+    await link.focus();
+    await expect(page.locator('[data-detail]')).toContainText(word.blurb!);
+    await link.blur();
+    await expect(page.locator('[data-detail]')).toContainText('Point at or focus a word');
+  });
+
+  test('is three headed lists of links without JavaScript', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto('/');
+    await expect(page.locator('.wc__group-title')).toHaveText([
+      'Research',
+      'Building and sensing',
+      'Teaching and life',
+    ]);
+    await expect(page.locator('.wc__word a')).toHaveCount(words.length);
+    for (const title of await page.locator('.wc__group-title').all())
+      await expect(title).toBeVisible();
+    await context.close();
   });
 });

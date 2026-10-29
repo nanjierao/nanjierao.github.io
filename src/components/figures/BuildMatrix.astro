@@ -1,0 +1,138 @@
+---
+// Builds × what each involved: a table with one row per build and a dot per area. Column
+// headers are turned on their side so the table fits a phone. Every cell says yes or no in
+// text for screen readers; the dot is decoration.
+import { BUILD_AREAS, BUILD_AREA_LABELS } from '../../content/schemas.ts';
+import type { Build } from '../../lib/content.ts';
+
+interface Props {
+  builds: Build[];
+}
+
+const { builds } = Astro.props;
+---
+
+<div class="matrix-wrap">
+  <table class="matrix">
+    <caption class="visually-hidden">What each build involved</caption>
+    <thead>
+      <tr>
+        <th scope="col" class="matrix__corner">
+          Build
+        </th>
+        {BUILD_AREAS.map((area) => (
+          <th scope="col" class="matrix__area">
+            <span>{BUILD_AREA_LABELS[area]}</span>
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {builds.map((build) => (
+        <tr>
+          <th scope="row" class="matrix__build">
+            <a href={`/builds/${build.id}/`}>{build.data.title}</a>
+            {build.data.when && <span class="matrix__when">{build.data.when}</span>}
+          </th>
+          {BUILD_AREAS.map((area) => {
+            const yes = build.data.areas.includes(area);
+            return (
+              <td class:list={['matrix__cell', { 'matrix__cell--yes': yes }]}>
+                {yes && <span class="matrix__dot" aria-hidden="true" />}
+                <span class="visually-hidden">{yes ? 'yes' : 'no'}</span>
+              </td>
+            );
+          })}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .matrix-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+  }
+
+  .matrix th,
+  .matrix td {
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .matrix__corner {
+    vertical-align: bottom;
+    text-align: left;
+    padding: 0 var(--space-2) var(--space-2) 0;
+    color: var(--color-text-muted);
+  }
+
+  .matrix__area {
+    width: 2.25rem;
+    padding: 0 0 var(--space-2);
+    vertical-align: bottom;
+    border-bottom: 2px solid var(--color-text-muted);
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+
+  .matrix__corner {
+    border-bottom: 2px solid var(--color-text-muted);
+  }
+
+  /* Sideways header text, read bottom to top. */
+  .matrix__area span {
+    display: inline-block;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  @media (min-width: 48rem) {
+    .matrix__area {
+      width: 7rem;
+    }
+
+    .matrix__area span {
+      writing-mode: horizontal-tb;
+      transform: none;
+      white-space: normal;
+    }
+  }
+
+  .matrix__build {
+    padding: var(--space-2) var(--space-3) var(--space-2) 0;
+    text-align: left;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .matrix__when {
+    display: block;
+    color: var(--color-text-muted);
+  }
+
+  .matrix__cell {
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .matrix__cell--yes {
+    background: color-mix(in srgb, var(--color-series-a) 10%, transparent);
+  }
+
+  .matrix__dot {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: var(--color-series-a);
+  }
+</style>

@@ -1,0 +1,87 @@
+---
+// Sense–Engage–Govern's six design dimensions, each drawn as a spectrum, plus the framework's
+// privacy boundary (facts.md §5.3). The poles of each spectrum aren't in facts.md, so the
+// tracks carry no end labels, and the boundary is drawn beside the dimensions, not around them.
+import { SEG_DIMENSIONS } from '../../data/figures.ts';
+---
+
+<div class="dims">
+  <ul class="dims__list">
+    {SEG_DIMENSIONS.map((dimension) => (
+      <li class="dims__item">
+        <span class="dims__name">{dimension}</span>
+        <span class="dims__track" aria-hidden="true"></span>
+      </li>
+    ))}
+  </ul>
+  <p class="dims__boundary">Plus a privacy boundary</p>
+</div>
+
+<style>
+  .dims {
+    margin-top: var(--space-2);
+  }
+
+  .dims__boundary {
+    display: inline-block;
+    margin: var(--space-5) 0 0;
+    padding: var(--space-1) var(--space-3);
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius);
+    font-weight: 600;
+  }
+
+  .dims__list {
+    display: grid;
+    gap: var(--space-4) var(--space-5);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dims__item {
+    margin: 0;
+  }
+
+  .dims__name {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .dims__name::first-letter {
+    text-transform: uppercase;
+  }
+
+  /* A spectrum: a line with an open end on each side. */
+  .dims__track {
+    position: relative;
+    display: block;
+    height: 2px;
+    margin: 0 0.4rem;
+    background: var(--color-series-a);
+  }
+
+  .dims__track::before,
+  .dims__track::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 0.65rem;
+    height: 0.65rem;
+    border: 2px solid var(--color-series-a);
+    border-radius: 50%;
+    background: var(--color-bg);
+    transform: translate(-50%, -50%);
+  }
+
+  .dims__track::before {
+    left: 0;
+  }
+
+  .dims__track::after {
+    left: 100%;
+  }
+</style>

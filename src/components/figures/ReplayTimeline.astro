@@ -1,0 +1,91 @@
+---
+// The CS-UDT replay as a time axis: when the first three-channel confirmation came.
+// facts.md §5.3. Hours only: facts.md doesn't map replay hours to calendar dates.
+import { CSUDT_REPLAY } from '../../data/figures.ts';
+
+const { hours, firstConfirmation } = CSUDT_REPLAY;
+const at = `${((firstConfirmation.value / hours) * 100).toFixed(1)}%`;
+const ticks = [0, 6, 12, 18, 24, 30];
+---
+
+<div class="replay" style={`--at: ${at}`}>
+  <p class="replay__event">
+    First three-channel confirmation: <strong>{firstConfirmation.display} h</strong>
+  </p>
+  <div class="replay__track" aria-hidden="true">
+    <span class="replay__elapsed"></span>
+    <span class="replay__marker"></span>
+  </div>
+  <ol class="replay__ticks" aria-hidden="true">
+    {ticks.map((tick) => (
+      <li style={`left: ${(tick / hours) * 100}%`}>{tick} h</li>
+    ))}
+  </ol>
+  <p class="visually-hidden">Replay length: {hours} hours.</p>
+</div>
+
+<style>
+  .replay {
+    position: relative;
+    padding: 0 0.75rem;
+  }
+
+  .replay__event {
+    position: relative;
+    left: var(--at);
+    width: max-content;
+    max-width: 70%;
+    margin: 0 0 var(--space-2);
+    transform: translateX(-1.1rem);
+    padding-left: 1rem;
+    border-left: 2px solid var(--color-series-a);
+    font-size: var(--text-sm);
+  }
+
+  .replay__track {
+    position: relative;
+    height: 0.9rem;
+    border-radius: 999px;
+    background: var(--color-track);
+  }
+
+  .replay__elapsed {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--at);
+    border-radius: 999px 0 0 999px;
+    background: repeating-linear-gradient(90deg, var(--color-series-a) 0 3px, transparent 3px 6px);
+    opacity: 0.55;
+  }
+
+  .replay__marker {
+    position: absolute;
+    top: 50%;
+    left: var(--at);
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 3px solid var(--color-bg);
+    border-radius: 50%;
+    background: var(--color-series-a);
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 2px var(--color-series-a);
+  }
+
+  .replay__ticks {
+    position: relative;
+    height: 1.5rem;
+    margin: var(--space-1) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .replay__ticks li {
+    position: absolute;
+    margin: 0;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+</style>

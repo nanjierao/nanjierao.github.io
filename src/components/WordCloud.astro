@@ -1,0 +1,421 @@
+---
+// Homepage word cloud (D03, D04; content/wordcloud.yaml). The page ships three headed lists of
+// links, sized by weight: that is the whole cloud without JavaScript, on a phone, and in a
+// screen reader. On wider screens d3-cloud packs the same links into one cloud (no new
+// elements, so focus order and link text stay as they are). Every word stays a 24 px target
+// (WCAG 2.5.8). Each group has its own typeface as well as its own color, and the legend names
+// both. Hover or focus shows a word's blurb below the cloud; screen readers get the blurb as
+// the link's description. Nothing moves on its own.
+import { getCollection } from 'astro:content';
+import { WORD_GROUPS, WORD_GROUP_LABELS } from '../content/schemas.ts';
+
+const words = (await getCollection('words')).map((entry) => entry.data);
+const groups = WORD_GROUPS.map((group) => ({
+  group,
+  label: WORD_GROUP_LABELS[group],
+  // In the order content/wordcloud.yaml gives them, which mixes big and small words.
+  words: words.filter((word) => word.portal === group),
+}));
+const HINT = 'Point at or focus a word to read about it. Each word links to a page.';
+---
+
+<div class="wc" data-wordcloud>
+  <ul class="wc__legend" aria-hidden="true">
+    {groups.map(({ group, label }) => (
+      <li class={`wc__key wc__key--${group}`}>{label}</li>
+    ))}
+  </ul>
+  <div class="wc__cloud" data-cloud>
+    {groups.map(({ group, label, words: list }) => (
+      <div class={`wc__group wc__group--${group}`}>
+        <h3 class="wc__group-title">{label}</h3>
+        <ul class="wc__words">
+          {list.map((word, index) => {
+            const id = `wc-${group}-${index}`;
+            return (
+              <li class="wc__word" data-weight={word.weight}>
+                <a
+                  href={word.link}
+                  aria-describedby={word.blurb ? id : undefined}
+                  data-text={word.text}
+                >
+                  {word.text}
+                </a>
+                {word.blurb && (
+                  <span class="visually-hidden" id={id} data-blurb>
+                    {word.blurb}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ))}
+  </div>
+  <p class="wc__detail" aria-hidden="true" data-detail data-hint={HINT} hidden>
+    {HINT}
+  </p>
+</div>
+
+<script>
+  import cloud from 'd3-cloud';
+
+  interface Placed {
+    text: string;
+    size: number;
+    font: string;
+    weight: string;
+    el: HTMLLIElement;
+    x?: number;
+    y?: number;
+  }
+
+  /** Smallest pointer target, in CSS px (WCAG 2.2, 2.5.8). */
+  const TARGET = 24;
+
+  /** Small seeded generator, so the cloud keeps the same shape on every visit. */
+  function seeded(seed: number): () => number {
+    let state = seed;
+    return () => {
+      state = (state + 0x6d2b79f5) | 0;
+      let t = Math.imul(state ^ (state >>> 15), 1 | state);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function layout(words: Placed[], width: number, height: number): Promise<Placed[]> {
+    return new Promise((resolve) => {
+      cloud<Placed>()
+        .size([width, height])
+        .words(words.map((word) => ({ ...word })))
+        .timeInterval(Infinity)
+        // Room around small words, so every link keeps a 24 px target (WCAG 2.5.8).
+        .padding((word) => Math.max(4, Math.ceil((TARGET - word.size * 0.75) / 2)))
+        .rotate(0)
+        .font((word) => word.font)
+        .fontWeight((word) => word.weight)
+        .fontSize((word) => word.size)
+        .spiral('archimedean')
+        .random(seeded(7))
+        .on('end', (placed) => resolve(placed))
+        .start();
+    });
+  }
+
+  /** Distance from the top of an element's box to its text baseline. */
+  function baselineOffset(el: HTMLElement): number {
+    const probe = document.createElement('span');
+    probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+    el.append(probe);
+    const offset = probe.getBoundingClientRect().top - el.getBoundingClientRect().top;
+    probe.remove();
+    return offset;
+  }
+
+  function reset(root: HTMLElement, box: HTMLElement, items: HTMLLIElement[]): void {
+    root.classList.remove('is-cloud');
+    box.style.removeProperty('height');
+    for (const el of items) {
+      for (const prop of ['font-size', 'left', 'top', 'transform']) el.style.removeProperty(prop);
+    }
+  }
+
+  /** Below this width the words stay in their three lists: a packed cloud can't keep 24 px targets. */
+  const CLOUD_MIN_WIDTH = 600;
+
+  async function draw(root: HTMLElement): Promise<void> {
+    const box = root.querySelector<HTMLElement>('[data-cloud]');
+    if (!box) return;
+    const items = [...box.querySelectorAll<HTMLLIElement>('.wc__word')];
+    reset(root, box, items);
+    const width = box.clientWidth;
+    if (width < CLOUD_MIN_WIDTH) return;
+    // Wide and short on a desktop, squarer on a tablet; type scales with the width.
+    let height = Math.round(
+      width < 960 ? width * 0.62 : Math.max(380, Math.min(520, width * 0.42)),
+    );
+    const min = Math.min(16, Math.max(13, width / 70));
+    const max = Math.min(46, Math.max(26, width / 24));
+
+    let scale = 1;
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const words: Placed[] = items.map((el) => {
+        const link = el.querySelector('a')!;
+        const style = getComputedStyle(link);
+        const weight = Number(el.dataset.weight ?? 1);
+        return {
+          text: link.dataset.text ?? link.textContent ?? '',
+          size: Math.round((min + ((weight - 1) / 4) * (max - min)) * scale),
+          font: style.fontFamily,
+          weight: style.fontWeight,
+          el,
+        };
+      });
+      const placed = await layout(words, width, height);
+      if (placed.length === words.length) {
+        box.style.height = `${height}px`;
+        root.classList.add('is-cloud');
+        for (const word of placed) {
+          const { el } = word;
+          el.style.fontSize = `${word.size}px`;
+          el.style.left = `${width / 2 + (word.x ?? 0)}px`;
+          el.style.top = `${height / 2 + (word.y ?? 0)}px`;
+        }
+        // Positions are baselines: lift each word by its own baseline offset.
+        for (const word of placed) {
+          word.el.style.transform = `translate(-50%, -${baselineOffset(word.el)}px)`;
+        }
+        return;
+      }
+      // Smaller type needs relatively more room around it for its 24 px target, so make the
+      // cloud taller before making the type smaller.
+      if (attempt < 3) height = Math.round(height * 1.1);
+      else scale *= 0.9;
+    }
+    // Some words never fit: keep the plain lists.
+    reset(root, box, items);
+  }
+
+  function describe(root: HTMLElement): void {
+    const detail = root.querySelector<HTMLElement>('[data-detail]');
+    if (!detail) return;
+    // The hint promises hover text, which only exists with JavaScript.
+    detail.hidden = false;
+    const hint = detail.dataset.hint ?? '';
+    const show = (link: HTMLAnchorElement | null) => {
+      if (!link) {
+        detail.textContent = hint;
+        root.removeAttribute('data-active');
+        return;
+      }
+      const blurb = link.parentElement?.querySelector('[data-blurb]')?.textContent;
+      const title = document.createElement('strong');
+      title.textContent = link.dataset.text ?? '';
+      detail.replaceChildren(title, blurb ? `: ${blurb}` : '');
+      root.setAttribute('data-active', '');
+    };
+    const linkOf = (target: EventTarget | null) =>
+      target instanceof Element ? target.closest<HTMLAnchorElement>('.wc__word a') : null;
+    root.addEventListener('pointerover', (event) => {
+      const link = linkOf(event.target);
+      if (link) show(link);
+    });
+    root.addEventListener('pointerleave', () => {
+      show(root.contains(document.activeElement) ? linkOf(document.activeElement) : null);
+    });
+    root.addEventListener('focusin', (event) => show(linkOf(event.target)));
+    root.addEventListener('focusout', (event) => {
+      if (!root.contains(event.relatedTarget as Node | null)) show(null);
+    });
+  }
+
+  async function init(): Promise<void> {
+    const root = document.querySelector<HTMLElement>('[data-wordcloud]');
+    if (!root) return;
+    describe(root);
+    await document.fonts.ready;
+    await draw(root);
+    let lastWidth = root.clientWidth;
+    let timer: number | undefined;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (Math.abs(root.clientWidth - lastWidth) < 24) return;
+        lastWidth = root.clientWidth;
+        void draw(root);
+      }, 200);
+    });
+  }
+
+  void init();
+</script>
+
+<style>
+  .wc {
+    margin: var(--space-5) 0 var(--space-6);
+  }
+
+  .wc__legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2) var(--space-5);
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-sm);
+  }
+
+  .wc__key {
+    margin: 0;
+  }
+
+  .wc__key::before {
+    content: '';
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    margin-right: 0.45em;
+    border-radius: 2px;
+    vertical-align: -0.05em;
+    background: var(--tone);
+  }
+
+  /* Each group: its own color and its own typeface. */
+  .wc__key--ask,
+  .wc__group--ask {
+    --tone: var(--color-series-a);
+    --face: var(--font-serif);
+    --face-weight: 600;
+  }
+
+  .wc__key--hands,
+  .wc__group--hands {
+    --tone: var(--color-series-c);
+    --face: var(--font-mono);
+    --face-weight: 400;
+  }
+
+  .wc__key--life,
+  .wc__group--life {
+    --tone: var(--color-series-b);
+    --face: var(--font-sans);
+    --face-weight: 500;
+  }
+
+  .wc__key {
+    font-family: var(--face);
+    font-weight: var(--face-weight);
+    color: var(--tone);
+  }
+
+  .wc__cloud {
+    position: relative;
+  }
+
+  /* The lists (phone, no JavaScript): three small clouds, centered. */
+  .wc__group-title {
+    margin: var(--space-4) 0 var(--space-1);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+
+  .wc__words {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: 0 var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .wc__word {
+    margin: 0;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+
+  .wc__word[data-weight='1'] {
+    font-size: 0.875rem;
+  }
+
+  .wc__word[data-weight='2'] {
+    font-size: 1rem;
+  }
+
+  .wc__word[data-weight='3'] {
+    font-size: 1.15rem;
+  }
+
+  .wc__word[data-weight='4'] {
+    font-size: 1.35rem;
+  }
+
+  .wc__word[data-weight='5'] {
+    font-size: 1.6rem;
+  }
+
+  /* Every word is at least a 24 px target (WCAG 2.5.8). */
+  .wc__word a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    font-family: var(--face);
+    font-weight: var(--face-weight);
+    color: var(--tone);
+    text-decoration: none;
+    border-radius: 3px;
+  }
+
+  .wc__word a:hover,
+  .wc__word a:focus-visible {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.15em;
+  }
+
+  /* The cloud, once laid out: words placed absolutely, group titles kept for screen readers. */
+  .wc.is-cloud .wc__group-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .wc.is-cloud .wc__word {
+    position: absolute;
+    line-height: 1;
+    animation: wc-in 0.4s ease-out both;
+  }
+
+  /* A box as tall as the type, so neighbouring words' targets don't overlap. */
+  .wc.is-cloud .wc__word a {
+    line-height: 1;
+  }
+
+  @keyframes wc-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* While a word is pointed at or focused, the others step back. */
+  .wc.is-cloud[data-active] .wc__word a {
+    opacity: 0.45;
+    transition: opacity 0.15s;
+  }
+
+  .wc.is-cloud[data-active] .wc__word a:hover,
+  .wc.is-cloud[data-active] .wc__word a:focus-visible {
+    opacity: 1;
+  }
+
+  /* Touch screens open the page on tap, so there is no hover text to show. */
+  @media (hover: none) {
+    .wc__detail[data-detail] {
+      display: none;
+    }
+  }
+
+  .wc__detail {
+    min-height: 3em;
+    margin: var(--space-3) auto 0;
+    max-width: var(--measure);
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .wc__detail strong {
+    color: var(--color-text);
+  }
+</style>

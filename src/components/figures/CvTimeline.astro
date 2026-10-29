@@ -1,0 +1,278 @@
+---
+// The CV as a timeline: one row per item, a bar for a period and a diamond for a single point
+// in time, plus a row of dots for papers per year. Labels and dates are text, so the timeline
+// reads as a list in a screen reader; the bars are decoration.
+import type { TimelineItem } from '../../data/cv.ts';
+import type { Publication } from '../../lib/content.ts';
+
+interface Props {
+  groups: Array<{ group: string; items: TimelineItem[] }>;
+  publications: Publication[];
+  /** The build date: where "present" ends. */
+  now?: Date;
+}
+
+const { groups, publications, now = new Date() } = Astro.props;
+
+/** "2018-08" → the start of August 2018 as a fractional year; "2016" → the start of 2016. */
+function startOf(date: string): number {
+  const [year, month] = date.split('-').map(Number);
+  return year! + (month ? (month - 1) / 12 : 0);
+}
+
+/** The end of the named month or year. */
+function endOf(date: string): number {
+  if (date === 'present') return now.getFullYear() + now.getMonth() / 12;
+  const [year, month] = date.split('-').map(Number);
+  return year! + (month ? month / 12 : 1);
+}
+
+const papers = publications.filter((pub) => pub.year !== undefined);
+const allStarts = groups.flatMap((g) => g.items.map((item) => startOf(item.start)));
+const allEnds = groups.flatMap((g) =>
+  g.items.map((item) => (item.end ? endOf(item.end) : endOf(item.start))),
+);
+const from = Math.floor(Math.min(...allStarts));
+const to = Math.ceil(Math.max(...allEnds, ...papers.map((pub) => pub.year! + 1)));
+const span = to - from;
+const pct = (value: number) => `${(((value - from) / span) * 100).toFixed(2)}%`;
+const ticks = Array.from({ length: Math.floor(span / 2) + 1 }, (_, i) => from + i * 2);
+const papersByYear = Array.from({ length: span }, (_, i) => from + i)
+  .map((year) => ({ year, count: papers.filter((pub) => pub.year === year).length }))
+  .filter(({ count }) => count > 0);
+const groupClass = ['a', 'b', 'c', 'd'];
+---
+
+<div class="cvtl" style={`--span: ${span}`}>
+  <div class="cvtl__axis" aria-hidden="true">
+    <span class="cvtl__axis-label"></span>
+    <span class="cvtl__axis-track">
+      {ticks.map((tick) => (
+        <span
+          class:list={['cvtl__tick', { 'cvtl__tick--minor': (tick - from) % 4 !== 0 }]}
+          style={`left: ${pct(tick)}`}
+        >
+          {tick}
+        </span>
+      ))}
+    </span>
+  </div>
+
+  {groups.map(({ group, items }, index) => (
+    <section class={`cvtl__group cvtl__group--${groupClass[index % groupClass.length]}`}>
+      <p class="cvtl__group-title">{group}</p>
+      <ul class="cvtl__rows">
+        {items.map((item) => {
+          const start = startOf(item.start);
+          const end = item.end ? endOf(item.end) : undefined;
+          return (
+            <li class="cvtl__row">
+              <span class="cvtl__label">
+                {item.label} <span class="cvtl__when">{item.when}</span>
+              </span>
+              <span class="cvtl__track" aria-hidden="true">
+                {end !== undefined ? (
+                  <span
+                    class="cvtl__bar"
+                    style={`left: ${pct(start)}; width: calc(${pct(end)} - ${pct(start)})`}
+                  />
+                ) : (
+                  <span
+                    class="cvtl__point"
+                    style={`left: ${pct(start + (item.start.includes('-') ? 1 / 24 : 0.5))}`}
+                  />
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  ))}
+
+  <section class="cvtl__group">
+    <p class="cvtl__group-title">Publications</p>
+    <ul class="cvtl__rows">
+      <li class="cvtl__row">
+        <span class="cvtl__label">
+          Peer-reviewed papers listed on this site, per year{' '}
+          <span class="cvtl__when">
+            {papersByYear.map(({ year, count }) => `${year}: ${count}`).join(', ')}
+          </span>
+        </span>
+        <span class="cvtl__track" aria-hidden="true">
+          {papersByYear.map(({ year, count }) => (
+            <span class="cvtl__papers" style={`left: ${pct(year + 0.5)}`}>
+              {count}
+            </span>
+          ))}
+        </span>
+      </li>
+    </ul>
+  </section>
+</div>
+
+<style>
+  .cvtl {
+    --label: 0;
+    font-size: var(--text-sm);
+  }
+
+  @media (min-width: 48rem) {
+    .cvtl {
+      --label: 17rem;
+    }
+  }
+
+  .cvtl__axis,
+  .cvtl__row {
+    display: grid;
+    grid-template-columns: var(--label) 1fr;
+    align-items: center;
+  }
+
+  @media (max-width: 47.99rem) {
+    .cvtl__row {
+      grid-template-columns: 1fr;
+    }
+
+    .cvtl__axis {
+      grid-template-columns: 1fr;
+    }
+
+    .cvtl__axis-label {
+      display: none;
+    }
+  }
+
+  .cvtl__axis {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: var(--space-1) 0;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .cvtl__axis-track,
+  .cvtl__track {
+    position: relative;
+    display: block;
+    margin: 0 0.75rem;
+  }
+
+  .cvtl__axis-track {
+    height: 1.4rem;
+  }
+
+  .cvtl__tick {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 47.99rem) {
+    .cvtl__tick--minor {
+      display: none;
+    }
+  }
+
+  .cvtl__group {
+    margin-top: var(--space-3);
+  }
+
+  .cvtl__group-title {
+    margin: 0 0 var(--space-1);
+    font-weight: 650;
+  }
+
+  .cvtl__rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cvtl__row {
+    margin: 0;
+    padding: var(--space-1) 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .cvtl__label {
+    line-height: 1.35;
+    padding-right: var(--space-3);
+  }
+
+  .cvtl__when {
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .cvtl__track {
+    height: 1.2rem;
+    /* A faint line every two years. */
+    background: repeating-linear-gradient(
+      to right,
+      var(--color-rule) 0 1px,
+      transparent 1px calc(200% / var(--span))
+    );
+  }
+
+  @media (max-width: 47.99rem) {
+    .cvtl__track {
+      margin-top: var(--space-1);
+    }
+  }
+
+  .cvtl__bar {
+    position: absolute;
+    top: 0.15rem;
+    bottom: 0.15rem;
+    min-width: 4px;
+    border-radius: 999px;
+    background: var(--tone, var(--color-series-a));
+  }
+
+  .cvtl__point {
+    position: absolute;
+    top: 50%;
+    width: 0.7rem;
+    height: 0.7rem;
+    background: var(--tone, var(--color-series-a));
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  .cvtl__group--a {
+    --tone: var(--color-series-a);
+  }
+
+  .cvtl__group--b {
+    --tone: var(--color-series-b);
+  }
+
+  .cvtl__group--c {
+    --tone: var(--color-series-c);
+  }
+
+  .cvtl__group--d {
+    --tone: var(--color-grounded);
+  }
+
+  /* Papers per year: the count in a small disc at the middle of its year. */
+  .cvtl__papers {
+    position: absolute;
+    top: 50%;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 999px;
+    background: var(--color-text-muted);
+    color: var(--color-bg);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.15rem;
+    text-align: center;
+    transform: translate(-50%, -50%);
+  }
+</style>

@@ -1,5 +1,6 @@
 import { defineCollection } from 'astro:content';
 import { file, glob } from 'astro/loaders';
+import { parse as parseYaml } from 'yaml';
 import {
   blogSchema,
   buildSchema,
@@ -7,10 +8,11 @@ import {
   publicationSchema,
   talkSchema,
   themeSchema,
+  wordSchema,
 } from './content/schemas.ts';
 
 const themes = defineCollection({
-  loader: glob({ base: './src/content/themes', pattern: '*.md' }),
+  loader: glob({ base: './src/content/themes', pattern: '*.{md,mdx}' }),
   schema: themeSchema,
 });
 
@@ -46,4 +48,16 @@ const blog = defineCollection({
   schema: blogSchema,
 });
 
-export const collections = { themes, builds, publications, talks, news, blog };
+// The homepage word cloud lives with the other editable drafts in content/.
+const words = defineCollection({
+  loader: file('content/wordcloud.yaml', {
+    parser: (text) =>
+      (parseYaml(text) as { words: Array<Record<string, unknown>> }).words.map((word, index) => ({
+        id: `word-${index + 1}`,
+        ...word,
+      })),
+  }),
+  schema: wordSchema,
+});
+
+export const collections = { themes, builds, publications, talks, news, blog, words };

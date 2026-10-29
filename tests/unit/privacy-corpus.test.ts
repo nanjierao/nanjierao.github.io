@@ -82,6 +82,7 @@ describe('privacy rules on the labeled corpus', () => {
   it('normalizes idempotently, so match positions do not drift', () => {
     const extra = [
       'I&amp;#39;m; &amp;nbsp; %2540 &#x0040;&#064; ‘’ʼ ‐‑ １３８ ……',
+      '&quot;He&quot; &#34; &#x22; &amp;quot; &#0034; &QUOT; ＆quot;',
       'a b &nbsp;&NBSP; é ’́ ‑́',
     ];
     const texts = [
@@ -105,6 +106,7 @@ describe('privacy rules on the labeled corpus', () => {
     const pieces = [
       ...['&', '#', 'x', 'X', '0', '39', '64', '160', 'a0', 'A0', '820', '8209', '8217', '2019'],
       ...[';', '&rsquo;', '&lsquo;', '&nbsp;', '&apos;', '&amp;', '&hyphen;', '%4', '0', '%40'],
+      ...['&quot;', 'quot', '34', '22', '&#34;', '\r'],
       ...['e', 'I', 'm', "'", '@', '-', '=', '<', ' ', '\n', '\r\n', '我', '…'],
       ...chars(0xad, 0x200b, 0x200c, 0x200d, 0x2060, 0xfeff, 0x00a0, 0x0301, 0x0338),
       ...chars(0x2018, 0x2019, 0x02bc, 0x2010, 0x2011, 0xff11, 0xff06, 0xff03, 0xff1b),
