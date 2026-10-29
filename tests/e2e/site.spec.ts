@@ -99,6 +99,15 @@ test.describe('every page', () => {
         await isolate(page);
         await page.emulateMedia({ colorScheme: scheme });
         await page.goto(path);
+        // Check the page as a visitor sees it once it has settled: the homepage word cloud is
+        // laid out after the fonts load and then fades in for 0.4 s, and axe would otherwise
+        // measure the half-transparent words.
+        await page.waitForFunction(() => {
+          const cloud = document.querySelector('[data-wordcloud]');
+          const box = cloud?.querySelector<HTMLElement>('[data-cloud]');
+          const laidOut = !box || box.clientWidth < 600 || cloud!.classList.contains('is-cloud');
+          return laidOut && document.getAnimations().every((a) => a.playState !== 'running');
+        });
         const results = await new AxeBuilder({ page })
           .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'])
           .analyze();

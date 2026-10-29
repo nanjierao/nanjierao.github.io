@@ -2,8 +2,10 @@
 // to src/generated/ (git-ignored, never committed). Runs before `astro build` (npm `prebuild`).
 //
 // It never fails the build: every source has a timeout, and on any error that source is left
-// empty, so pages fall back quietly (the GitHub section links to the profile; the video card
-// hides). Only counts and HTTP status codes are logged.
+// empty, so pages fall back quietly (the GitHub section links to the profile). YouTube's feed is
+// retried and, if it still fails, the last result that worked (.cache/external/, carried between
+// CI runs) fills the video card; without one the card hides (D62). Only counts, dates and HTTP
+// status codes are logged.
 //
 //   EXTERNAL_DATA=network   (default) fetch from GitHub and YouTube
 //   EXTERNAL_DATA=keep      keep data an earlier step of the same CI job fetched; fetch if none
@@ -22,17 +24,22 @@ import {
   summarizeEvents,
   summarizeRepos,
 } from '../src/lib/github.ts';
-import { YOUTUBE_FEED_URL, parseFeed, thumbnailUrl } from '../src/lib/youtube.ts';
 import type { ExternalData } from '../src/lib/external-types.ts';
 import { FLAGS } from '../src/data/site.ts';
 import { isPublishableVideoTitle } from './lib/privacy-rules.ts';
 import { filterGitHub } from './lib/filter-external.ts';
+import { HttpError } from './lib/fetch-retry.ts';
+import { loadLatestVideo } from './lib/youtube-source.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'src', 'generated');
+/** The last good YouTube result, carried between CI runs by actions/cache (D62); git-ignored. */
+const CACHE_DIR = join(ROOT, '.cache', 'external');
 const FIXTURES = join(ROOT, 'tests', 'fixtures');
 const TIMEOUT_MS = 10_000;
-const MAX_THUMBNAIL_BYTES = 2_000_000;
+// YouTube's feed fails for minutes to hours at a time (D62). In CI, wait 15 s and then 45 s
+// before trying again; locally, where the host may simply be blocked, retry once quickly.
+const RETRY_DELAYS_MS = process.env.CI ? [15_000, 45_000] : [1_000];
 
 type Mode = 'network' | 'keep' | 'fixtures' | 'off';
 const requested = (process.env.EXTERNAL_DATA ?? 'network') as Mode;
@@ -57,7 +64,7 @@ async function get(url: string, accept: string): Promise<Response> {
     delete headers.Authorization;
     response = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
   }
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw new HttpError(response.status);
   return response;
 }
 
@@ -99,52 +106,27 @@ async function loadGitHub(): Promise<ExternalData['github']> {
 }
 
 async function loadYouTube(): Promise<ExternalData['youtube']> {
-  try {
-    const xml =
-      mode === 'fixtures'
-        ? await readFixture('youtube-feed.xml')
-        : await (await get(YOUTUBE_FEED_URL, 'application/atom+xml')).text();
-    const videos = parseFeed(xml);
-    // D54: titles stay off the site unless Jimmy turns them on; then only titles that pass the
-    // §15 rules and the strict family rule, newest first. Without titles, the newest video.
-    const latest = FLAGS.showLatestVideoTitle
-      ? (videos.find((video) => isPublishableVideoTitle(video.title)) ?? null)
-      : (videos[0] ?? null);
-    const skipped = latest ? videos.indexOf(latest) : videos.length;
-    if (skipped > 0) log(`YouTube: skipped ${skipped} newer video(s) by the title filter`);
-    if (!latest) {
-      log('YouTube: no publishable video in the feed; the card stays hidden');
-      return null;
-    }
-    // Keep a title out of the build data entirely while titles are off.
-    const video = FLAGS.showLatestVideoTitle ? latest : { ...latest, title: '' };
-    let thumbnail: string | null = null;
-    if (FLAGS.showLatestVideoThumbnail) thumbnail = await saveThumbnail(latest.id);
-    log(`YouTube: latest video found${thumbnail ? ' with thumbnail' : ''}`);
-    return { latest: video, thumbnail };
-  } catch (error) {
-    log(`YouTube: feed not available (${reason(error)}); the card stays hidden`);
-    return null;
-  }
-}
-
-/** Download the thumbnail so Astro's image pipeline can process it (no hot-linking). */
-async function saveThumbnail(id: string): Promise<string | null> {
-  try {
-    const bytes =
-      mode === 'fixtures'
-        ? await readFile(join(FIXTURES, 'youtube-thumbnail.jpg'))
-        : Buffer.from(await (await get(thumbnailUrl(id), 'image/jpeg')).arrayBuffer());
-    if (bytes.length > MAX_THUMBNAIL_BYTES) throw new Error('thumbnail too large');
-    // Re-encode: proves it is an image and drops any metadata before Astro sees it.
-    const clean = await sharp(bytes).rotate().jpeg({ quality: 85 }).toBuffer();
-    const name = 'latest-video.jpg';
-    await writeFile(join(OUT_DIR, name), clean);
-    return name;
-  } catch (error) {
-    log(`YouTube: thumbnail not available (${reason(error)})`);
-    return null;
-  }
+  const fixtures = mode === 'fixtures';
+  return loadLatestVideo({
+    fetchText: fixtures
+      ? () => readFixture('youtube-feed.xml')
+      : async (url) => (await get(url, 'application/atom+xml')).text(),
+    fetchBytes: fixtures
+      ? () => readFile(join(FIXTURES, 'youtube-thumbnail.jpg'))
+      : async (url) => Buffer.from(await (await get(url, 'image/jpeg')).arrayBuffer()),
+    cleanThumbnail: (bytes) => sharp(bytes).rotate().jpeg({ quality: 85 }).toBuffer(),
+    isPublishableTitle: isPublishableVideoTitle,
+    flags: {
+      showTitle: FLAGS.showLatestVideoTitle,
+      showThumbnail: FLAGS.showLatestVideoThumbnail,
+    },
+    outDir: OUT_DIR,
+    // Fixture builds neither read nor write the cache, so tests stay repeatable.
+    cacheDir: fixtures ? null : CACHE_DIR,
+    now: new Date(),
+    delays: fixtures ? [] : RETRY_DELAYS_MS,
+    log,
+  });
 }
 
 async function main(): Promise<void> {

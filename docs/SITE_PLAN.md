@@ -187,7 +187,7 @@ Full spec and copy: `content/life-portal.md`. Five acts:
 
 ```
 Claude Code cloud session (claude.ai/code) ── pull request + screenshots ──▶ Jimmy merges ──▶
-GitHub: nanjierao/nanjierao.github.io (public) ── Actions: build on merge, by hand, and weekly
+GitHub: nanjierao/nanjierao.github.io (public) ── Actions: build on merge, by hand, twice weekly
     (+ fetch GitHub activity and the YouTube RSS feed) ──▶
 GitHub Pages: https://nanjierao.github.io (static files only)
 
@@ -196,8 +196,9 @@ Visitor's browser ──(only if PUBLIC_API_URL is set)──▶ Cloudflare Work
     /ask · /fit · /interests · /lesson  ──▶ Anthropic Messages API (key = Worker secret)
 ```
 - No server in the site, no secrets in the repository, and no workflow ever commits to `main`.
-  The weekly rebuild only refreshes "Recent"; if GitHub pauses it after 60 quiet days, nothing
-  breaks.
+  The scheduled rebuild (Mondays and Thursdays) only refreshes "Recent"; if GitHub pauses it after
+  60 quiet days, nothing breaks. If YouTube's feed fails during a build, the video card shows the
+  last result that worked (D62).
 - Build-time data (S1): one CI step fetches GitHub activity and the YouTube feed into the
   git-ignored `src/generated/` with the read-only token; the Astro action builds with that data
   (D57). Pull requests run the checks and the build without deploying. The latest-video card

@@ -16,6 +16,7 @@ tests/fixtures/blog/
 /dist/
 /.astro/
 /src/generated/
+/.cache/
 /playwright-report/
 /test-results/
 /package-lock.json

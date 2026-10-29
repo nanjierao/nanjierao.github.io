@@ -1,6 +1,7 @@
 ---
-// Latest YouTube video (D50), read from the channel's RSS feed at build time. Hidden when the
-// feed was unavailable. The thumbnail and the title each follow a FLAGS switch (D54: both on).
+// Latest YouTube video (D50), read from the channel's RSS feed at build time. When the feed is
+// down, the build uses the last result that worked (D62); hidden when there is none, or when no
+// title passes the filters. The thumbnail and the title each follow a FLAGS switch (D54: both on).
 import { ELSEWHERE, FLAGS } from '../data/site.ts';
 import { getGeneratedImage } from '../lib/external.ts';
 import type { ExternalData } from '../lib/external-types.ts';

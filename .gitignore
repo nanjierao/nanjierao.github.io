@@ -5,6 +5,8 @@ dist/
 
 # Data fetched during the build (GitHub activity, YouTube feed); never committed (D40, D50)
 src/generated/
+# The last good YouTube result, carried between CI runs by actions/cache (D62)
+.cache/
 
 # Cloudflare Worker local state and secrets (never commit keys)
 .wrangler/
