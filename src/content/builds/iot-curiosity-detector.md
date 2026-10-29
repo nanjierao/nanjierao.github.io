@@ -1,6 +1,6 @@
 ---
 title: IoT Curiosity Detector for Connected Learning
-order: 10
+order: 11
 summary: 'Hidden until facts.md §7 has a description.'
 datasheet:
   - { label: Status, value: 'Waiting for a description' }

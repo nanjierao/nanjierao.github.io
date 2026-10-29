@@ -1,6 +1,6 @@
 ---
 title: CTE activity recognition for bench electronics
-order: 6
+order: 7
 summary: Breadboarding and soldering recorded with eye-tracking glasses and a GoPro, and a GPT-4o vision stage that summarizes the activities from video frames.
 datasheet:
   - { label: Recording, value: 'Breadboarding and soldering recorded with Tobii Pro Glasses 3 (first-person video + gaze) and a GoPro' }

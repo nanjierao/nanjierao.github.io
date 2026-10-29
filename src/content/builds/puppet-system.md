@@ -1,7 +1,7 @@
 ---
 title: Unity puppet storytelling system
 when: 2018–21
-order: 4
+order: 5
 summary: 3D-printed puppets animated in Unity in real time, built for the NSF project To Enact, To Tell, To Write.
 datasheet:
   - { label: Puppets, value: '3D-printed puppets animated in Unity in real time' }

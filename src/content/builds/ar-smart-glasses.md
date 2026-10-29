@@ -1,7 +1,7 @@
 ---
 title: AR smart-glasses apps
 when: IEEE VR 2020
-order: 5
+order: 6
 summary: Two Android apps for the Vuzix Blade that compared showing information when an object was detected with showing it on spoken request.
 datasheet:
   - { label: Platform, value: 'Two Android apps for Vuzix Blade' }

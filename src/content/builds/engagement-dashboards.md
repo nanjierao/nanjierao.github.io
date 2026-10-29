@@ -1,7 +1,7 @@
 ---
 title: Engagement dashboards — The Teaching Lab (internship)
 when: '2022'
-order: 11
+order: 12
 summary: Two interactive dashboards of student-engagement data for program directors, and a centralized web grading system.
 datasheet:
   - { label: Dashboards, value: 'Two interactive dashboards of student-engagement data for program directors' }

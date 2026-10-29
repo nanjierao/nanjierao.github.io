@@ -45,6 +45,7 @@ words:
   - { text: '3D printing', weight: 1, portal: hands, link: /builds/puppet-system/, blurb: '3D-printed puppets tracked by vision and IMUs.' }
   # ── Teaching and life (life) ──────────────────────────────────────────
   - { text: 'teaching data structures', weight: 3, portal: life, link: /teaching/, blurb: 'COP 3530 discussion sections for about 150 students in total (Fall 2026).' }
+  - { text: 'academic writing', weight: 2, portal: life, link: /builds/academic-revision-checklist/, blurb: '66 rules for revising academic English, from more than 60 revision rounds of my dissertation.' }
   - { text: 'office hours', weight: 2, portal: life, link: /teaching/, blurb: 'In person and on Zoom at the same time.' }
   - { text: 'after-school English', weight: 1, portal: life, link: /teaching/, blurb: 'Taught a class of six elementary-school students for a year and a half.' }
   - { text: 'Go (weiqi)', weight: 3, portal: life, link: /about/, blurb: 'Certified rank-2 master.' }

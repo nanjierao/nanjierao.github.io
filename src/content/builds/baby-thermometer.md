@@ -1,7 +1,7 @@
 ---
 title: Wearable baby thermometer (Galaxy Studio)
 when: 2012–16
-order: 9
+order: 10
 summary: A wearable thermometer, designed and iterated at Galaxy Studio, later commercialized and sold in the U.S.
 datasheet:
   - { label: Studio, value: 'Galaxy Studio, the student hardware/software studio I founded and led at HUST' }

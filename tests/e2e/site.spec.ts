@@ -20,6 +20,7 @@ const PAGES = [
   '/builds/cs-udt/',
   '/builds/interest-extraction-pipeline/',
   '/builds/gaze-log-platform/',
+  '/builds/academic-revision-checklist/',
   '/builds/puppet-system/',
   '/builds/ar-smart-glasses/',
   '/builds/cte-activity-recognition/',

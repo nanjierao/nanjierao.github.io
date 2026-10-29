@@ -1,7 +1,7 @@
 ---
 title: Humanoid telepresence robot — ANA Avatar XPRIZE
 when: Sept 2021
-order: 7
+order: 8
 summary: On-site leader of four-person Team Limitless, whose 300+ lb humanoid telepresence robot was a semifinalist in the ANA Avatar XPRIZE.
 datasheet:
   - { label: Role, value: 'On-site leader of four-person Team Limitless' }

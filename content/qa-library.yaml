@@ -201,7 +201,7 @@ items:
       Miami (September 2021), among 37 teams from 15 countries. When the power converter failed
       the night before testing, he re-scoped the robot to keep the scored manipulation task. The
       team reached the semifinals.
-    sources: [/builds/xprize-avatar/]
+    sources: [/builds/xprize-avatar-robot/]
     audience: [industry, general]
     status: ready
   - id: llm-skills
@@ -215,6 +215,17 @@ items:
     sources: [/builds/, /research/]
     audience: [industry]
     status: ready
+  - id: revision-checklist
+    q: "Has he published anything on academic writing?"
+    a: >-
+      In October 2026 he released academic-revision-checklist, an open checklist for revising
+      academic English for a first-time reader: 66 rules and a 16-item quick list from five weeks
+      and more than 60 revision rounds of his dissertation, plus a Python script that lists
+      candidates for the mechanical checks. It works as a checklist or as a Claude Code skill. The
+      text is CC BY 4.0 and the script MIT.
+    sources: [/builds/academic-revision-checklist/]
+    audience: [faculty, general]
+    status: needs-jimmy
   - id: stack
     q: "What languages and tools does he use?"
     a: >-

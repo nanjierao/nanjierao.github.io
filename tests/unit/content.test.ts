@@ -240,6 +240,7 @@ describe('visible text', () => {
           [
             [b.id, b.data.title],
             [b.id, b.data.summary],
+            [b.id, b.body],
             ...b.data.datasheet.map(
               (row) => [b.id, `${row.label} ${row.value}`] as [string, string],
             ),
