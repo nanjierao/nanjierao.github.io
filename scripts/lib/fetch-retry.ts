@@ -1,5 +1,5 @@
 // Retries for flaky public endpoints (D62). YouTube's feed server answers 404 or 500 for hours
-// at a time and then recovers: of the first 11 deploys, 5 got no feed. A failed attempt is
+// at a time and then recovers: of the first 11 builds, 5 got no feed. A failed attempt is
 // retried after a pause, and each round also tries the next URL that serves the same data.
 
 /** An HTTP response that wasn't 2xx. */

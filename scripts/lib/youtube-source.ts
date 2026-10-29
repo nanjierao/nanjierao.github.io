@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import type { ExternalData } from '../../src/lib/external-types.ts';
 import {
   YOUTUBE_FEED_URLS,
+  isChannelFeed,
   isVideoId,
   parseFeed,
   thumbnailUrl,
@@ -31,6 +32,13 @@ export interface LastGoodVideo {
   /** THUMBNAIL_FILE when a thumbnail was kept beside the record, else null. */
   thumbnail: string | null;
 }
+
+/**
+ * What the cache file holds: a video, or `latest: null` when the last feed that worked had none
+ * to show. That empty record is written rather than deleting the file, so the Actions cache
+ * saves it and an older video can't come back at the next outage.
+ */
+type LastGoodRecord = LastGoodVideo | { savedAt: string; latest: null; thumbnail: null };
 
 export interface YouTubeDeps {
   /** Fetches a feed; throws `HttpError` (or a network error) when it fails. */
@@ -93,7 +101,10 @@ function choose(videos: VideoItem[], deps: YouTubeDeps): VideoItem | null {
   return videos.find((video) => deps.isPublishableTitle(video.title)) ?? null;
 }
 
-/** While titles are off, keep the title out of the build data and the cache entirely. */
+/**
+ * While titles are off, keep the title out of the build data and out of what is cached from now
+ * on (a record cached earlier loses its title the first time it is used; see fromLastGood).
+ */
 function forBuild(video: VideoItem, deps: YouTubeDeps): VideoItem {
   return deps.flags.showTitle ? video : { ...video, title: '' };
 }
@@ -119,6 +130,23 @@ async function saveThumbnail(id: string, deps: YouTubeDeps): Promise<string | nu
   }
 }
 
+async function writeRecord(record: LastGoodRecord, deps: YouTubeDeps): Promise<void> {
+  if (!deps.cacheDir) return;
+  await mkdir(deps.cacheDir, { recursive: true });
+  await writeFile(join(deps.cacheDir, LAST_GOOD_FILE), `${JSON.stringify(record, null, 2)}\n`);
+}
+
+async function readRecord(deps: YouTubeDeps): Promise<unknown> {
+  if (!deps.cacheDir) return undefined;
+  const file = join(deps.cacheDir, LAST_GOOD_FILE);
+  if (!existsSync(file)) return undefined;
+  try {
+    return JSON.parse(await readFile(file, 'utf8')) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 /** Keeps this result for the next build, in case the feed fails then. */
 async function remember(video: VideoItem, thumbnail: string | null, deps: YouTubeDeps) {
   if (!deps.cacheDir) return;
@@ -128,40 +156,74 @@ async function remember(video: VideoItem, thumbnail: string | null, deps: YouTub
       const bytes = await readFile(join(deps.outDir, thumbnail));
       await writeFile(join(deps.cacheDir, THUMBNAIL_FILE), bytes);
     }
-    const record: LastGoodVideo = {
-      savedAt: deps.now.toISOString(),
-      latest: video,
-      thumbnail: thumbnail ? THUMBNAIL_FILE : null,
-    };
-    await writeFile(join(deps.cacheDir, LAST_GOOD_FILE), `${JSON.stringify(record, null, 2)}\n`);
+    await writeRecord(
+      {
+        savedAt: deps.now.toISOString(),
+        latest: video,
+        thumbnail: thumbnail ? THUMBNAIL_FILE : null,
+      },
+      deps,
+    );
   } catch (error) {
     deps.log(`YouTube: couldn't keep this result for the next build (${describe(error)})`);
   }
 }
 
+/** The feed worked and had nothing to show: make sure no older video comes back later. */
+async function forget(deps: YouTubeDeps): Promise<void> {
+  if (!deps.cacheDir) return;
+  try {
+    await rm(join(deps.cacheDir, THUMBNAIL_FILE), { force: true });
+    await writeRecord({ savedAt: deps.now.toISOString(), latest: null, thumbnail: null }, deps);
+  } catch (error) {
+    deps.log(`YouTube: couldn't clear the earlier result (${describe(error)})`);
+  }
+}
+
+/**
+ * The feed worked but the thumbnail download didn't: reuse the kept thumbnail if it belongs to
+ * the same video.
+ */
+async function keptThumbnailFor(id: string, deps: YouTubeDeps): Promise<string | null> {
+  const record = parseLastGood(await readRecord(deps), deps.now);
+  if (!deps.cacheDir || !record || record.latest.id !== id || !record.thumbnail) return null;
+  try {
+    const name = await writeThumbnail(await readFile(join(deps.cacheDir, record.thumbnail)), deps);
+    deps.log('YouTube: using the kept thumbnail of the same video');
+    return name;
+  } catch {
+    return null;
+  }
+}
+
 /** The last result that worked, if it is recent and still passes today's filters. */
 async function fromLastGood(deps: YouTubeDeps): Promise<ExternalData['youtube']> {
-  const file = deps.cacheDir ? join(deps.cacheDir, LAST_GOOD_FILE) : null;
-  if (!file || !existsSync(file)) {
+  const raw = await readRecord(deps);
+  if (raw === undefined) {
     deps.log('YouTube: no earlier result to fall back on; the card stays hidden');
     return null;
   }
-  let record: LastGoodVideo | null;
-  try {
-    record = parseLastGood(JSON.parse(await readFile(file, 'utf8')), deps.now);
-  } catch {
-    record = null;
+  if (typeof raw === 'object' && raw !== null && (raw as { latest?: unknown }).latest === null) {
+    deps.log('YouTube: the last feed that worked had no video to show; the card stays hidden');
+    return null;
   }
+  const record = parseLastGood(raw, deps.now);
   if (!record) {
-    deps.log(
-      'YouTube: the earlier result is missing, unreadable or too old; the card stays hidden',
-    );
+    deps.log('YouTube: the earlier result is unreadable or too old; the card stays hidden');
     return null;
   }
   const { latest } = record;
   if (deps.flags.showTitle && (!latest.title || !deps.isPublishableTitle(latest.title))) {
     deps.log("YouTube: the earlier result's title doesn't pass the filters; the card stays hidden");
     return null;
+  }
+  if (!deps.flags.showTitle && latest.title) {
+    // Titles were switched off after this was cached: drop the title from the cache too.
+    try {
+      await writeRecord({ ...record, latest: { ...latest, title: '' } }, deps);
+    } catch (error) {
+      deps.log(`YouTube: couldn't update the earlier result (${describe(error)})`);
+    }
   }
   let thumbnail: string | null = null;
   if (deps.flags.showThumbnail && record.thumbnail && deps.cacheDir) {
@@ -184,8 +246,13 @@ export async function loadLatestVideo(deps: YouTubeDeps): Promise<ExternalData['
     videos = await firstSuccess(
       YOUTUBE_FEED_URLS,
       async (url) => {
-        const found = parseFeed(await deps.fetchText(url));
-        if (found.length === 0) throw new UnusableResponseError('no videos in the feed');
+        const xml = await deps.fetchText(url);
+        const found = parseFeed(xml);
+        // An error page served with 200 is an outage; the channel's own feed with no entries is
+        // a real answer (every video private or removed) and must not bring back an older one.
+        if (found.length === 0 && !isChannelFeed(xml)) {
+          throw new UnusableResponseError('the answer was not the channel feed');
+        }
         return found;
       },
       {
@@ -196,7 +263,10 @@ export async function loadLatestVideo(deps: YouTubeDeps): Promise<ExternalData['
     );
   } catch (error) {
     deps.log(`YouTube: feed not available (${describe(error)})`);
-    return fromLastGood(deps);
+    return fromLastGood(deps).catch((fallbackError: unknown) => {
+      deps.log(`YouTube: unexpected error (${describe(fallbackError)}); the card stays hidden`);
+      return null;
+    });
   }
   try {
     const latest = choose(videos, deps);
@@ -205,12 +275,20 @@ export async function loadLatestVideo(deps: YouTubeDeps): Promise<ExternalData['
     if (!latest) {
       // The feed worked, so this is the answer: forget any older result rather than fall back
       // to it during a later outage.
-      deps.log('YouTube: no publishable video in the feed; the card stays hidden');
-      if (deps.cacheDir) await rm(join(deps.cacheDir, LAST_GOOD_FILE), { force: true });
+      deps.log(
+        videos.length === 0
+          ? 'YouTube: the feed lists no videos; the card stays hidden'
+          : 'YouTube: no publishable video in the feed; the card stays hidden',
+      );
+      await forget(deps);
       return null;
     }
     const video = forBuild(latest, deps);
-    const thumbnail = deps.flags.showThumbnail ? await saveThumbnail(latest.id, deps) : null;
+    let thumbnail: string | null = null;
+    if (deps.flags.showThumbnail) {
+      thumbnail =
+        (await saveThumbnail(latest.id, deps)) ?? (await keptThumbnailFor(latest.id, deps));
+    }
     deps.log(`YouTube: latest video found${thumbnail ? ' with thumbnail' : ''}`);
     await remember(video, thumbnail, deps);
     return { latest: video, thumbnail };

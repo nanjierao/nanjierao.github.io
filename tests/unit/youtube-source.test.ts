@@ -134,7 +134,70 @@ describe('loadLatestVideo when the feed works', () => {
     remembered({ savedAt: '2026-10-25T00:00:00Z' });
     const result = await loadLatestVideo(deps({ isPublishableTitle: () => false }));
     expect(result).toBeNull();
-    expect(existsSync(join(cacheDir, LAST_GOOD_FILE))).toBe(false);
+    // An empty record, not a deleted file: CI's cache-save step only runs when the file exists,
+    // and saving it is what stops the older video from coming back.
+    const record = JSON.parse(readFileSync(join(cacheDir, LAST_GOOD_FILE), 'utf8'));
+    expect(record).toEqual({ savedAt: NOW.toISOString(), latest: null, thumbnail: null });
+    expect(existsSync(join(cacheDir, THUMBNAIL_FILE))).toBe(false);
+    // The next build hits an outage and gets that record back from the cache: still hidden.
+    log = [];
+    expect(await loadLatestVideo(deps({ fetchText: failingFeed() }))).toBeNull();
+    expect(log).toContain(
+      'YouTube: the last feed that worked had no video to show; the card stays hidden',
+    );
+  });
+
+  it("treats the channel's own feed with no entries as an answer, not an outage", async () => {
+    remembered({ savedAt: '2026-10-28T14:12:00Z' });
+    const empty =
+      '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom" xmlns:yt="http://www.youtube.com/xml/schemas/2015">' +
+      '<yt:channelId>UCsaBHMWGQFx1Mltl3nFQc3g</yt:channelId><title>Fixture channel</title></feed>';
+    const result = await loadLatestVideo(
+      deps({
+        fetchText: async (url) => {
+          feedCalls.push(url);
+          return empty;
+        },
+      }),
+    );
+    expect(result).toBeNull();
+    expect(feedCalls).toHaveLength(1);
+    expect(log).toContain('YouTube: the feed lists no videos; the card stays hidden');
+    expect(JSON.parse(readFileSync(join(cacheDir, LAST_GOOD_FILE), 'utf8')).latest).toBeNull();
+  });
+
+  it("doesn't take another channel's feed as an answer", async () => {
+    const other =
+      '<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"><yt:channelId>UCxxxxxxxxxxxxxxxxxxxxxx</yt:channelId></feed>';
+    remembered({ savedAt: '2026-10-28T14:12:00Z' });
+    const result = await loadLatestVideo(deps({ fetchText: async () => other }));
+    expect(result?.latest.id).toBe('BBBBBBBBBB1');
+  });
+
+  it('reuses the kept thumbnail when the feed works but only the thumbnail download fails', async () => {
+    await loadLatestVideo(deps());
+    const failingThumbnail = async () => {
+      throw new HttpError(503);
+    };
+    log = [];
+    const result = await loadLatestVideo(deps({ fetchBytes: failingThumbnail }));
+    expect(result).toMatchObject({ latest: { id: 'AAAAAAAAAA2' }, thumbnail: THUMBNAIL_FILE });
+    expect(log).toContain('YouTube: using the kept thumbnail of the same video');
+    expect(JSON.parse(readFileSync(join(cacheDir, LAST_GOOD_FILE), 'utf8')).thumbnail).toBe(
+      THUMBNAIL_FILE,
+    );
+  });
+
+  it("doesn't reuse a kept thumbnail that belongs to another video", async () => {
+    remembered({ savedAt: '2026-10-28T14:12:00Z' });
+    const result = await loadLatestVideo(
+      deps({
+        fetchBytes: async () => {
+          throw new HttpError(503);
+        },
+      }),
+    );
+    expect(result).toMatchObject({ latest: { id: 'AAAAAAAAAA2' }, thumbnail: null });
   });
 
   it('keeps titles out of the build data and the cache while titles are off', async () => {
@@ -216,6 +279,17 @@ describe('loadLatestVideo when the feed fails', () => {
       }),
     );
     expect(result).toMatchObject({ latest: { id: 'BBBBBBBBBB1' }, thumbnail: null });
+  });
+
+  it('drops a title cached before titles were switched off, and shows none', async () => {
+    remembered({ savedAt: '2026-10-28T14:12:00Z' });
+    const result = await loadLatestVideo(
+      deps({ fetchText: failingFeed(), flags: { showTitle: false, showThumbnail: true } }),
+    );
+    expect(result).toMatchObject({ latest: { id: 'BBBBBBBBBB1', title: '' } });
+    const record = JSON.parse(readFileSync(join(cacheDir, LAST_GOOD_FILE), 'utf8'));
+    expect(record.latest.title).toBe('');
+    expect(record.savedAt).toBe('2026-10-28T14:12:00.000Z');
   });
 
   it('ignores a corrupt cache file', async () => {
