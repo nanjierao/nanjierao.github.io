@@ -7,7 +7,8 @@ datasheet:
   - { label: Contents, value: '66 rules, a 16-item quick list, reading protocols, and a script' }
   - { label: Method, value: 'One case, one rule, the whole document: fix the sentence where a reader stopped, write the fix as a rule that can be checked, then check the whole document for it' }
   - { label: Source, value: 'Five weeks and more than 60 revision rounds of my English-language HCI dissertation; each rule began as one sentence where a reader stopped' }
-  - { label: Script, value: 'Python 3, no other packages; lists candidates for the mechanical checks in .tex, .md and .txt files, and reading decides. In my dissertation its abbreviation check flagged 13 places, of which 3 were real problems' }
+  - { label: Script, value: 'Python 3, no other packages; lists candidates for the mechanical checks in .tex, .md and .txt files, and reading decides' }
+  - { label: Reading decides, value: 'When I revised my dissertation, an abbreviation check flagged 13 places, of which 3 were real problems' }
   - { label: Use, value: 'As a checklist, as a Claude Code skill, or pasted into another AI assistant' }
   - { label: Scope, value: '“Reads like AI” here means the places where a first-time reader stops or reads twice. It is not a tool for getting past AI detectors' }
   - { label: Language, value: 'Rules in Chinese with English example sentences; the skill file in English' }
@@ -42,4 +43,4 @@ From the repository (CC BY 4.0). Ask each question after revising a paragraph.
 15. After a change, reread that paragraph and the one before it, and rerun hard limits such as word caps and paragraph length.
 16. Check comments from people and from AI against the text and the data, and apply only what holds.
 
-The full 66 rules, each with a sentence from the dissertation before and after the fix and a way to check for it, are in the repository.
+The full 66 rules are in the repository, most with a sentence from the dissertation before and after the fix and a way to check for it.
