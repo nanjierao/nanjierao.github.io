@@ -3,9 +3,10 @@
 #
 # - Push to main: check, build, deploy. Merging a pull request publishes the site.
 # - Pull requests: the same checks and build, no deploy.
-# - Weekly schedule: rebuild and redeploy only, to refresh "Recent" (GitHub activity, latest
-#   video) and time-aware wording (D26, D50). GitHub pauses schedules after 60 days without
-#   repository activity; nothing breaks if it does.
+# - Schedule (Mondays and Thursdays): rebuild and redeploy only, to refresh "Recent" (GitHub
+#   activity, latest video) and time-aware wording (D26, D50, D62). Twice a week also keeps the
+#   last-good YouTube cache from expiring (GitHub drops caches unused for 7 days). GitHub pauses
+#   schedules after 60 days without repository activity; nothing breaks if it does.
 # - No step ever commits to the repository (D40).
 name: Deploy to GitHub Pages
 
@@ -16,7 +17,8 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: '17 9 * * 1' # Mondays 09:17 UTC
+    # 15:17 UTC: outside the 09:00–12:00 UTC window in which YouTube's feeds are reported to fail.
+    - cron: '17 15 * * 1,4' # Mondays and Thursdays
 
 permissions:
   contents: read
@@ -60,12 +62,29 @@ jobs:
       - name: Privacy check (repository)
         run: npm run check:privacy -- --repo
 
+      # The last YouTube result that worked (D62): if the feed fails now, the card shows it. Pinned
+      # to the actions/cache commit that withastro/action@v6 uses.
+      - name: Restore the last good video data
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .cache/external
+          key: external-last-good-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: external-last-good-
+
       # Fetch GitHub activity and the YouTube feed here: only this step gets the read-only token
       # in its environment (checkout doesn't persist it), not the dependency installs.
       - name: Fetch GitHub activity and the latest video
         run: npm run fetch:external
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Only main keeps the result for later runs; pull requests read it but never write it.
+      - name: Keep the video data for the next build
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && hashFiles('.cache/external/youtube.json') != ''
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .cache/external
+          key: external-last-good-${{ github.run_id }}-${{ github.run_attempt }}
 
       # Installs, builds (keeping the data fetched above), runs the privacy check on dist/
       # (npm postbuild) and uploads the Pages artifact.

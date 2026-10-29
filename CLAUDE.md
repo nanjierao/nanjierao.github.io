@@ -61,8 +61,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Content: Astro content collections (`src/content/`), Markdown/MDX plus YAML. Blog posts live in
   `src/content/blog/<slug>/index.md` with their images beside them.
 - Hosting: GitHub Pages through the official Astro GitHub Action and `actions/deploy-pages`,
-  triggered by pushes to `main`, by hand (`workflow_dispatch`), and by a weekly schedule that only
-  rebuilds (it refreshes "Recent" and time-aware copy). No workflow step ever commits to `main`.
+  triggered by pushes to `main`, by hand (`workflow_dispatch`), and by a schedule (Mondays and
+  Thursdays, 15:17 UTC) that only rebuilds (it refreshes "Recent" and time-aware copy). No
+  workflow step ever commits to `main`.
   If GitHub pauses the schedule after 60 days without repository activity, nothing breaks.
   `site: 'https://nanjierao.github.io'`, no `base`.
 - Live AI (optional): `worker/` has its own package.json and wrangler config and deploys to
@@ -82,7 +83,7 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - `npm run build` · `npm run preview` — production build and a local look at it. `build` first
   runs `fetch:external` and afterwards `check:privacy --dist` (npm pre/post hooks).
 - `npm run fetch:external` — writes GitHub activity and the latest video to `src/generated/`
-  (git-ignored). `EXTERNAL_DATA=fixtures` uses `tests/fixtures/`, `off` skips the network, `keep`
+  (git-ignored), and keeps the last video that worked in `.cache/external/` (git-ignored, D62). `EXTERNAL_DATA=fixtures` uses `tests/fixtures/`, `off` skips the network, `keep`
   (CI) reuses data fetched earlier in the job. Blocked hosts fail quietly.
 - `npm run check` — `astro check` and TypeScript
 - `npm run lint` · `npm run format` — ESLint and `prettier --check` · `prettier --write`
@@ -166,9 +167,12 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   per visitor) with a `sessionStorage` cache. On any error, keep the build-time data quietly.
 - Latest YouTube video: read the channel's public RSS feed during the build (channel ID in
   facts.md §13); show title, date and a click-to-load facade. Download and process the thumbnail
-  at build time instead of hot-linking it. If the feed fails, hide the card. Titles pass the
-  facts.md §15 rules and the strict family filter first, so the card shows the newest video
-  whose title passes (D54).
+  at build time instead of hot-linking it. YouTube's feed fails for hours at a time (D62), so the
+  build tries two feed addresses with retries; if all fail, it shows the last result that worked
+  (kept in `.cache/external/` between CI runs by actions/cache, at most 30 days old, never
+  committed), and only without one hides the card. Titles pass the facts.md §15 rules and the
+  strict family filter first, also when they come from that cache, so the card shows the newest
+  video whose title passes (D54).
 
 ## AI: static first, live only through the Worker
 

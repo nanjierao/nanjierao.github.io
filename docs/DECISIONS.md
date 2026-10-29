@@ -3,6 +3,12 @@
 Newest first. Status: **proposed** (drafted for Jimmy, in effect unless he objects) ·
 **needs Jimmy** (blocked on his choice) · **accepted** · **superseded**.
 
+## 2026-10-29 — Latest-video card survives YouTube feed outages
+
+| ID | Decision | Why | Status |
+|---|---|---|---|
+| D62 | **The video card falls back instead of disappearing.** The build tries the channel feed and the uploads-playlist feed (`playlist_id=UU…`, same videos), three rounds with 15 s and 45 s pauses in CI. If every attempt fails, it shows the last result that worked: `scripts/fetch-external.ts` keeps it in `.cache/external/` (git-ignored, never committed), and the workflow carries that folder between runs with actions/cache (only runs on `main` save it; pull requests only read). A remembered result is used only if it is at most 30 days old and its title still passes the §15 rules and the family filter; otherwise the card hides as before. When the feed works but no title passes, the remembered result is dropped. The scheduled rebuild moves from Mondays 09:17 UTC to Mondays and Thursdays 15:17 UTC: twice a week keeps the cache from expiring (7 days unused), and the time avoids the 09:00–12:00 UTC window in which YouTube feed failures are reported. | The channel ID is right: of the first 11 builds, 6 read the feed and 5 got HTTP 404 or 500 from YouTube, including both deploys of the live site, so the card never appeared there. | proposed |
+
 ## 2026-10-28 — Visual pass (Jimmy: "too text heavy… word cloud, diagrams, tables?")
 
 | ID | Decision | Why | Status |

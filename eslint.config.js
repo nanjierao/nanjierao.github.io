@@ -16,6 +16,7 @@ export default defineConfig(
       'migration/',
       '.claude/worktrees/',
       'src/generated/',
+      '.cache/',
       'playwright-report/',
       'test-results/',
     ],

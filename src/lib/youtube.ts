@@ -4,6 +4,10 @@ import { XMLParser } from 'fast-xml-parser';
 
 export const YOUTUBE_CHANNEL_ID = 'UCsaBHMWGQFx1Mltl3nFQc3g';
 export const YOUTUBE_FEED_URL = `https://www.youtube.com/feeds/videos.xml?channel_id=${YOUTUBE_CHANNEL_ID}`;
+/** The channel's uploads playlist ("UU" + the rest of the channel ID): the same videos. */
+export const YOUTUBE_UPLOADS_FEED_URL = `https://www.youtube.com/feeds/videos.xml?playlist_id=UU${YOUTUBE_CHANNEL_ID.slice(2)}`;
+/** Tried in this order; the second answers when the first doesn't, now and then (D62). */
+export const YOUTUBE_FEED_URLS = [YOUTUBE_FEED_URL, YOUTUBE_UPLOADS_FEED_URL] as const;
 
 export interface VideoItem {
   id: string;
