@@ -3,6 +3,12 @@
 Newest first. Status: **proposed** (drafted for Jimmy, in effect unless he objects) ·
 **needs Jimmy** (blocked on his choice) · **accepted** · **superseded**.
 
+## 2026-10-30 — CISE redirect is live
+
+| ID | Decision | Why | Status |
+|---|---|---|---|
+| D63 | **Only the old site's pages redirect, at any `/~user/` address.** `.htaccess` in `~/public_html` of the CISE (GatorLink) account sends `/`, `index.html` and `dissertation.html` / `enactment.html` with 301s to the homepage, `/research/teacher-support/` (the old dissertation page was the teacher-visualization poster) and `/research/embodied-learning/` (the old enactment page). The patterns match `^/~[^/]+/`, not `~nr0`. There is no catch-all, and the home folder's permissions stay as they were. `migration/cise/` holds copies of both files; the old homepage is kept as `~/index.html.backup-2026` outside the web folder. | The account is the GatorLink one, and both `/~nr0/` and `/~<GatorLink username>/` serve its folder, so rules tied to `~nr0` might never have matched. The folder also holds study platforms, demos and course material that a catch-all would have sent to the homepage. Checked with curl on Oct 30, 2026: both addresses and `dissertation.html` return 301 to the right pages. | accepted (amends D47; done Oct 30, 2026) |
+
 ## 2026-10-29 — Latest-video card survives YouTube feed outages
 
 | ID | Decision | Why | Status |
@@ -55,7 +61,7 @@ Argon, six points on this switch) is folded in below.
 | D44 | Fit check middle status is named **"Transferable foundation"** (Jimmy's pick). It must still cite a page and carry the inferred mark. | His wording; the rule matters more than the label. | accepted (amends D22) |
 | D45 | Research contexts: **Personal · Embodied · Civic**. The umbrella line is still Jimmy's pick (default: his research statement's framing). | His pick. | grouping accepted · umbrella needs Jimmy |
 | D46 | **DTRUE 2026**: Jatin Verma is a coauthor (Jimmy confirmed with the organizers), so "sole author" is gone everywhere. Author order, spelling and title stay **VERIFY** until checked against the v2 extended abstract. QR target: https://nanjierao.github.io/demos/csudt/. | The facts changed. | accepted (VERIFY) |
-| D47 | The CISE redirect now points to https://nanjierao.github.io/ (run after S3). | New address. | accepted (updates V1-05) |
+| D47 | The CISE redirect now points to https://nanjierao.github.io/ (run after S3). | New address. | accepted (updates V1-05); amended by D63, done Oct 30, 2026 |
 | D48 | Superseded by this switch: Cloudflare hosting of the site, Cloudflare Email Routing (the public email is now a choice in facts.md §1), `_redirects`, cloud-session and PR-preview steps, and D33's order (now SESSION_PROMPTS v4: S0 → S10). D16, D19 and D20 apply only if S8 happens; the key then lives only as a Worker secret that Jimmy sets himself. | — | S0 dropped by D49 |
 
 ### The outside review of this switch (Oct 27): six points
@@ -157,4 +163,4 @@ drafts as approved and add facts that aren't in `content/facts.md`.
 | V1-02 | Domain nanjierao.com (Scholar name); optional jimmyrao.com redirect. | superseded by D37 (nanjierao.github.io; a domain can come later) |
 | V1-03 | Design direction "Grounded" (claims carry evidence; grounded vs. inferred marks), with "Lab Bench" datasheet cards for builds; chosen in a design spike. | proposed |
 | V1-04 | Facts only from `content/facts.md`; final-dissertation numbers win. | accepted |
-| V1-05 | CISE page → 301 redirect after launch (`migration/cise/`). | accepted (target changed by D47; run it right after S3) |
+| V1-05 | CISE page → 301 redirect after launch (`migration/cise/`). | accepted (target changed by D47, scope by D63; done Oct 30, 2026) |
