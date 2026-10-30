@@ -367,7 +367,8 @@ Other videos from the old site (ask Jimmy what they are before using):
   against real home life)
 - Zhihu: https://www.zhihu.com/people/daozhu (his Chinese writing; blog posts link back here)
 - LinkedIn: `TODO(jimmy)` · ORCID: `TODO(jimmy)` (create one if none)
-- Old site (to be replaced by a redirect stub): https://www.cise.ufl.edu/~nr0/
+- Old site: https://www.cise.ufl.edu/~nr0/ (since Oct 30, 2026 a 301 redirect to this site; see
+  `migration/cise/HOWTO.md`)
 
 ## 14. Personal (About page, optional)
 

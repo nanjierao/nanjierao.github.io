@@ -246,9 +246,10 @@ can be added later; GitHub then redirects the github.io address to it.
 
 ## 13. CISE page
 
-Run the redirect once the real homepage (S3) is live, while the CISE account still exists: one SSH
-session using `migration/cise/HOWTO.md` (301 redirects to https://nanjierao.github.io + a fallback
-index.html). Ask CISE IT how long the page survives after graduation.
+Done on Oct 30, 2026 (D63): the old site's pages answer with 301 redirects to
+https://nanjierao.github.io, plus a fallback index.html; the other folders in the CISE web folder
+keep working. `migration/cise/HOWTO.md` has the check, the setup and the undo. Still open: ask CISE
+IT how long the page survives after graduation.
 
 ## 14. Phases and timeline (2026)
 
@@ -287,7 +288,7 @@ While S1 is open
    link LinkedIn and ORCID (§13). Check the DTRUE author list (§5.3, VERIFY).
 
 Later
-7. S2: pick a design. After S3: run the CISE redirect (`migration/cise/HOWTO.md`).
+7. S2: pick a design. (The CISE redirect is done: D63, `migration/cise/HOWTO.md`.)
 8. S4: put the QR code on the DTRUE slides.
 9. S6: record the three hand stories with `/hands/record` and upload them to `inbox/`. S7: mark
    reflections ready; approve the sample people.
