@@ -35,6 +35,11 @@
   --font-cjk:
     'PingFang SC', 'Hiragino Sans GB', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei',
     sans-serif;
+  /* The Chinese name beside the English one (D64): a Kai (regular-script) face where the system
+     has one, then a Song face, then the sans stack. System fonts only; nothing is downloaded. */
+  --font-cjk-name:
+    'Kaiti SC', STKaiti, KaiTi, 'AR PL UKai CN', 'Songti SC', 'Noto Serif CJK SC',
+    'Source Han Serif SC', SimSun, var(--font-cjk);
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --text-sm: 0.875rem;

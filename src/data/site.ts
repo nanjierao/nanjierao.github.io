@@ -11,12 +11,18 @@ export const PERSON = {
   givenName: 'Nanjie',
   familyName: 'Rao',
   alternateName: 'Jimmy Rao',
+  /** facts.md §1: shown beside the display name as live text with lang="zh-CN" (D64). */
+  chineseName: '饶楠杰',
   /** facts.md §1: city level only. */
   city: 'Gainesville, Florida',
   // TODO(jimmy): pick the one public email address the site shows (facts.md §1). Until then the
   // intro strip and /about show no email link, and check:privacy allows no email address.
   email: null as string | null,
 } as const;
+
+/** Alt text of the headshot (homepage intro strip and /about). */
+export const HEADSHOT_ALT =
+  'Nanjie (Jimmy) Rao, smiling, in a dark suit jacket, leaning on a railing beside a tall window.';
 
 /**
  * Intro-strip line. facts.md §3 option 4 (dissertation-aligned), a placeholder until Jimmy picks

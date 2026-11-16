@@ -57,6 +57,7 @@ describe('SEO', () => {
     const person = personJsonLd();
     expect(person['@type']).toBe('Person');
     expect(person.name).toBe('Nanjie Rao');
+    expect(person.alternateName).toEqual(['Nanjie (Jimmy) Rao', 'Jimmy Rao', '饶楠杰']);
     expect(person.sameAs).toEqual([
       'https://scholar.google.com/citations?user=EBetHqQAAAAJ',
       'https://github.com/JimmyRaoUF',

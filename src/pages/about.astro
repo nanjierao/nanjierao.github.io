@@ -1,9 +1,10 @@
 ---
 import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ChineseName from '../components/ChineseName.astro';
 import ElsewhereLinks from '../components/ElsewhereLinks.astro';
 import TalkList from '../components/TalkList.astro';
-import { PERSON, UMBRELLA } from '../data/site.ts';
+import { HEADSHOT_ALT, PERSON, UMBRELLA } from '../data/site.ts';
 import { STATUS } from '../data/cv.ts';
 import { personJsonLd } from '../lib/seo.ts';
 import headshot from '../assets/images/nanjie-rao-headshot.jpg';
@@ -22,16 +23,17 @@ import headshot from '../assets/images/nanjie-rao-headshot.jpg';
     <Image
       class="about__photo"
       src={headshot}
-      alt="Nanjie (Jimmy) Rao, smiling, in a dark suit jacket, leaning on a railing beside a tall window."
+      alt={HEADSHOT_ALT}
       width={240}
       height={240}
       loading="eager"
     />
     <div class="prose">
       <p>
-        I’m {PERSON.displayName}; my papers use {PERSON.scholarlyName}. I’m a Ph.D. candidate in
-        Human-Centered Computing at the University of Florida, in the {STATUS.department}. I work in
-        the <a href={STATUS.labUrl}>Embodied Learning & Experience (ELX) Lab</a>, advised by{' '}
+        I’m {PERSON.displayName} (<ChineseName />
+        ); my papers use {PERSON.scholarlyName}. I’m a Ph.D. candidate in Human-Centered Computing
+        at the University of Florida, in the {STATUS.department}. I work in the{' '}
+        <a href={STATUS.labUrl}>Embodied Learning & Experience (ELX) Lab</a>, advised by{' '}
         <a href={STATUS.advisorUrl}>Dr. Sharon Lynn Chu</a>. I passed my oral defense in October
         2026, and the Ph.D. is to be conferred in December 2026.
       </p>

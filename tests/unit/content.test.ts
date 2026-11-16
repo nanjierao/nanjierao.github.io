@@ -20,7 +20,8 @@ import {
   isListedWorkingPaper,
 } from '../../src/lib/visibility.ts';
 import { isSelf } from '../../src/lib/format.ts';
-import { FLAGS } from '../../src/data/site.ts';
+import { FLAGS, PERSON } from '../../src/data/site.ts';
+import { STATUS } from '../../src/data/cv.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const CONTENT = join(ROOT, 'src', 'content');
@@ -54,6 +55,27 @@ const builds = markdownDir('builds').map((b) => ({
   ...b,
   data: buildSchema(imageStub).parse(b.data),
 }));
+
+describe('identity in the intro strip (facts.md §1, §2; D64)', () => {
+  const facts = readFileSync(join(ROOT, 'content', 'facts.md'), 'utf8').replace(/\*\*/g, '');
+  const section = (number: number) => {
+    const start = facts.indexOf(`\n## ${number}. `);
+    return facts.slice(start, facts.indexOf('\n## ', start + 1));
+  };
+
+  it('shows the Chinese name exactly as facts.md §1 gives it', () => {
+    expect(section(1)).toContain(`Chinese name: ${PERSON.chineseName}`);
+  });
+
+  it('builds the role line only from facts.md §2', () => {
+    const status = section(2).replace(/\s+/g, ' ');
+    expect(status).toContain(STATUS.role);
+    expect(status).toContain(`(${STATUS.labShort.replace(' Lab', '')}) Lab`);
+    expect(status).toContain(`advised by ${STATUS.advisor}`);
+    expect(status).toContain(STATUS.conferral);
+    expect(STATUS.lab).toContain(STATUS.advisor);
+  });
+});
 
 describe('publications (facts.md §6)', () => {
   const published = publications.filter((pub) => pub.type !== 'in-preparation');

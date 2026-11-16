@@ -3,6 +3,12 @@
 Newest first. Status: **proposed** (drafted for Jimmy, in effect unless he objects) ·
 **needs Jimmy** (blocked on his choice) · **accepted** · **superseded**.
 
+## 2026-11-16 — Who and where in the first screen (Jimmy: "I think I like this one", a reference homepage)
+
+| ID | Decision | Why | Status |
+|---|---|---|---|
+| D64 | **The intro strip says who and where.** (1) 饶楠杰 follows the display name as live text marked `lang="zh-CN"` in the homepage h1, the first sentence of /about, the /cv header and JSON-LD `alternateName`; the header brand and page titles stay English. It is text, never an image, in a system Kai face where the device has one (`--font-cjk-name`; nothing is downloaded), otherwise the usual CJK stack. (2) The existing headshot sits in the strip: beside the name on a phone, to the right of the text from 48rem up. (3) One role line under the name, built only from facts.md §2: role, ELX Lab and advisor (linked), "Ph.D. to be conferred December 2026". The order of everything below is unchanged. Taken from the comparison and not built: a picture of the name, photo-first layout, a city line, an obfuscated email, icon badges from other hosts, the single long page. | Jimmy pointed to a homepage that shows the Chinese name beside the English one and gave his own. On that page a visitor knows who the person is and where they work before scrolling; here the first screen gave the research question but no face, role or affiliation. All four reviews of the comparison (faculty search, industry hiring, accessibility and privacy, site strategy) put this first, and it needs no new fact or file. | proposed (amends D21; S2's variants keep it) |
+
 ## 2026-10-30 — CISE redirect is live
 
 | ID | Decision | Why | Status |

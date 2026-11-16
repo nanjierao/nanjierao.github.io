@@ -48,9 +48,12 @@ export const STATUS = {
   department:
     'Department of Computer & Information Science & Engineering, Herbert Wertheim College of Engineering',
   lab: 'Embodied Learning & Experience (ELX) Lab, advised by Dr. Sharon Lynn Chu',
+  labShort: 'ELX Lab',
+  advisor: 'Dr. Sharon Lynn Chu',
   labUrl: 'https://elxlab.cise.ufl.edu/',
   advisorUrl: 'https://www.cise.ufl.edu/~slchu/',
   defense: 'Oral defense passed October 2026; Ph.D. to be conferred December 2026.',
+  conferral: 'Ph.D. to be conferred December 2026',
 } as const;
 
 export interface TeachingItem {

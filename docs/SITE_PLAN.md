@@ -11,7 +11,7 @@ outside review; v1 and v2 the same day. Decisions and their status:
 Replace the 2019-era page at cise.ufl.edu/~nr0 with a site that *shows* what Jimmy does and keeps
 running with almost no upkeep. It lives at https://nanjierao.github.io, built by GitHub Actions
 from a public repository that Jimmy maintains with Claude Code cloud sessions. The homepage opens with
-a compact intro strip (name, one line, CV, publications, email) for anyone who needs the facts in
+a compact intro strip (name, photo, role, one line, CV, publications, email) for anyone who needs the facts in
 five seconds. Below it are a living word cloud of his research background and three doors.
 **Hands** (left, most technical) starts telling a story with Jimmy's recorded hand motion, and the
 visitor's own hand can take over through the camera, all in the browser. **Ask** (middle) answers
@@ -66,7 +66,9 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 ## 4. Homepage
 
 Top to bottom (D21):
-- **Intro strip**: name (optional pronunciation button, D36), one-line positioning (facts.md §3),
+- **Intro strip**: name with 饶楠杰 beside it as live text (D64; optional pronunciation button,
+  D36), the headshot, one role line from facts.md §2 (role, lab and advisor, degree date; D64),
+  one-line positioning (facts.md §3),
   status line (facts.md §2, only once Jimmy approves one), and three actions: CV (PDF),
   Publications, Email. Small "Elsewhere" links: Google Scholar, GitHub (JimmyRaoUF), YouTube,
   Zhihu, and whichever of ORCID and LinkedIn facts.md §13 lists. On a phone it fits in the first screen with the top of the cloud

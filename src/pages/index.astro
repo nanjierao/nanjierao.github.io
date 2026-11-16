@@ -1,19 +1,23 @@
 ---
 // Homepage until S3 (D21: intro strip first, then the word cloud). The portals and the easter
 // egg arrive with the chosen design (S2, S3).
+import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ChineseName from '../components/ChineseName.astro';
 import ElsewhereLinks from '../components/ElsewhereLinks.astro';
 import GitHubActivity from '../components/GitHubActivity.astro';
 import LatestVideo from '../components/LatestVideo.astro';
 import TimeAware from '../components/TimeAware.astro';
 import WordCloud from '../components/WordCloud.astro';
-import { PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
+import { HEADSHOT_ALT, PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
+import { STATUS } from '../data/cv.ts';
 import { CONTEXT_LABELS } from '../content/schemas.ts';
 import { getNews, getPosts, getThemesByContext } from '../lib/content.ts';
 import { getExternalData } from '../lib/external.ts';
 import { formatDay, formatPartialDate, isoDay } from '../lib/format.ts';
 import { CV_PDF_HREF, hasCvPdf } from '../lib/cv-pdf.ts';
 import { personJsonLd } from '../lib/seo.ts';
+import headshot from '../assets/images/nanjie-rao-headshot.jpg';
 
 const contexts = await getThemesByContext();
 const news = await getNews(3);
@@ -25,7 +29,22 @@ const cvPdf = hasCvPdf();
 
 <BaseLayout description={POSITIONING} jsonLd={personJsonLd()} ogType="profile">
   <section class="intro" aria-labelledby="intro-name">
-    <h1 id="intro-name">{PERSON.displayName}</h1>
+    <Image
+      class="intro__photo"
+      src={headshot}
+      alt={HEADSHOT_ALT}
+      width={144}
+      height={144}
+      densities={[1, 2]}
+      loading="eager"
+    />
+    <h1 id="intro-name">
+      {PERSON.displayName} <ChineseName />
+    </h1>
+    <p class="intro__role">
+      {STATUS.role} · <a href={STATUS.labUrl}>{STATUS.labShort}</a>, advised by{' '}
+      <a href={STATUS.advisorUrl}>{STATUS.advisor}</a> · {STATUS.conferral}
+    </p>
     <p class="intro__line">{POSITIONING}</p>
     <ul class="intro__actions" aria-label="Quick links">
       <li>
@@ -46,7 +65,9 @@ const cvPdf = hasCvPdf();
         </li>
       )}
     </ul>
-    <ElsewhereLinks label="Elsewhere" />
+    <div class="intro__links">
+      <ElsewhereLinks label="Elsewhere" />
+    </div>
   </section>
 
   <section aria-labelledby="topics-heading">
@@ -150,19 +171,73 @@ const cvPdf = hasCvPdf();
 </BaseLayout>
 
 <style>
+  /* Who, where, what: on a phone the photo sits beside the name; from 48rem up it moves to the
+     right of the text, which keeps its measure. */
   .intro {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'photo name'
+      'role role'
+      'line line'
+      'actions actions'
+      'links links';
+    column-gap: var(--space-4);
+    align-items: center;
     padding-bottom: var(--space-5);
     border-bottom: 1px solid var(--color-rule);
   }
 
+  .intro :global(.intro__photo) {
+    grid-area: photo;
+    width: 4.5rem;
+    height: auto;
+    border-radius: var(--radius);
+  }
+
   .intro h1 {
-    margin-bottom: var(--space-3);
+    grid-area: name;
+    margin: 0;
+  }
+
+  .intro__role {
+    grid-area: role;
+    max-width: 42rem;
+    margin: var(--space-3) 0 0;
+    color: var(--color-text-muted);
   }
 
   .intro__line {
+    grid-area: line;
     font-size: var(--text-lg);
     max-width: 42rem;
-    margin-bottom: var(--space-5);
+    margin: var(--space-3) 0 var(--space-5);
+  }
+
+  .intro__actions {
+    grid-area: actions;
+  }
+
+  .intro__links {
+    grid-area: links;
+  }
+
+  @media (min-width: 48rem) {
+    .intro {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'name photo'
+        'role photo'
+        'line photo'
+        'actions photo'
+        'links photo';
+      column-gap: var(--space-6);
+      align-items: start;
+    }
+
+    .intro :global(.intro__photo) {
+      width: 9rem;
+    }
   }
 
   .intro__actions {

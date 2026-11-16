@@ -1,0 +1,19 @@
+---
+// 饶楠杰 beside the English name (D64): live text with its language marked, never an image, so
+// it can be selected, searched and read aloud, and it follows the theme's colors.
+import { PERSON } from '../data/site.ts';
+---
+
+<span class="name-zh" lang="zh-CN">
+  {PERSON.chineseName}
+</span>
+
+<style>
+  .name-zh {
+    font-family: var(--font-cjk-name);
+    font-size: 0.72em;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+</style>

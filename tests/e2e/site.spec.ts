@@ -468,6 +468,43 @@ test.describe('CS-UDT phone demo', () => {
   });
 });
 
+test.describe('who and where in the intro strip (D64)', () => {
+  test('shows the Chinese name as text marked zh-CN on the homepage, /about and /cv', async ({
+    page,
+  }) => {
+    await isolate(page);
+    for (const path of ['/', '/about/', '/cv/']) {
+      await page.goto(path);
+      await expect(page.locator('main span[lang="zh-CN"]', { hasText: '饶楠杰' })).toHaveCount(1);
+    }
+    await page.goto('/');
+    await expect(page.locator('h1')).toHaveText('Nanjie (Jimmy) Rao 饶楠杰');
+  });
+
+  test('puts the photo beside the name on a phone and beside the text on a desktop', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto('/');
+    await expect(page.locator('.intro__photo')).toHaveAttribute('alt', /^Nanjie \(Jimmy\) Rao, /);
+    await expect(page.locator('.intro__role a')).toHaveCount(2);
+    const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
+    const photo = await box('.intro__photo');
+    const name = await box('#intro-name');
+    const line = await box('.intro__line');
+    const width = page.viewportSize()!.width;
+    if (width < 768) {
+      expect(photo.x + photo.width).toBeLessThanOrEqual(name.x);
+      expect(line.y).toBeGreaterThanOrEqual(photo.y + photo.height);
+    } else {
+      expect(photo.x).toBeGreaterThanOrEqual(line.x + line.width);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+  });
+});
+
 test.describe('homepage word cloud', () => {
   const words = (
     parseYaml(readFileSync(new URL('../../content/wordcloud.yaml', import.meta.url), 'utf8')) as {
