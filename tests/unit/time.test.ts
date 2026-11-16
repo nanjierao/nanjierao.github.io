@@ -53,6 +53,16 @@ describe('wordingFor', () => {
     expect(wordingFor(DTRUE, WORDING, new Date('2026-11-21T09:00:00-05:00'))).toBe(WORDING.past);
   });
 
+  it('returns an empty past wording as it is, so a clause can disappear after its date (D64)', () => {
+    const month = { start: '2026-12-01', end: '2026-12-31', timeZone: 'America/New_York' };
+    const wording = { upcoming: ' · Ph.D. to be conferred December 2026', past: '' };
+    expect(wordingFor(month, wording, new Date('2026-11-16T12:00:00Z'))).toBe(wording.upcoming);
+    expect(wordingFor(month, wording, new Date('2026-12-31T23:00:00-05:00'))).toBe(
+      wording.upcoming,
+    );
+    expect(wordingFor(month, wording, new Date('2027-01-01T00:30:00-05:00'))).toBe('');
+  });
+
   it('uses the ongoing wording when one is given', () => {
     const withOngoing = { ...WORDING, ongoing: 'Presenting at DTRUE 2026 this week' };
     expect(wordingFor(DTRUE, withOngoing, new Date('2026-11-19T12:00:00-05:00'))).toBe(

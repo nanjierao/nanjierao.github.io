@@ -172,6 +172,22 @@ test.describe('time-aware wording (D26)', () => {
     await page.goto('/about/');
     await expect(page.locator('main')).toContainText('Presented at DTRUE 2026');
   });
+
+  test('shows the conferral clause through December 2026 and drops it after (D64)', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.clock.setFixedTime(new Date('2026-12-31T23:00:00-05:00'));
+    await page.goto('/');
+    await expect(page.locator('.intro__role')).toHaveText(
+      'Ph.D. candidate, Human-Centered Computing, University of Florida · ELX Lab, advised by Dr. Sharon Lynn Chu · Ph.D. to be conferred December 2026',
+    );
+    await page.clock.setFixedTime(new Date('2027-01-01T00:30:00-05:00'));
+    await page.goto('/');
+    await expect(page.locator('.intro__role')).toHaveText(
+      'Ph.D. candidate, Human-Centered Computing, University of Florida · ELX Lab, advised by Dr. Sharon Lynn Chu',
+    );
+  });
 });
 
 test.describe('YouTube facade', () => {
@@ -479,6 +495,18 @@ test.describe('who and where in the intro strip (D64)', () => {
     }
     await page.goto('/');
     await expect(page.locator('h1')).toHaveText('Nanjie (Jimmy) Rao 饶楠杰');
+    // The spacing around the name is checked as text: the link checks don't look at <span>.
+    await page.goto('/cv/');
+    await expect(page.locator('.cv-header .lede')).toHaveText('Nanjie (Jimmy) Rao 饶楠杰');
+    await page.goto('/about/');
+    const sentence = page.locator('.about .prose p').first();
+    await expect(sentence).toContainText('Nanjie (Jimmy) Rao (饶楠杰); my papers');
+    // In running text the name keeps the size of the text around it.
+    const sizes = await sentence.evaluate((p) => [
+      getComputedStyle(p).fontSize,
+      getComputedStyle(p.querySelector('span[lang="zh-CN"]')!).fontSize,
+    ]);
+    expect(sizes[1]).toBe(sizes[0]);
   });
 
   test('puts the photo beside the name on a phone and beside the text on a desktop', async ({
@@ -502,6 +530,8 @@ test.describe('who and where in the intro strip (D64)', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
     );
+    // SITE_PLAN §4: the top of the cloud shows in the first screen.
+    expect((await box('[data-wordcloud]')).y).toBeLessThan(page.viewportSize()!.height);
   });
 });
 

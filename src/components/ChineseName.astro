@@ -11,9 +11,16 @@ import { PERSON } from '../data/site.ts';
 <style>
   .name-zh {
     font-family: var(--font-cjk-name);
-    font-size: 0.72em;
     font-weight: 400;
-    color: var(--color-text-muted);
+    /* The global :lang(zh) leading is for Chinese running text; here the host line sets it. */
+    line-height: inherit;
     white-space: nowrap;
+  }
+
+  /* Beside the heading-size name it steps back; in running text it keeps the text's size and
+     color. */
+  :global(h1) .name-zh {
+    font-size: 0.72em;
+    color: var(--color-text-muted);
   }
 </style>

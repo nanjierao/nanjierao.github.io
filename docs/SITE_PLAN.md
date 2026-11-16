@@ -71,8 +71,9 @@ Top to bottom (D21):
   one-line positioning (facts.md §3),
   status line (facts.md §2, only once Jimmy approves one), and three actions: CV (PDF),
   Publications, Email. Small "Elsewhere" links: Google Scholar, GitHub (JimmyRaoUF), YouTube,
-  Zhihu, and whichever of ORCID and LinkedIn facts.md §13 lists. On a phone it fits in the first screen with the top of the cloud
-  visible below it.
+  Zhihu, and whichever of ORCID and LinkedIn facts.md §13 lists. In a 390 × 844 viewport it fits in the first screen with the top of the cloud
+  visible below it; with the browser's bars showing, or on a shorter phone, the cloud starts one
+  scroll lower (D64).
 - **Word cloud** (`content/wordcloud.yaml`): ~40 terms weighted by prominence and tagged by portal
   (hands / ask / life). Layout `d3-cloud`, gentle drift with `motion`. Hovering or focusing a
   portal makes its words glow and drift toward it. Clicking a word opens a one-line blurb with a

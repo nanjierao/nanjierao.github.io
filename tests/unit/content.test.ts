@@ -64,16 +64,24 @@ describe('identity in the intro strip (facts.md §1, §2; D64)', () => {
   };
 
   it('shows the Chinese name exactly as facts.md §1 gives it', () => {
-    expect(section(1)).toContain(`Chinese name: ${PERSON.chineseName}`);
+    expect(section(1).match(/^- Chinese name: (\S+)/m)?.[1]).toBe(PERSON.chineseName);
   });
 
   it('builds the role line only from facts.md §2', () => {
-    const status = section(2).replace(/\s+/g, ' ');
-    expect(status).toContain(STATUS.role);
+    const lines = section(2);
+    const status = lines.replace(/\s+/g, ' ');
+    expect(status).toContain(`- ${STATUS.role} (Dept.`);
     expect(status).toContain(`(${STATUS.labShort.replace(' Lab', '')}) Lab`);
-    expect(status).toContain(`advised by ${STATUS.advisor}`);
-    expect(status).toContain(STATUS.conferral);
+    expect(lines.match(/advised by (.+)$/m)?.[1]).toBe(STATUS.advisor);
+    expect(lines.match(/; (Ph\.D\. to be conferred .+)$/m)?.[1]).toBe(STATUS.conferral);
     expect(STATUS.lab).toContain(STATUS.advisor);
+    // /cv prints the whole sentence.
+    expect(status).toContain(STATUS.defense.replace(/\.$/, ''));
+  });
+
+  it('drops the conferral clause after the month facts.md §2 names (D26)', () => {
+    expect(STATUS.conferral).toContain('December 2026');
+    expect(STATUS.conferralMonth).toEqual({ start: '2026-12-01', end: '2026-12-31' });
   });
 });
 

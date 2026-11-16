@@ -29,6 +29,9 @@ const cvPdf = hasCvPdf();
 
 <BaseLayout description={POSITIONING} jsonLd={personJsonLd()} ogType="profile">
   <section class="intro" aria-labelledby="intro-name">
+    <h1 id="intro-name">
+      {PERSON.displayName} <ChineseName />
+    </h1>
     <Image
       class="intro__photo"
       src={headshot}
@@ -38,12 +41,15 @@ const cvPdf = hasCvPdf();
       densities={[1, 2]}
       loading="eager"
     />
-    <h1 id="intro-name">
-      {PERSON.displayName} <ChineseName />
-    </h1>
     <p class="intro__role">
       {STATUS.role} · <a href={STATUS.labUrl}>{STATUS.labShort}</a>, advised by{' '}
-      <a href={STATUS.advisorUrl}>{STATUS.advisor}</a> · {STATUS.conferral}
+      <a href={STATUS.advisorUrl}>{STATUS.advisor}</a>
+      <TimeAware
+        start={STATUS.conferralMonth.start}
+        end={STATUS.conferralMonth.end}
+        upcoming={` · ${STATUS.conferral}`}
+        past=""
+      />
     </p>
     <p class="intro__line">{POSITIONING}</p>
     <ul class="intro__actions" aria-label="Quick links">
@@ -198,12 +204,16 @@ const cvPdf = hasCvPdf();
   .intro h1 {
     grid-area: name;
     margin: 0;
+    /* Two names, not a title: break between them, not inside the English one. */
+    text-wrap: wrap;
+    overflow-wrap: anywhere;
   }
 
   .intro__role {
     grid-area: role;
     max-width: 42rem;
     margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
   }
 
@@ -237,6 +247,10 @@ const cvPdf = hasCvPdf();
 
     .intro :global(.intro__photo) {
       width: 9rem;
+    }
+
+    .intro__role {
+      font-size: inherit;
     }
   }
 
