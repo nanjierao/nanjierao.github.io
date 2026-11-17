@@ -173,19 +173,17 @@ test.describe('time-aware wording (D26)', () => {
     await expect(page.locator('main')).toContainText('Presented at DTRUE 2026');
   });
 
-  test('shows the conferral clause through December 2026 and drops it after (D64)', async ({
-    page,
-  }) => {
+  test('shows the degree note through December 2026 and drops it after (D65)', async ({ page }) => {
     await isolate(page);
     await page.clock.setFixedTime(new Date('2026-12-31T23:00:00-05:00'));
     await page.goto('/');
     await expect(page.locator('.intro__role')).toHaveText(
-      'Ph.D. candidate, Human-Centered Computing, University of Florida · ELX Lab, advised by Dr. Sharon Lynn Chu · Ph.D. to be conferred December 2026',
+      'Ph.D., Human-Centered Computing, University of Florida (defense passed and dissertation accepted; degree will be granted December 2026) · ELX Lab, advised by Dr. Sharon Lynn Chu',
     );
     await page.clock.setFixedTime(new Date('2027-01-01T00:30:00-05:00'));
     await page.goto('/');
     await expect(page.locator('.intro__role')).toHaveText(
-      'Ph.D. candidate, Human-Centered Computing, University of Florida · ELX Lab, advised by Dr. Sharon Lynn Chu',
+      'Ph.D., Human-Centered Computing, University of Florida · ELX Lab, advised by Dr. Sharon Lynn Chu',
     );
   });
 });

@@ -73,15 +73,18 @@ describe('identity in the intro strip (facts.md §1, §2; D64)', () => {
     expect(status).toContain(`- ${STATUS.role} (Dept.`);
     expect(status).toContain(`(${STATUS.labShort.replace(' Lab', '')}) Lab`);
     expect(lines.match(/advised by (.+)$/m)?.[1]).toBe(STATUS.advisor);
-    expect(lines.match(/; (Ph\.D\. to be conferred .+)$/m)?.[1]).toBe(STATUS.conferral);
     expect(STATUS.lab).toContain(STATUS.advisor);
-    // /cv prints the whole sentence.
-    expect(status).toContain(STATUS.defense.replace(/\.$/, ''));
+    // /cv prints the whole sentence; the homepage puts Jimmy's shorter wording in brackets.
+    const degree = lines.match(/^- (Defense passed .+)$/m)?.[1];
+    expect(degree).toBe(STATUS.defense.replace(/\.$/, ''));
+    expect(status).toContain(`("${STATUS.degreeNote}")`);
+    expect(STATUS.role).not.toContain('candidate');
   });
 
-  it('drops the conferral clause after the month facts.md §2 names (D26)', () => {
-    expect(STATUS.conferral).toContain('December 2026');
-    expect(STATUS.conferralMonth).toEqual({ start: '2026-12-01', end: '2026-12-31' });
+  it('drops the bracketed note after the month facts.md §2 names (D26, D65)', () => {
+    expect(STATUS.degreeNote).toContain('December 2026');
+    expect(STATUS.defense).toContain('December 2026');
+    expect(STATUS.degreeMonth).toEqual({ start: '2026-12-01', end: '2026-12-31' });
   });
 });
 

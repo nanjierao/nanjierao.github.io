@@ -26,10 +26,12 @@ checked by Jimmy against the final dissertation before they appear on the site.
 
 ## 2. Current status (keep exactly this until Jimmy updates it)
 
-- Ph.D. candidate, Human-Centered Computing, University of Florida (Dept. of Computer &
+- Ph.D., Human-Centered Computing, University of Florida (Dept. of Computer &
   Information Science & Engineering, Herbert Wertheim College of Engineering)
 - Embodied Learning & Experience (ELX) Lab, advised by Dr. Sharon Lynn Chu
-- Oral defense passed October 2026; Ph.D. to be conferred **December 2026**
+- Defense passed October 2026 and dissertation accepted; degree will be granted **December 2026**
+- Wording (Jimmy, Nov 16, 2026; D65): say "Ph.D." with the status in brackets ("defense passed
+  and dissertation accepted; degree will be granted December 2026"), not "Ph.D. candidate".
 - Don't mention job-search news until this section says so.
 
 Status line for the intro strip — DRAFT options; none ships until Jimmy picks one and moves it

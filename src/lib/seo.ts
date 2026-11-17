@@ -18,7 +18,7 @@ export function personJsonLd(): Record<string, unknown> {
     givenName: PERSON.givenName,
     familyName: PERSON.familyName,
     url: `${SITE_URL}/`,
-    jobTitle: 'Ph.D. candidate in Human-Centered Computing',
+    jobTitle: 'Human-computer interaction researcher',
     affiliation: {
       '@type': 'CollegeOrUniversity',
       name: 'University of Florida',
