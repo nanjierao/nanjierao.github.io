@@ -42,15 +42,26 @@ export const EDUCATION: EducationItem[] = [
   },
 ];
 
+const CONFERRAL = 'Ph.D. to be conferred December 2026';
+
 /** facts.md §2. */
 export const STATUS = {
   role: 'Ph.D. candidate, Human-Centered Computing, University of Florida',
   department:
     'Department of Computer & Information Science & Engineering, Herbert Wertheim College of Engineering',
   lab: 'Embodied Learning & Experience (ELX) Lab, advised by Dr. Sharon Lynn Chu',
+  labShort: 'ELX Lab',
+  advisor: 'Dr. Sharon Lynn Chu',
   labUrl: 'https://elxlab.cise.ufl.edu/',
   advisorUrl: 'https://www.cise.ufl.edu/~slchu/',
-  defense: 'Oral defense passed October 2026; Ph.D. to be conferred December 2026.',
+  defense: `Oral defense passed October 2026; ${CONFERRAL}.`,
+  conferral: CONFERRAL,
+  /**
+   * D26, D64: the homepage shows the conferral clause through this month and then drops it.
+   * Nothing replaces it, and "Ph.D. candidate" stays until facts.md §2 changes.
+   * TODO(jimmy): update facts.md §2 after the degree is conferred.
+   */
+  conferralMonth: { start: '2026-12-01', end: '2026-12-31' },
 } as const;
 
 export interface TeachingItem {

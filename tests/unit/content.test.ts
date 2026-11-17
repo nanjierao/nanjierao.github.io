@@ -20,7 +20,8 @@ import {
   isListedWorkingPaper,
 } from '../../src/lib/visibility.ts';
 import { isSelf } from '../../src/lib/format.ts';
-import { FLAGS } from '../../src/data/site.ts';
+import { FLAGS, PERSON } from '../../src/data/site.ts';
+import { STATUS } from '../../src/data/cv.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const CONTENT = join(ROOT, 'src', 'content');
@@ -54,6 +55,35 @@ const builds = markdownDir('builds').map((b) => ({
   ...b,
   data: buildSchema(imageStub).parse(b.data),
 }));
+
+describe('identity in the intro strip (facts.md §1, §2; D64)', () => {
+  const facts = readFileSync(join(ROOT, 'content', 'facts.md'), 'utf8').replace(/\*\*/g, '');
+  const section = (number: number) => {
+    const start = facts.indexOf(`\n## ${number}. `);
+    return facts.slice(start, facts.indexOf('\n## ', start + 1));
+  };
+
+  it('shows the Chinese name exactly as facts.md §1 gives it', () => {
+    expect(section(1).match(/^- Chinese name: (\S+)/m)?.[1]).toBe(PERSON.chineseName);
+  });
+
+  it('builds the role line only from facts.md §2', () => {
+    const lines = section(2);
+    const status = lines.replace(/\s+/g, ' ');
+    expect(status).toContain(`- ${STATUS.role} (Dept.`);
+    expect(status).toContain(`(${STATUS.labShort.replace(' Lab', '')}) Lab`);
+    expect(lines.match(/advised by (.+)$/m)?.[1]).toBe(STATUS.advisor);
+    expect(lines.match(/; (Ph\.D\. to be conferred .+)$/m)?.[1]).toBe(STATUS.conferral);
+    expect(STATUS.lab).toContain(STATUS.advisor);
+    // /cv prints the whole sentence.
+    expect(status).toContain(STATUS.defense.replace(/\.$/, ''));
+  });
+
+  it('drops the conferral clause after the month facts.md §2 names (D26)', () => {
+    expect(STATUS.conferral).toContain('December 2026');
+    expect(STATUS.conferralMonth).toEqual({ start: '2026-12-01', end: '2026-12-31' });
+  });
+});
 
 describe('publications (facts.md §6)', () => {
   const published = publications.filter((pub) => pub.type !== 'in-preparation');

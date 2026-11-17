@@ -1,0 +1,26 @@
+---
+// 饶楠杰 beside the English name (D64): live text with its language marked, never an image, so
+// it can be selected, searched and read aloud, and it follows the theme's colors.
+import { PERSON } from '../data/site.ts';
+---
+
+<span class="name-zh" lang="zh-CN">
+  {PERSON.chineseName}
+</span>
+
+<style>
+  .name-zh {
+    font-family: var(--font-cjk-name);
+    font-weight: 400;
+    /* The global :lang(zh) leading is for Chinese running text; here the host line sets it. */
+    line-height: inherit;
+    white-space: nowrap;
+  }
+
+  /* Beside the heading-size name it steps back; in running text it keeps the text's size and
+     color. */
+  :global(h1) .name-zh {
+    font-size: 0.72em;
+    color: var(--color-text-muted);
+  }
+</style>

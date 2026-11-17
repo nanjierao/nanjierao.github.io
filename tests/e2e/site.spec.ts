@@ -172,6 +172,22 @@ test.describe('time-aware wording (D26)', () => {
     await page.goto('/about/');
     await expect(page.locator('main')).toContainText('Presented at DTRUE 2026');
   });
+
+  test('shows the conferral clause through December 2026 and drops it after (D64)', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.clock.setFixedTime(new Date('2026-12-31T23:00:00-05:00'));
+    await page.goto('/');
+    await expect(page.locator('.intro__role')).toHaveText(
+      'Ph.D. candidate, Human-Centered Computing, University of Florida · ELX Lab, advised by Dr. Sharon Lynn Chu · Ph.D. to be conferred December 2026',
+    );
+    await page.clock.setFixedTime(new Date('2027-01-01T00:30:00-05:00'));
+    await page.goto('/');
+    await expect(page.locator('.intro__role')).toHaveText(
+      'Ph.D. candidate, Human-Centered Computing, University of Florida · ELX Lab, advised by Dr. Sharon Lynn Chu',
+    );
+  });
 });
 
 test.describe('YouTube facade', () => {
@@ -465,6 +481,57 @@ test.describe('CS-UDT phone demo', () => {
     await expect(page.locator('#toast')).toContainText("Couldn't save in this browser");
     await expect(page.locator('#feedList .feeditem').first()).toContainText('@You');
     await expect(page.locator('#feedList .feeditem').first().locator('img')).toHaveCount(1);
+  });
+});
+
+test.describe('who and where in the intro strip (D64)', () => {
+  test('shows the Chinese name as text marked zh-CN on the homepage, /about and /cv', async ({
+    page,
+  }) => {
+    await isolate(page);
+    for (const path of ['/', '/about/', '/cv/']) {
+      await page.goto(path);
+      await expect(page.locator('main span[lang="zh-CN"]', { hasText: '饶楠杰' })).toHaveCount(1);
+    }
+    await page.goto('/');
+    await expect(page.locator('h1')).toHaveText('Nanjie (Jimmy) Rao 饶楠杰');
+    // The spacing around the name is checked as text: the link checks don't look at <span>.
+    await page.goto('/cv/');
+    await expect(page.locator('.cv-header .lede')).toHaveText('Nanjie (Jimmy) Rao 饶楠杰');
+    await page.goto('/about/');
+    const sentence = page.locator('.about .prose p').first();
+    await expect(sentence).toContainText('Nanjie (Jimmy) Rao (饶楠杰); my papers');
+    // In running text the name keeps the size of the text around it.
+    const sizes = await sentence.evaluate((p) => [
+      getComputedStyle(p).fontSize,
+      getComputedStyle(p.querySelector('span[lang="zh-CN"]')!).fontSize,
+    ]);
+    expect(sizes[1]).toBe(sizes[0]);
+  });
+
+  test('puts the photo beside the name on a phone and beside the text on a desktop', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto('/');
+    await expect(page.locator('.intro__photo')).toHaveAttribute('alt', /^Nanjie \(Jimmy\) Rao, /);
+    await expect(page.locator('.intro__role a')).toHaveCount(2);
+    const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
+    const photo = await box('.intro__photo');
+    const name = await box('#intro-name');
+    const line = await box('.intro__line');
+    const width = page.viewportSize()!.width;
+    if (width < 768) {
+      expect(photo.x + photo.width).toBeLessThanOrEqual(name.x);
+      expect(line.y).toBeGreaterThanOrEqual(photo.y + photo.height);
+    } else {
+      expect(photo.x).toBeGreaterThanOrEqual(line.x + line.width);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    // SITE_PLAN §4: the top of the cloud shows in the first screen.
+    expect((await box('[data-wordcloud]')).y).toBeLessThan(page.viewportSize()!.height);
   });
 });
 

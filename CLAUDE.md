@@ -110,7 +110,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 3. Status: use facts.md §2 exactly. Don't mention job-search news unless §2 says so. Don't discuss
    location, availability, or immigration matters.
 4. Names: "Nanjie (Jimmy) Rao" on first mention; "Nanjie Rao" for scholarly identity (it matches
-   Google Scholar and the papers).
+   Google Scholar and the papers). The Chinese name 饶楠杰 follows the display name on the homepage,
+   /about and /cv as live text marked `lang="zh-CN"`, never as an image (D64).
 5. Demos use synthetic data only and say so on screen.
 6. Private sources stay private. Don't copy CVs, application materials, raw data, participant
    quotations, or unpublished drafts into the repository. Paraphrase facts already in facts.md.
@@ -130,8 +131,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 ## Design rules
 
 - Follow `docs/DESIGN.md`. Until it exists, use the neutral baseline in SITE_PLAN §8.
-- Homepage order (D21): intro strip (name, one line, CV / Publications / Email) first, then the
-  word cloud and portals. The footer carries the annotation legend (D30).
+- Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
+  one line, CV / Publications / Email) first, then the word cloud and portals. The footer carries the annotation legend (D30).
 - Accessibility: WCAG 2.2 AA. Keyboard reachable, visible focus, semantic landmarks, skip link,
   alt text for every meaningful image, `prefers-reduced-motion` respected, color never the only
   carrier of meaning. The grounded/inferred convention always uses line style + label + color.

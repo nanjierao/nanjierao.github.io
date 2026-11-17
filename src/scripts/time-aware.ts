@@ -5,7 +5,8 @@ import { wordingFor } from '../lib/time.ts';
 export function updateTimeAware(root: ParentNode = document, now: Date = new Date()): void {
   for (const el of root.querySelectorAll<HTMLElement>('[data-time-aware]')) {
     const { start, end, timeZone, upcoming, ongoing, past } = el.dataset;
-    if (!start || !upcoming || !past) continue;
+    // An empty `past` is a choice: the text disappears after the date.
+    if (!start || !upcoming || past === undefined) continue;
     try {
       const text = wordingFor({ start, end, timeZone }, { upcoming, ongoing, past }, now);
       if (el.textContent !== text) el.textContent = text;

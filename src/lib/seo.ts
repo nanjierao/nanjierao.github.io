@@ -14,7 +14,7 @@ export function personJsonLd(): Record<string, unknown> {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: PERSON.scholarlyName,
-    alternateName: [PERSON.displayName, PERSON.alternateName],
+    alternateName: [PERSON.displayName, PERSON.alternateName, PERSON.chineseName],
     givenName: PERSON.givenName,
     familyName: PERSON.familyName,
     url: `${SITE_URL}/`,

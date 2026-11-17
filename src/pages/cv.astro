@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ChineseName from '../components/ChineseName.astro';
 import ElsewhereLinks from '../components/ElsewhereLinks.astro';
 import PublicationList from '../components/PublicationList.astro';
 import CvTimeline from '../components/figures/CvTimeline.astro';
@@ -34,7 +35,9 @@ const cvPdf = hasCvPdf();
 >
   <header class="cv-header">
     <h1>Curriculum vitae</h1>
-    <p class="lede">{PERSON.displayName}</p>
+    <p class="lede">
+      {PERSON.displayName} <ChineseName />
+    </p>
     <p>
       {STATUS.role}
       <br />

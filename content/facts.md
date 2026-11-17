@@ -14,7 +14,9 @@ checked by Jimmy against the final dissertation before they appear on the site.
 
 - Display name: **Nanjie (Jimmy) Rao**
 - Scholarly name (matches Google Scholar and papers): **Nanjie Rao** (one 2020 CHI paper lists "N. J. Rao")
-- Chinese name (for the future /zh pages): 饶楠杰
+- Chinese name: 饶楠杰 (beside the English name on the homepage, /about and /cv: D64, proposed
+  Nov 16, 2026; also for the future /zh pages). Pinyin and an English respelling for "how to say
+  it": `TODO(jimmy)`.
 - Pronouns: he/him
 - Location (public, city level only): Gainesville, Florida
 - Public contact: `TODO(jimmy)`: pick the one email address the site shows (intro strip, /about).
@@ -367,7 +369,8 @@ Other videos from the old site (ask Jimmy what they are before using):
   against real home life)
 - Zhihu: https://www.zhihu.com/people/daozhu (his Chinese writing; blog posts link back here)
 - LinkedIn: `TODO(jimmy)` · ORCID: `TODO(jimmy)` (create one if none)
-- Old site (to be replaced by a redirect stub): https://www.cise.ufl.edu/~nr0/
+- Old site: https://www.cise.ufl.edu/~nr0/ (since Oct 30, 2026 a 301 redirect to this site; see
+  `migration/cise/HOWTO.md`)
 
 ## 14. Personal (About page, optional)
 
