@@ -42,11 +42,9 @@ export const EDUCATION: EducationItem[] = [
   },
 ];
 
-const CONFERRAL = 'Ph.D. to be conferred December 2026';
-
 /** facts.md §2. */
 export const STATUS = {
-  role: 'Ph.D. candidate, Human-Centered Computing, University of Florida',
+  role: 'Ph.D., Human-Centered Computing, University of Florida',
   department:
     'Department of Computer & Information Science & Engineering, Herbert Wertheim College of Engineering',
   lab: 'Embodied Learning & Experience (ELX) Lab, advised by Dr. Sharon Lynn Chu',
@@ -54,14 +52,16 @@ export const STATUS = {
   advisor: 'Dr. Sharon Lynn Chu',
   labUrl: 'https://elxlab.cise.ufl.edu/',
   advisorUrl: 'https://www.cise.ufl.edu/~slchu/',
-  defense: `Oral defense passed October 2026; ${CONFERRAL}.`,
-  conferral: CONFERRAL,
+  defense:
+    'Defense passed October 2026 and dissertation accepted; degree will be granted December 2026.',
+  /** The status in brackets after "Ph.D." (Jimmy's wording, D65). */
+  degreeNote: 'defense passed and dissertation accepted; degree will be granted December 2026',
   /**
-   * D26, D64: the homepage shows the conferral clause through this month and then drops it.
-   * Nothing replaces it, and "Ph.D. candidate" stays until facts.md §2 changes.
-   * TODO(jimmy): update facts.md §2 after the degree is conferred.
+   * D26, D65: the homepage shows the bracketed note through this month and then drops it; the
+   * line then reads "Ph.D., Human-Centered Computing, University of Florida".
+   * TODO(jimmy): update facts.md §2 after the degree is granted (/cv and /about follow that edit).
    */
-  conferralMonth: { start: '2026-12-01', end: '2026-12-31' },
+  degreeMonth: { start: '2026-12-01', end: '2026-12-31' },
 } as const;
 
 export interface TeachingItem {

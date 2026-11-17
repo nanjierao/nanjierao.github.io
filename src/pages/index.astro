@@ -42,14 +42,16 @@ const cvPdf = hasCvPdf();
       loading="eager"
     />
     <p class="intro__role">
-      {STATUS.role} · <a href={STATUS.labUrl}>{STATUS.labShort}</a>, advised by{' '}
-      <a href={STATUS.advisorUrl}>{STATUS.advisor}</a>
+      {STATUS.role}
       <TimeAware
-        start={STATUS.conferralMonth.start}
-        end={STATUS.conferralMonth.end}
-        upcoming={` · ${STATUS.conferral}`}
+        start={STATUS.degreeMonth.start}
+        end={STATUS.degreeMonth.end}
+        upcoming={` (${STATUS.degreeNote})`}
         past=""
       />
+      {' · '}
+      <a href={STATUS.labUrl}>{STATUS.labShort}</a>, advised by{' '}
+      <a href={STATUS.advisorUrl}>{STATUS.advisor}</a>
     </p>
     <p class="intro__line">{POSITIONING}</p>
     <ul class="intro__actions" aria-label="Quick links">

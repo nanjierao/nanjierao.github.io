@@ -55,7 +55,7 @@ describe('wordingFor', () => {
 
   it('returns an empty past wording as it is, so a clause can disappear after its date (D64)', () => {
     const month = { start: '2026-12-01', end: '2026-12-31', timeZone: 'America/New_York' };
-    const wording = { upcoming: ' · Ph.D. to be conferred December 2026', past: '' };
+    const wording = { upcoming: ' (degree will be granted December 2026)', past: '' };
     expect(wordingFor(month, wording, new Date('2026-11-16T12:00:00Z'))).toBe(wording.upcoming);
     expect(wordingFor(month, wording, new Date('2026-12-31T23:00:00-05:00'))).toBe(
       wording.upcoming,
