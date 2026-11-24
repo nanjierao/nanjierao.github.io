@@ -1,10 +1,11 @@
 # Session prompts for Claude Code cloud sessions (v5)
 
 How to run one: claude.ai/code (or the Code tab in the Claude app) → repository
-`nanjierao/nanjierao.github.io` → paste the prompt → let it work → open the pull request it
-creates and look at the screenshots → reply in the session with fixes → merge on GitHub (web or
-phone). Merging publishes https://nanjierao.github.io within a minute or two. Start a fresh session
-for each numbered task.
+`nanjierao/nanjierao.github.io` → paste the prompt → let it work. Since Nov 24, 2026 the session
+merges its own pull request once the checks pass (D67), and merging publishes
+https://nanjierao.github.io within a minute or two. Open the pull request it names, look at the
+screenshots, and reply in the session with fixes: they go out as a new pull request. Start a
+fresh session for each numbered task.
 
 v5: cloud sessions, GitHub Pages, blog, YouTube and Zhihu links, optional Worker (DECISIONS
 D37–D52). Paste these prompts as they are. Don't paste review text or "master prompts" from other

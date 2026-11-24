@@ -73,6 +73,17 @@ Compared and not used:
   and "nothing from YouTube before a click", so `src/components/YouTubeFacade.astro` is a small
   custom element (a link that becomes a youtube-nocookie.com iframe on click) with local posters.
 
+- **Sketch scenes (D68, 24 Nov 2026).** Jimmy's design notes looked at Rough.js (MIT;
+  hand-drawn rendering on canvas or SVG), Vivus (MIT; SVG line-drawing animation),
+  perfect-freehand (MIT), Excalidraw (MIT) and lottie-web (MIT), and used none of them: five
+  drawings don't need a renderer. The scenes are hand-written SVG paths, revealed with
+  `stroke-dashoffset` and roughened by an SVG turbulence filter, with one script of under 4 KB
+  gzipped (`src/scripts/sketch-scenes.ts`). A React island was ruled out for the home page:
+  React 19's client runtime is 68 KB gzipped, more than the page's 50 KB JavaScript budget. The
+  way of drawing (one idea per scene, regions in story order, lines before color, one caption
+  per region) follows the whiteboard-video method in his notes; no code from another project is
+  in the scenes.
+
 ## Alternatives (pick in a spike if the recommended one disappoints)
 
 | Use | Project | License | Latest release | Notes |

@@ -27,4 +27,4 @@ The Astro site itself (S1 onward):
 - `tests/` — Vitest unit and content checks, Playwright + axe end-to-end tests, synthetic fixtures
 - `.github/workflows/deploy.yml` — checks, build and deploy to GitHub Pages
 
-Workflow: Claude Code cloud session → pull request with screenshots → Jimmy merges → GitHub Actions → GitHub Pages.
+Workflow: Claude Code cloud session → pull request with screenshots → the session merges it once the checks pass (D67) → GitHub Actions → GitHub Pages.

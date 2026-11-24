@@ -7,6 +7,7 @@ import ChineseName from '../components/ChineseName.astro';
 import ElsewhereLinks from '../components/ElsewhereLinks.astro';
 import GitHubActivity from '../components/GitHubActivity.astro';
 import LatestVideo from '../components/LatestVideo.astro';
+import LearnersTeachers from '../components/LearnersTeachers.astro';
 import TimeAware from '../components/TimeAware.astro';
 import WordCloud from '../components/WordCloud.astro';
 import { HEADSHOT_ALT, PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
@@ -84,6 +85,8 @@ const cvPdf = hasCvPdf();
     </h2>
     <WordCloud />
   </section>
+
+  <LearnersTeachers />
 
   <section aria-labelledby="research-heading">
     <h2 id="research-heading">Research</h2>

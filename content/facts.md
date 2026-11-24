@@ -211,6 +211,72 @@ they supersede the CVs and the research statement wherever they differ.
 - Explanation types and user motivations in recommender systems (AAAI HCOMP 2020, co-author).
 - Everyday-inspired movie recommendation from personal social media (IFIP INTERACT 2023, co-author).
 
+### 5.7 Learner and teacher modeling (the home page's "How AI learns about people and places" section, below its sketch scenes; D66)
+Source: Jimmy's outline (Nov 24, 2026), first for a page of its own, then moved to the home
+page the same day. The section was titled "Modeling Learners and Teachers" until the sketch
+scenes arrived (§5.8, D68). The items marked "check" are not in the sections above: they are
+wording from the outline, or choices made while writing it. They go live with the section under
+the merge rule (D67) and are still Jimmy's to confirm; a correction here goes to the page.
+`TODO(jimmy)`: the lede ("One line of work runs through these papers...") now stands above the
+sketch scenes, as he asked; say if it should move below them or be rewritten to cover them.
+
+- Framing: one line of work, building systems that observe how people learn and checking what
+  those observations are worth. The term is "learner model", never "world model".
+- The section's intro also says "a learner model is only as good as what reaches it". That sentence
+  is not in the outline; it widens §5.1's core idea from a tutor to a learner model (check).
+- Section headings from the outline: "Observing learners" (the ICIDS 2026 study observed people
+  writing stories), "Modeling teachers" (§5.5 calls these papers teacher-facing, not models of
+  teachers) and "Supporting breadth" (check all three).
+- Observing learners: the dissertation, IEEE ICALT 2026, ICIDS 2026 (gaze and interaction logs;
+  accepted, to appear), IEEE VR 2020.
+- Modeling teachers: IEEE ICALT 2023, HCI International 2022, IEEE ICALT 2021, and the survey of
+  81 studies on teacher autonomy and automation (§5.5).
+- Supporting breadth: ACM CHI 2020, AAAI HCOMP 2020, IFIP INTERACT 2023, ICIDS 2019.
+- Dissertation participants: college students (§5.1 says so for Study 1; check: Study 2).
+- IEEE ICALT 2023: focus groups with K-12 teachers (check).
+- HCI International 2022: the system is called PRIS (check; what PRIS stands for: `TODO(jimmy)`).
+- The survey may be named in this section. The outline calls it an "81-paper survey"; §5.5 and §6
+  say 81 studies (check which word). Listing working papers anywhere else still waits on D28.
+- §6 [11]: the venue is written "HCI International 2022, Late Breaking Posters" since this section;
+  it had a dash between the two parts (check against the proceedings title).
+- IEEE VR 2020: this section says only that the speech-triggered display led to better learning
+  scores. §5.4 also says "task scores" (check against the paper; if task scores did not differ,
+  §5.4, the TL;DR draft for [12], the embodied-learning page and the Q&A answer need the same fix).
+
+### 5.8 Sketch scenes on the home page (D68)
+Source: Jimmy's design notes and sketch prototype of Nov 24, 2026 (not in this repository). The
+scenes use the facts of the sections named below. What comes only from the design is marked
+"design". Interests, records, reports and posts shown in the scenes are made up, and each scene
+says so.
+
+- Title: "How AI learns about people and places". Subtitle: "Each scene shows where the data
+  comes from, what the system builds from it, and who checks it." Five scenes; no teacher scene,
+  because §5.5 has only titles for that work.
+- Scene 0, Tracker Toolbox (§7; labeled a prototype; no numbers): it logs clicks, scrolls and
+  searches, follows gaze with WebGazer.js, maps records to page content, and asks the learner
+  once a minute. Design: the pop-up in the scene asks "Did you learn something in the last
+  minute?", and the answer labels that minute of the record. The Toolbox asks two questions; the
+  scene shows one, with wording from the design, and says that the question is an example.
+  `TODO(jimmy)`: the real wording of the two questions, and whether the answers are stored as
+  labels of the log.
+- Scenes 1 and 2, browsing history and social-media posts (§5.1, Study 2): self-curation,
+  sensitive-content filtering, non-retention; an LLM extracts interests with explanations;
+  students confirm or reject each; 69.8% and 56.3% confirmed; 2.14 vs. 1.58 grounded units per
+  confirmed interest; 38.2% added by the two sources together; 32 participants after screening.
+  The sample student and the eight interests are made up. The scenes give the privacy protocol
+  in §5.1's three terms and say only that sensitive content is left out of what the LLM
+  extracts. `TODO(jimmy)`: what non-retention covers (the samples, the LLM calls, or both), and
+  whether anything filters the samples before the LLM reads them.
+- Scene 3, puppet (§5.4, §7): position from a YOLO detector, rotation from an IMU over
+  Bluetooth, animated in Unity in real time; perception study with 23 MTurk workers. Design: the
+  drawing shows a storyteller at a classroom table with a camera, and the scene says the IMU is
+  on the puppet.
+- Scene 4, flooded street (§5.3; labeled simulated; "coauthored", with no names until the author
+  list is verified): official sensor anomaly, citizen report and social post in the same map
+  cell; when two agree, a one-tap verification quest; when three agree, confirmed; 10.8 hours
+  into a 30-hour replay; four confirmed cells and three open quests at the peak. Design: the
+  visitor can switch channels off, and with one channel left the scene says neither rule applies.
+
 ## 6. Publications (12 peer-reviewed; * = first author)
 
 Do not hard-code citation counts or h-index on the site (they go stale) — link to Google Scholar.
@@ -246,7 +312,7 @@ Extended abstracts, posters, workshop papers
     appear in EPiC Series in Technology. **VERIFY** authors and title against the v2 extended
     abstract.
 11. *Rao, N., Chu, S. L., Jing, Z., Kuang, H., Tang, Y., & Dong, Z. (2022). Exploring Information
-    Retrieval for Personalized Teaching Support. HCI International 2022 — Late Breaking Posters,
+    Retrieval for Personalized Teaching Support. HCI International 2022, Late Breaking Posters,
     Springer, pp. 191–197.
 12. *Rao, N., Zhang, L., Chu, S. L., Jurczyk, K., Candelora, C., Su, S., & Kozlin, C. (2020).
     Investigating the Necessity of Meaningful Context Anchoring in Augmented Reality Smart Glasses
@@ -292,7 +358,7 @@ Optional (on Google Scholar, omitted from recent CVs — ask Jimmy): 饶正寿, 
 | Humanoid telepresence robot — ANA Avatar XPRIZE | Sept 2021 | On-site leader of four-person Team Limitless; 300+ lb humanoid telepresence robot (NVIDIA Jetson) with motion-capture teleoperation; 37 teams from 15 countries; semifinalist; re-scoped the system overnight after the power converter failed | YouTube `u9nYUBc-_s0` (XPRIZE channel; start at 74 s) |
 | Humanoid robot behavior imitation (B.S. thesis) | 2016 | Kinect-based human action recognition driving a humanoid robot over Wi-Fi; Outstanding Thesis Award (top 1%) | `TODO` |
 | Wearable baby thermometer (Galaxy Studio) | 2012–16 | Designed and iterated; later commercialized and sold in the U.S. | `TODO` |
-| IoT Curiosity Detector for Connected Learning | `TODO` | `TODO(jimmy): one-paragraph description` | YouTube `zzlthBSD1ns` |
+| IoT Curiosity Detector for Connected Learning: the Tracker Toolbox | 2020–22 | Tracker Toolbox, a Chrome extension (2020 to 2022, unpublished): it logs clicks, scrolls, searches and WebGazer.js gaze, maps them to page content, and asks learners two self-report questions every 60 seconds. Don't mention a competition placement. (Jimmy, Nov 24, 2026.) | YouTube `zzlthBSD1ns` (`TODO(jimmy)`: confirm this video shows the Tracker Toolbox before the build page uses it) |
 | Engagement dashboards — The Teaching Lab (internship) | 2022 | Two interactive dashboards of student-engagement data for program directors; centralized web grading system | `TODO` |
 
 Other videos from the old site (ask Jimmy what they are before using):

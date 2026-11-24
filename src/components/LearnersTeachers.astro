@@ -1,0 +1,220 @@
+---
+// The home page's section "How AI learns about people and places" (D66, D68): the sketch
+// scenes first, then the learner and teacher work they come from (observing learners, the
+// teacher's side, and the checks). The sentences and numbers live in
+// src/data/learners-teachers.ts so a test can read them; headings and fixed labels are here.
+// The citations come from the publication list the rest of the site uses.
+import Figure from './figures/Figure.astro';
+import Flow from './figures/Flow.astro';
+import PairedBars from './figures/PairedBars.astro';
+import PublicationList from './PublicationList.astro';
+import SketchScenes from './SketchScenes.astro';
+import { STUDY2_SOURCES } from '../data/figures.ts';
+import {
+  BREADTH_INTRO,
+  BREADTH_PUBLICATIONS,
+  GROUNDING_NOTE,
+  INTRO,
+  LEARNER_STUDIES,
+  LEDE,
+  SOURCES_FIGURE,
+  STEPS,
+  STEPS_NOTE,
+  TEACHER_INTRO,
+  TEACHER_ITEMS,
+  TEACHER_PUBLICATIONS,
+  TITLE,
+} from '../data/learners-teachers.ts';
+import { getPublicationsByIds } from '../lib/content.ts';
+
+const teacherPapers = await getPublicationsByIds(TEACHER_PUBLICATIONS);
+const breadthPapers = await getPublicationsByIds(BREADTH_PUBLICATIONS);
+---
+
+<section class="lt" id="learners-and-teachers" aria-labelledby="lt-heading">
+  <h2 id="lt-heading">{TITLE}</h2>
+  <p class="lede">{LEDE}</p>
+
+  <SketchScenes />
+
+  <div class="prose">
+    {INTRO.map((paragraph) => (
+      <p>{paragraph}</p>
+    ))}
+  </div>
+
+  <Figure title="Observe, model, check" note={STEPS_NOTE}>
+    <Flow label="Observe, model, check" steps={STEPS} />
+  </Figure>
+
+  <div class="lt__part">
+    <h3 id="learners-heading">Observing learners</h3>
+    <ul class="studies">
+      {LEARNER_STUDIES.map((study) => (
+        <li class="study" id={study.id}>
+          <h4 class="study__title">{study.label}</h4>
+          <p class="study__where small muted">
+            <cite>{study.title}</cite>. {study.where}
+          </p>
+          <dl class="study__facts">
+            <dt>{study.firstLabel ?? 'Observed'}</dt>
+            <dd>{study.observed}</dd>
+            <dt>Who</dt>
+            <dd>{study.who}</dd>
+            <dt>Found</dt>
+            <dd>{study.found}</dd>
+          </dl>
+          <ul class="study__links">
+            {study.links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  aria-label={link.context ? `${link.label}: ${link.context}` : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ul>
+
+    <h4 id="worth-heading">What the observations are worth</h4>
+    <Figure title={SOURCES_FIGURE.title} note={SOURCES_FIGURE.note}>
+      <PairedBars series={STUDY2_SOURCES.series} metrics={STUDY2_SOURCES.metrics} />
+    </Figure>
+    <div class="prose">
+      {GROUNDING_NOTE.map((paragraph) => (
+        <p>{paragraph}</p>
+      ))}
+      <p>
+        <a href="/research/grounding/">How the grounding check works</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="lt__part">
+    <h3 id="teachers-heading">Modeling teachers</h3>
+    <p class="prose">{TEACHER_INTRO}</p>
+    <dl class="teacher-items">
+      {TEACHER_ITEMS.map((item) => (
+        <div class="teacher-item">
+          <dt>
+            {item.lead} <span class="small muted">{item.where}</span>
+          </dt>
+          <dd>{item.text}</dd>
+        </div>
+      ))}
+    </dl>
+    <h4 id="teacher-papers-heading">The three papers</h4>
+    <PublicationList publications={teacherPapers} compact />
+    <p>
+      <a href="/research/teacher-support/">Teacher support technologies</a>
+    </p>
+  </div>
+
+  <div class="lt__part">
+    <h3 id="breadth-heading">Supporting breadth</h3>
+    <p class="prose">{BREADTH_INTRO}</p>
+    <PublicationList publications={breadthPapers} compact />
+  </div>
+</section>
+
+<style>
+  .studies {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+    margin: var(--space-4) 0 var(--space-6);
+    padding: 0;
+    list-style: none;
+  }
+
+  .study {
+    margin: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius);
+  }
+
+  .study__title {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .study__where {
+    margin: var(--space-1) 0 var(--space-3);
+  }
+
+  .study__where cite {
+    font-style: italic;
+  }
+
+  .study__facts {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--space-2) var(--space-3);
+    margin: 0 0 var(--space-3);
+  }
+
+  .study__facts dt {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .study__facts dd {
+    margin: 0;
+  }
+
+  .study__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .study__links li {
+    margin: 0;
+  }
+
+  .study__links a {
+    display: inline-block;
+    padding-block: var(--space-1);
+  }
+
+  .teacher-items {
+    max-width: var(--measure);
+    margin: var(--space-4) 0 var(--space-5);
+  }
+
+  .teacher-item {
+    margin: 0 0 var(--space-4);
+    padding-left: var(--space-4);
+    border-left: 3px solid var(--color-rule);
+  }
+
+  .teacher-item dt {
+    font-weight: 600;
+  }
+
+  .teacher-item dt span {
+    font-weight: 400;
+  }
+
+  .teacher-item dd {
+    margin: var(--space-1) 0 0;
+  }
+
+  .lt {
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .lt__part > h3 {
+    margin-top: var(--space-6);
+  }
+</style>

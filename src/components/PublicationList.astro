@@ -54,6 +54,14 @@ const { publications, compact = false } = Astro.props;
     margin: 0 0 var(--space-4);
     padding-left: var(--space-4);
     border-left: 3px solid var(--color-rule);
+    scroll-margin-top: var(--space-4);
+  }
+
+  /* The citation a link pointed at: a thicker, colored bar and a tinted background. */
+  .pub:target {
+    padding-left: calc(var(--space-4) - 3px);
+    border-left: 6px solid var(--color-series-a);
+    background: var(--color-surface);
   }
 
   .pub__title {
