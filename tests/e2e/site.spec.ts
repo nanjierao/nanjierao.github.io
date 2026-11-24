@@ -488,7 +488,7 @@ test.describe('one page for the learner and teacher work (D66)', () => {
     await isolate(page);
     await page.goto('/learners-and-teachers/');
     const tab = page.locator('.site-nav a[href="/learners-and-teachers/"]');
-    await expect(tab).toHaveText('Modeling Learners and Teachers');
+    await expect(tab).toHaveText('Learners and Teachers');
     await expect(tab).toHaveAttribute('aria-current', 'page');
     await expect(page.locator('h1')).toHaveText('Modeling Learners and Teachers');
     await expect(page.locator('main h2')).toHaveText([
@@ -557,6 +557,29 @@ test.describe('one page for the learner and teacher work (D66)', () => {
       'border-left-width',
       '6px',
     );
+  });
+
+  test('keeps the menu on two rows on a phone, from 360 px up', async ({ page }) => {
+    await isolate(page);
+    for (const width of [360, 375, 390, 412, 430]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/learners-and-teachers/');
+      const tops = await page
+        .locator('.site-nav a')
+        .evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().top)));
+      expect(new Set(tops).size, `${width}px`).toBe(2);
+      // Every item stays a 44 px tall target, at least 24 px wide.
+      const sizes = await page.locator('.site-nav a').evaluateAll((links) =>
+        links.map((link) => {
+          const box = link.getBoundingClientRect();
+          return [box.width, box.height];
+        }),
+      );
+      for (const [w, h] of sizes) {
+        expect(w, `${width}px`).toBeGreaterThanOrEqual(24);
+        expect(h, `${width}px`).toBeGreaterThanOrEqual(44);
+      }
+    }
   });
 
   test('keeps the theme toggle beside the name, never on a row of its own', async ({ page }) => {

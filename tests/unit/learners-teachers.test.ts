@@ -184,7 +184,9 @@ describe('publications and links on /learners-and-teachers/', () => {
     }
   });
 
-  it('has its own tab, named as the page is', () => {
-    expect(NAV.find((item) => item.href === '/learners-and-teachers/')?.label).toBe(page.TITLE);
+  it('has its own tab, with a shorter name than the page so the phone menu keeps two rows', () => {
+    const label = NAV.find((item) => item.href === '/learners-and-teachers/')?.label;
+    expect(label).toBe('Learners and Teachers');
+    expect(page.TITLE).toContain(label);
   });
 });

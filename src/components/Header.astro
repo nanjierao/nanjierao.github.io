@@ -92,9 +92,9 @@ const current = (href: string) =>
     font-weight: 600;
   }
 
-  /* Up to the page width (72rem; a media query can't read the token), the name and the theme
-     toggle share the first row and the menu takes the row below. */
-  @media (max-width: 72rem) {
+  /* Up to 66rem the name and the theme toggle share the first row and the menu takes the row
+     below; from there up all eight items fit beside them on one row. */
+  @media (max-width: 66rem) {
     .site-header__inner {
       gap: 0 var(--space-3);
     }
@@ -103,6 +103,22 @@ const current = (href: string) =>
       order: 3;
       width: 100%;
       margin-inline: calc(-1 * var(--space-2));
+    }
+  }
+
+  /* Small phones: closer spacing keeps the menu on two rows from 360px up. The targets stay
+     44px tall. */
+  @media (max-width: 24.5rem) {
+    nav {
+      margin-inline: -5px;
+    }
+
+    .site-nav {
+      gap: 0;
+    }
+
+    .site-nav a {
+      padding: 0 5px;
     }
   }
 </style>
