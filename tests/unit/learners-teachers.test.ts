@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 import * as page from '../../src/data/learners-teachers.ts';
 import * as sketch from '../../src/data/sketch-scenes.ts';
-import { DRAWINGS } from '../../src/data/sketch-drawings.ts';
+import { CANVAS, DRAWINGS } from '../../src/data/sketch-drawings.ts';
 import { GLYPHS } from '../../src/data/sketch-glyphs.ts';
 import { NAV } from '../../src/data/site.ts';
 
@@ -31,7 +31,8 @@ function strings(value: unknown): string[] {
 
 /** Sentences and labels, without paths and one-word keys. */
 const copyOf = (module: unknown) =>
-  strings(module).filter((text) => !text.startsWith('/') && !/^[a-z0-9-]+$/.test(text));
+  // Keys such as "tracker" or "cell-hatch" are not copy; a value made of digits ("77") is.
+  strings(module).filter((text) => !text.startsWith('/') && !/^[a-z-]+$/.test(text));
 const COPY = [...copyOf(page), ...copyOf(sketch)];
 const LINKS = strings(page).filter((text) => text.startsWith('/'));
 
@@ -171,9 +172,11 @@ describe('sketch scenes (D68)', () => {
       'puppet',
       'city',
     ]);
-    expect(sketch.SCENE_GROUPS.flatMap((group) => group.scenes)).toEqual(
-      sketch.SCENES.map((item) => item.id),
-    );
+    expect(sketch.SCENE_GROUPS).toEqual([
+      { label: 'Learners', scenes: ['tracker', 'dorm', 'dining'] },
+      { label: 'Hands', scenes: ['puppet'] },
+      { label: 'City', scenes: ['city'] },
+    ]);
     expect(strings(sketch).join(' ')).not.toMatch(/teacher/i);
   });
 
@@ -185,6 +188,8 @@ describe('sketch scenes (D68)', () => {
     expect(scene('tracker').source).toContain('Unpublished prototype');
     for (const id of ['tracker', 'dorm', 'dining'] as const)
       expect(scene(id).note, id).toContain('made up');
+    // The pop-up's wording is the scene's own; facts.md does not record the extension's.
+    expect(scene('tracker').note).toContain('the pop-up’s question is an example');
     expect(scene('city').note).toMatch(/^Everything in this scene is simulated/);
     expect(scene('puppet').note).toContain('illustration');
   });
@@ -208,7 +213,7 @@ describe('sketch scenes (D68)', () => {
       [
         /69\.8% confirmed vs\. 56\.3% for posts/,
         results('dining'),
-        /^56\.3% of the interests extracted from posts were confirmed, fewer than from browsing history/,
+        /^56\.3% of the interests extracted from posts were confirmed, a smaller share than from browsing history/,
       ],
       [
         /Posts' explanations carried more grounded information per confirmed interest \(2\.14 vs\. 1\.58 grounded units/,
@@ -243,6 +248,16 @@ describe('sketch scenes (D68)', () => {
     }
     // facts.md §5.1 retires "self-report missed 38%".
     expect(strings(sketch).join(' ')).not.toMatch(/self-report (form )?missed/i);
+    // The privacy protocol in facts.md's own three terms, and nothing stronger than them.
+    expect(FACTS_LINE).toContain(
+      'Privacy protocol: participant self-curation, sensitive-content filtering, non-retention.',
+    );
+    for (const id of ['dorm', 'dining'] as const) {
+      expect(scene(id).note, id).toContain(
+        'Privacy protocol in the study: participant self-curation, sensitive-content filtering, non-retention.',
+      );
+      expect(words(id), id).not.toMatch(/nothing is kept|never stored|deleted/i);
+    }
   });
 
   it('takes the flood scene’s numbers from facts.md §5.3 only, and names no coauthor', () => {
@@ -321,16 +336,23 @@ describe('sketch scenes (D68)', () => {
     if (city.task.kind !== 'toggle') throw new Error('the city scene toggles channels');
     for (const channel of city.task.channels)
       expect(parts('city').has(channel.part), channel.part).toBe(true);
-    for (const part of ['cell', 'cell-hatch']) expect(parts('city').has(part), part).toBe(true);
-    expect(parts('tracker').has('popup')).toBe(true);
+    for (const part of ['cell', 'cell-tick', 'cell-hatch'])
+      expect(parts('city').has(part), part).toBe(true);
     for (const [id, drawing] of Object.entries(DRAWINGS)) {
       for (const region of drawing.regions) {
         expect(region.ms, id).toBeGreaterThan(0);
         for (const shape of region.shapes) {
           expect(shape.d, id).toMatch(/^M[MLCZ\d ,.-]+$/);
           expect(Boolean(shape.fill) !== Boolean(shape.stroke), `${id}: ${shape.d}`).toBe(true);
-          for (const value of shape.d.match(/-?\d+(?:\.\d+)?/g) ?? [])
-            expect(Number(value), `${id}: ${shape.d}`).toBeLessThanOrEqual(800);
+          // Every point is on the 800 × 450 canvas: x then y, in pairs.
+          const numbers = (shape.d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+          expect(numbers.length % 2, `${id}: ${shape.d}`).toBe(0);
+          numbers.forEach((value, index) => {
+            expect(value, `${id}: ${shape.d}`).toBeGreaterThanOrEqual(0);
+            expect(value, `${id}: ${shape.d}`).toBeLessThanOrEqual(
+              index % 2 === 0 ? CANVAS.width : CANVAS.height,
+            );
+          });
         }
       }
     }

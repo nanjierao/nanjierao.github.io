@@ -113,17 +113,16 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
           },
         ],
       },
-      // Once a minute, a pop-up asks the learner about that minute. Every shape is part 'popup'.
+      // Once a minute, a pop-up asks the learner about that minute.
       {
         ms: 1800,
         shapes: [
-          { d: 'M431 181 L501 179 L502 229 L432 231 Z', fill: 'warm', part: 'popup' },
-          { d: 'M430 180 L502 178 L503 230 L431 232 Z', stroke: 'ink', part: 'popup' },
-          { d: 'M439 192 L488 191', stroke: 'thin', part: 'popup' },
+          { d: 'M431 181 L501 179 L502 229 L432 231 Z', fill: 'warm' },
+          { d: 'M430 180 L502 178 L503 230 L431 232 Z', stroke: 'ink' },
+          { d: 'M439 192 L488 191', stroke: 'thin' },
           {
             d: 'M439 204 L462 204 L462 220 L439 220 Z M471 204 L494 203 L494 219 L471 220 Z',
             stroke: 'thin',
-            part: 'popup',
           },
         ],
       },
@@ -160,7 +159,7 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
           },
         ],
       },
-      // A college student sits down at the desk.
+      // A student sits down at the desk.
       {
         ms: 2600,
         shapes: [
@@ -295,7 +294,7 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
   },
   puppet: {
     regions: [
-      // A classroom table with a webcam and a laptop.
+      // A classroom table with a camera and a laptop.
       {
         ms: 2600,
         shapes: [
@@ -315,7 +314,7 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
           { d: 'M470 220 L570 218 L571 290 L471 292 Z M458 299 L584 297', stroke: 'ink' },
         ],
       },
-      // A child moves a puppet in front of the camera. The puppet is part 'puppet'; its beak
+      // A storyteller moves a puppet in front of the camera. The puppet is part 'puppet'; its beak
       // points right, so mirroring the part about anchors.puppet turns it to face left.
       {
         ms: 2600,
@@ -345,14 +344,14 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
           { d: 'M414 160 L430 165 L410 168', stroke: 'ink', part: 'puppet' },
         ],
       },
-      // The camera tracks where the puppet is. A sensor inside it tracks how it turns.
+      // The camera tracks where the puppet is. A motion sensor on it tracks how it turns.
       // The character in the lens is part 'avatar' (pivot: anchors.avatar) and has the same beak.
       // The chip outline belongs to 'puppet'; the radio waves have no part and never flip.
       {
         ms: 3000,
         shapes: [
           { d: 'M604 112 L626 112 L626 130 L604 130 Z', fill: 'warm', part: 'avatar' },
-          { d: 'M276 258 C 318 228, 347 199, 382 172', stroke: 'thin' },
+          { d: 'M276 252 C 300 190, 340 160, 386 158', stroke: 'thin' },
           { d: 'M396 176 L408 176 L408 186 L396 186 Z', stroke: 'thin', part: 'puppet' },
           {
             d: 'M422 196 C 428 192, 428 186, 424 182 M428 202 C 438 194, 438 182, 430 174',
@@ -417,7 +416,7 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
           },
         ],
       },
-      // A resident steps outside with their phone.
+      // A resident steps outside with a phone.
       {
         ms: 2600,
         shapes: [
@@ -439,10 +438,11 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
           { d: 'M436 250 L452 248 L454 270 L438 272 Z', stroke: 'ink' },
         ],
       },
-      // A water sensor, the resident's phone, and public posts all feed one map cell.
+      // An official sensor, citizen reports and social posts all point at cells of one map.
       // Channels: 'sensor' (radio waves and link), 'citizen' (the phone's link), 'social' (the
-      // post card and its link). The cell: 'cell' is the solid fill, 'cell-hatch' the hatching
-      // shown in its place when only two of the three channels agree.
+      // post card and its link). The cell: 'cell' is the solid fill and 'cell-tick' the tick
+      // drawn on it when all three channels agree; 'cell-hatch' is the hatching shown in their
+      // place when only two agree.
       {
         ms: 3000,
         shapes: [
@@ -470,6 +470,7 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
             stroke: 'thin',
             part: 'cell-hatch',
           },
+          { d: 'M636 101 L643 109 L655 92', stroke: 'ink', part: 'cell-tick' },
           { d: 'M410 160 C 420 112, 480 84, 546 94', stroke: 'thin', part: 'sensor' },
           { d: 'M456 248 C 500 230, 530 210, 556 180', stroke: 'thin', part: 'citizen' },
           { d: 'M708 219 L726 218 L727 243 L709 244 Z', fill: 'screen', part: 'social' },

@@ -31,6 +31,13 @@ const carried = sceneById
   .panel.entries.filter((entry) => entry.sample === 'yes')
   .map((entry) => entry.name);
 
+/** Tap areas over the two figures that turn, each centred on its anchor and as large as the
+ *  figure in either facing (drawing units). */
+const HIT_AREAS = [
+  { part: 'puppet', width: 72, height: 92 },
+  { part: 'avatar', width: 100, height: 108 },
+] as const;
+
 /** Parts that turn (the puppet and its character) pivot on their own anchor. */
 function pivot(id: SceneId, shape: Shape): string | undefined {
   const anchor = shape.part ? DRAWINGS[id].anchors[shape.part] : undefined;
@@ -94,7 +101,7 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
         </div>
 
         <div class="sk__stage">
-          <figure class="sk__board">
+          <div class="sk__board">
             <svg
               class="sk__svg"
               viewBox={`0 0 ${CANVAS.width} ${CANVAS.height}`}
@@ -109,63 +116,69 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
                   <feDisplacementMap in="SourceGraphic" scale="2.2" />
                 </filter>
               </defs>
-              <g filter={`url(#sk-rough-${scene.id})`}>
-                {drawing.regions.map((region, index) => (
-                  <g class="sk__region" data-region={index} data-ms={region.ms}>
-                    {region.shapes
-                      .filter((shape) => shape.fill)
-                      .map((shape) => (
-                        <path
-                          class={`sk__fill sk__fill--${shape.fill}`}
-                          d={shape.d}
-                          data-part={shape.part}
-                          style={pivot(scene.id, shape)}
-                        />
-                      ))}
-                    {region.shapes
-                      .filter((shape) => !shape.fill)
-                      .map((shape) => (
-                        <path
-                          class:list={['sk__ink', { 'sk__ink--thin': shape.stroke === 'thin' }]}
-                          d={shape.d}
-                          data-part={shape.part}
-                          style={pivot(scene.id, shape)}
-                        />
-                      ))}
-                  </g>
-                ))}
-              </g>
+              {/* The hand-drawn wobble is applied region by region: a part that moves (the
+                  puppet) then redraws only its own region, and the rest stays crisp. */}
+              {drawing.regions.map((region, index) => (
+                <g data-region={index} data-ms={region.ms} filter={`url(#sk-rough-${scene.id})`}>
+                  {region.shapes
+                    .filter((shape) => shape.fill)
+                    .map((shape) => (
+                      <path
+                        class={`sk__fill sk__fill--${shape.fill}`}
+                        d={shape.d}
+                        data-part={shape.part}
+                        style={pivot(scene.id, shape)}
+                      />
+                    ))}
+                  {region.shapes
+                    .filter((shape) => !shape.fill)
+                    .map((shape) => (
+                      <path
+                        class:list={['sk__ink', { 'sk__ink--thin': shape.stroke === 'thin' }]}
+                        d={shape.d}
+                        data-part={shape.part}
+                        style={pivot(scene.id, shape)}
+                      />
+                    ))}
+                </g>
+              ))}
               {task.kind === 'turn' &&
-                ['puppet', 'avatar'].map((part) => {
+                HIT_AREAS.map(({ part, width, height }) => {
                   const [x, y] = drawing.anchors[part] ?? [0, 0];
                   // A tap on the puppet or its character turns it; the button does the same.
                   return (
-                    <rect class="sk__hit" data-turn x={x - 36} y={y - 46} width="72" height="92" />
+                    <rect
+                      class="sk__hit"
+                      data-turn
+                      x={x - width / 2}
+                      y={y - height / 2}
+                      width={width}
+                      height={height}
+                    />
                   );
                 })}
-              <g class="sk__flow" data-flow />
+              <g data-flow />
               <g class="sk__pen" data-pen>
                 <path d="M0 0 L6 -16 L40 -46 L50 -36 L16 -6 Z" />
                 <path class="sk__pen-tip" d="M0 0 L6 -16 L16 -6 Z" />
               </g>
             </svg>
-            <figcaption class="sk__story">
-              <p class="visually-hidden">{CONTROLS.story}</p>
-              <ol class="sk__steps">
-                {scene.steps.map((step, index) => (
-                  <li
-                    data-step={index}
-                    data-draw={step.draw}
-                    data-fly={step.flyFrom}
-                    data-filtered={step.filtered ? '' : undefined}
-                    data-reveal={step.reveal?.join(',')}
-                  >
-                    {step.line}
-                  </li>
-                ))}
-              </ol>
-            </figcaption>
-          </figure>
+          </div>
+          <div class="sk__story">
+            <ol class="sk__steps" aria-label={CONTROLS.story}>
+              {scene.steps.map((step, index) => (
+                <li
+                  data-step={index}
+                  data-draw={step.draw}
+                  data-fly={step.flyFrom}
+                  data-filtered={step.filtered ? '' : undefined}
+                  data-reveal={step.reveal?.join(',')}
+                >
+                  {step.line}
+                </li>
+              ))}
+            </ol>
+          </div>
 
           <div class="sk__panel" role="group" aria-labelledby={`sk-${scene.id}-panel`}>
             <h4 class="sk__panel-title" id={`sk-${scene.id}-panel`}>
@@ -204,13 +217,19 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
                     </svg>
                     <div class="sk__entry-text">
                       <span class="sk__name">{entry.name}</span>
-                      <span class="sk__why">{entry.why}</span>
+                      {task.kind === 'toggle' ? (
+                        <span class="sk__stack">
+                          <span class="sk__why">{entry.why}</span>
+                          <span class="sk__off-note">{task.off}</span>
+                        </span>
+                      ) : (
+                        <span class="sk__why">{entry.why}</span>
+                      )}
                       {scene.id === 'dining' && (
                         <span class="sk__also" data-also hidden={!carried.includes(entry.name)}>
                           {CARRIED.also}
                         </span>
                       )}
-                      {task.kind === 'toggle' && <span class="sk__off-note">{task.off}</span>}
                     </div>
                     {task.kind === 'judge' && (
                       <fieldset class="sk__marks">
@@ -282,7 +301,7 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
               </ol>
             </div>
 
-            <div class="sk__task" data-task>
+            <div class="sk__task">
               {task.kind === 'answer' && (
                 <fieldset class="sk__popup">
                   <legend>{task.question}</legend>
@@ -526,19 +545,31 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     color: var(--color-text-muted);
   }
 
+  /* The drawing, its captions under it, and the panel beside the two. The second row takes
+     whatever height the panel adds, so the captions stay right under the drawing. */
   .sk__stage {
     display: grid;
     grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-    gap: var(--space-4);
+    grid-template-rows: auto 1fr;
+    column-gap: var(--space-4);
     align-items: start;
+  }
+
+  .sk__board,
+  .sk__story {
+    grid-column: 1;
+  }
+
+  .sk__panel {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 
   /* ------------------------------------------------------------ the drawing */
 
   .sk__board {
     min-width: 0;
-    margin: 0;
-    border-radius: var(--radius);
+    border-radius: var(--radius) var(--radius) 0 0;
     background: var(--color-paper);
     overflow: hidden;
   }
@@ -629,6 +660,13 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     display: none;
   }
 
+  /* Without the script the three switches could not be used; the status line under them
+     already says that all three channels agree. */
+  :root:not(.js) .sk__switch,
+  .sk[data-failed] .sk__switch {
+    display: none;
+  }
+
   /* The puppet and its character turn about their own upright axis. */
   .sk__svg [data-part='puppet'],
   .sk__svg [data-part='avatar'] {
@@ -645,12 +683,13 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
   .sk__svg[data-off~='sensor'] [data-part='sensor'],
   .sk__svg[data-off~='citizen'] [data-part='citizen'],
   .sk__svg[data-off~='social'] [data-part='social'] {
-    stroke-opacity: 0.22;
-    fill-opacity: 0.22;
+    stroke-opacity: 0.5;
+    fill-opacity: 0.5;
     stroke-dasharray: 3 8;
   }
 
-  /* The map cell: filled when three channels agree, hatched when two do, empty otherwise. */
+  /* The map cell: filled and ticked when three channels agree, hatched when two do, empty
+     otherwise. The tick and the hatch are ink, so the state does not rest on a pale fill. */
   .sk__svg [data-part='cell-hatch'] {
     visibility: hidden;
   }
@@ -659,17 +698,20 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     visibility: visible;
   }
 
-  .sk__svg[data-count='2'] [data-part='cell'],
-  .sk__svg[data-count='1'] [data-part='cell'],
-  .sk__svg[data-count='0'] [data-part='cell'] {
+  .sk__svg[data-count='2'] :is([data-part='cell'], [data-part='cell-tick']),
+  .sk__svg[data-count='1'] :is([data-part='cell'], [data-part='cell-tick']),
+  .sk__svg[data-count='0'] :is([data-part='cell'], [data-part='cell-tick']) {
     visibility: hidden;
   }
 
   /* ------------------------------------------------------------ captions */
 
   .sk__story {
+    min-width: 0;
     padding: var(--space-3) var(--space-4) var(--space-4);
     border-top: 1.5px dashed var(--color-border);
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: var(--color-paper);
   }
 
   .sk__steps {
@@ -683,8 +725,16 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     padding-block: 0.15rem;
   }
 
+  /* The caption being drawn: underlined, with a heavier number. Its letters keep their weight,
+     so the line never re-wraps and nothing below it moves. */
   .sk__steps li.is-current {
-    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.22em;
+  }
+
+  .sk__steps li.is-current::marker {
+    font-weight: 700;
   }
 
   /* While a scene draws, what has not happened yet keeps its place but stays out of sight.
@@ -776,20 +826,38 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     visibility: visible;
   }
 
+  /* Not "no interests yet" right under the interests kept from the dorm scene. */
+  .sk__scene[data-empty] .sk__carried:not([hidden]) + .sk__list .sk__empty {
+    visibility: hidden;
+  }
+
   .sk__entries {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  /* A row: icon, text, control. The control moves under the text when the text needs the
+     width (a large text size in a narrow panel), so the two never overlap. */
   .sk__entry {
-    display: grid;
-    grid-template-columns: 20px minmax(0, 1fr) auto;
-    column-gap: var(--space-3);
-    align-items: start;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-2) var(--space-3);
     margin: 0;
     padding: var(--space-2) 0;
     border-top: 1px dashed var(--sk-line);
+  }
+
+  .sk__entry > .sk__glyph,
+  .sk__entry > .sk__marks,
+  .sk__entry > .sk__switch {
+    flex: none;
+  }
+
+  .sk__entry > .sk__marks,
+  .sk__entry > .sk__switch {
+    margin-left: auto;
   }
 
   .sk__entry:first-child {
@@ -824,7 +892,9 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
   }
 
   .sk__entry-text {
+    flex: 1 1 6.5rem;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .sk__name {
@@ -851,12 +921,15 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     text-decoration-color: var(--color-sketch-no);
   }
 
-  .sk__off-note {
-    display: none;
+  /* A channel that is off says so in the place of its description, so the row keeps its
+     height and nothing under it moves. */
+  .sk__off-note,
+  .sk__entry[data-off] .sk__stack > .sk__why {
+    visibility: hidden;
   }
 
   .sk__entry[data-off] .sk__off-note {
-    display: block;
+    visibility: visible;
   }
 
   /* One of several lines, picked by the scene's state. In a stack they share one cell, so the
@@ -885,13 +958,15 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     display: block;
   }
 
+  /* "inherit", not "visible": the chosen line stays hidden with its container while the scene
+     is still drawing. */
   .sk__scene[data-facing='right'] [data-when='right'],
   .sk__scene[data-facing='left'] [data-when='left'],
   .sk__scene[data-count='3'] [data-when='3'],
   .sk__scene[data-count='2'] [data-when='2'],
   .sk__scene[data-count='1'] [data-when='1'],
   .sk__scene[data-count='0'] [data-when='0'] {
-    visibility: visible;
+    visibility: inherit;
   }
 
   /* ------------------------------------------------------------ hands-on controls */
@@ -1063,8 +1138,17 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
 
   /* ------------------------------------------------------------ results */
 
+  /* The results keep their space from the start, so nothing moves when they arrive. Until
+     then a dashed frame shows that the space is waiting for something. */
   .sk__after {
     margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: 1.5px dashed transparent;
+    border-radius: var(--radius);
+  }
+
+  :root.js .sk:not([data-failed]) .sk__scene[data-state='ready'] .sk__after {
+    border-color: var(--color-border);
   }
 
   .sk__locked {
@@ -1141,10 +1225,30 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
   @media (max-width: 56rem) {
     .sk__stage {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto;
+    }
+
+    .sk__panel {
+      grid-column: 1;
+      grid-row: auto;
+      margin-top: var(--space-4);
     }
 
     .sk__ctl {
       margin-left: 0;
+    }
+  }
+
+  /* On a phone held upright the controls are a screen below the drawing they change. The
+     drawing therefore stays at the top of the window while its captions and panel pass under
+     it, so the visitor sees the puppet turn and the map cell change. */
+  @media (max-width: 56rem) and (orientation: portrait) {
+    :root.js .sk:not([data-failed]) .sk__board {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      border-radius: 0;
+      box-shadow: 0 1.5px 0 var(--color-border);
     }
   }
 
@@ -1182,6 +1286,16 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
 
     .sk__fill {
       fill: none;
+    }
+
+    /* The open scene's button and the confirmed map cell must not rest on a fill or a shadow. */
+    .sk__tab[aria-pressed='true'] {
+      border-width: 3px;
+    }
+
+    .sk__svg [data-part='cell'] {
+      fill: CanvasText;
+      fill-opacity: 0.45;
     }
 
     .sk__mark input:checked + .sk__mark-face,

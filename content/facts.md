@@ -215,8 +215,10 @@ they supersede the CVs and the research statement wherever they differ.
 Source: Jimmy's outline (Nov 24, 2026), first for a page of its own, then moved to the home
 page the same day. The section was titled "Modeling Learners and Teachers" until the sketch
 scenes arrived (§5.8, D68). The items marked "check" are not in the sections above: they are
-wording from the outline, or choices made while writing it. They went live on Nov 24, 2026 under
+wording from the outline, or choices made while writing it. They go live with the section under
 the merge rule (D67) and are still Jimmy's to confirm; a correction here goes to the page.
+`TODO(jimmy)`: the lede ("One line of work runs through these papers...") now stands above the
+sketch scenes, as he asked; say if it should move below them or be rewritten to cover them.
 
 - Framing: one line of work, building systems that observe how people learn and checking what
   those observations are worth. The term is "learner model", never "world model".
@@ -253,13 +255,18 @@ says so.
 - Scene 0, Tracker Toolbox (§7; labeled a prototype; no numbers): it logs clicks, scrolls and
   searches, follows gaze with WebGazer.js, maps records to page content, and asks the learner
   once a minute. Design: the pop-up in the scene asks "Did you learn something in the last
-  minute?", and the answer labels that minute of the record. The scene shows one of the two
-  self-report questions; the wording of the real questions is not recorded here.
+  minute?", and the answer labels that minute of the record. The Toolbox asks two questions; the
+  scene shows one, with wording from the design, and says that the question is an example.
+  `TODO(jimmy)`: the real wording of the two questions, and whether the answers are stored as
+  labels of the log.
 - Scenes 1 and 2, browsing history and social-media posts (§5.1, Study 2): self-curation,
   sensitive-content filtering, non-retention; an LLM extracts interests with explanations;
   students confirm or reject each; 69.8% and 56.3% confirmed; 2.14 vs. 1.58 grounded units per
   confirmed interest; 38.2% added by the two sources together; 32 participants after screening.
-  The sample student and the eight interests are made up.
+  The sample student and the eight interests are made up. The scenes give the privacy protocol
+  in §5.1's three terms and say only that sensitive content is left out of what the LLM
+  extracts. `TODO(jimmy)`: what non-retention covers (the samples, the LLM calls, or both), and
+  whether anything filters the samples before the LLM reads them.
 - Scene 3, puppet (§5.4, §7): position from a YOLO detector, rotation from an IMU over
   Bluetooth, animated in Unity in real time; perception study with 23 MTurk workers. Design: the
   drawing shows a storyteller at a classroom table with a camera, and the scene says the IMU is

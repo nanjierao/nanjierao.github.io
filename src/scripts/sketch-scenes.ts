@@ -13,6 +13,10 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 type Kind = 'answer' | 'judge' | 'turn' | 'toggle';
 
 function init(root: HTMLElement): void {
+  // The page has already fallen back to its finished scenes (the script came very late). Taking
+  // over now would fold four of them away under a visitor who may be reading one.
+  if (root.hasAttribute('data-failed')) return;
+
   const scenes = [...root.querySelectorAll<HTMLElement>('[data-scene]')];
   const buttons = [...root.querySelectorAll<HTMLButtonElement>('[data-scene-button]')];
   const live = root.querySelector<HTMLElement>('[data-live]');
@@ -20,13 +24,14 @@ function init(root: HTMLElement): void {
   if (!first || !live) return;
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  /** One column: the panel is below the drawing, not beside it (same width as the stylesheet). */
+  const narrow = window.matchMedia('(max-width: 56rem)');
   /** Scenes the visitor has opened: the first visit draws, later visits keep their state. */
   const seen = new WeakSet<HTMLElement>();
   let current = first;
   /** Changes whenever a drawing is started or stopped; a running one checks it and stops. */
   let token = 0;
-  let inView = false;
-  /** The first scene waits, undrawn, until the section scrolls into view. */
+  /** The first scene waits, undrawn, until its drawing scrolls into view. */
   let armed = false;
 
   const speed = (): number => Number(root.dataset.speed) || 1;
@@ -41,12 +46,24 @@ function init(root: HTMLElement): void {
   // ------------------------------------------------------------------ announcements
 
   let pending = 0;
+  let fading = 0;
+
+  /** Nothing waiting to be read out, and nothing left in the reading order. */
+  function hush(): void {
+    cancelAnimationFrame(pending);
+    window.clearTimeout(fading);
+    live!.textContent = '';
+  }
+
   /** Screen readers hear a line only when the visitor asked for something. */
   function say(text: string): void {
-    cancelAnimationFrame(pending);
-    live!.textContent = '';
+    hush();
     pending = requestAnimationFrame(() => {
       live!.textContent = text.replace(/\s+/g, ' ').trim();
+      // Long enough to be spoken; then it leaves, so nobody meets it again while reading on.
+      fading = window.setTimeout(() => {
+        live!.textContent = '';
+      }, 15_000);
     });
   }
 
@@ -55,6 +72,15 @@ function init(root: HTMLElement): void {
       .filter((el) => getComputedStyle(el).visibility !== 'hidden' && el.offsetParent !== null)
       .map((el) => el.textContent ?? '')
       .join(' ');
+
+  /** What a step did; the first time, also the results it released. */
+  function sayStep(scene: HTMLElement, selector: string, first: boolean): void {
+    say(
+      first
+        ? `${visibleText(scene, selector)} ${visibleText(scene, '.sk__results .sk__result')}`
+        : visibleText(scene, selector),
+    );
+  }
 
   // ------------------------------------------------------------------ drawing
 
@@ -74,7 +100,29 @@ function init(root: HTMLElement): void {
     );
   const fills = (scope: Element): SVGPathElement[] => all<SVGPathElement>(scope, '.sk__fill');
 
+  /**
+   * One <path> per stroke. SVG restarts a dash pattern on every sub-path, so a shape made of
+   * several strokes would show them all growing at once while the pencil follows only one.
+   * The page ships the shapes whole; they are split here, once, before the first drawing.
+   */
+  function splitStrokes(svg: SVGSVGElement): void {
+    if (svg.hasAttribute('data-split')) return;
+    svg.setAttribute('data-split', '');
+    for (const path of all<SVGPathElement>(svg, '.sk__ink')) {
+      const strokes = (path.getAttribute('d') ?? '').match(/M[^M]+/g) ?? [];
+      if (strokes.length < 2) continue;
+      path.replaceWith(
+        ...strokes.map((d) => {
+          const stroke = path.cloneNode(false) as SVGPathElement;
+          stroke.setAttribute('d', d.trim());
+          return stroke;
+        }),
+      );
+    }
+  }
+
   function hideDrawing(svg: SVGSVGElement): void {
+    splitStrokes(svg);
     for (const path of all<SVGPathElement>(svg, '.sk__ink')) {
       const length = path.getTotalLength();
       path.style.strokeDasharray = `${length} ${length}`;
@@ -83,14 +131,19 @@ function init(root: HTMLElement): void {
     for (const fill of fills(svg)) fill.style.opacity = '0';
   }
 
+  /** No pencil, no wire and no cards left on the paper. */
+  function clearOverlay(svg: SVGSVGElement): void {
+    svg.querySelector('[data-pen]')?.removeAttribute('data-on');
+    svg.querySelector('[data-flow]')?.replaceChildren();
+  }
+
   function showDrawing(svg: SVGSVGElement): void {
     for (const path of all<SVGPathElement>(svg, '.sk__ink')) {
       path.style.strokeDasharray = '';
       path.style.strokeDashoffset = '';
     }
     for (const fill of fills(svg)) fill.style.opacity = '';
-    svg.querySelector('[data-pen]')?.removeAttribute('data-on');
-    svg.querySelector('[data-flow]')?.replaceChildren();
+    clearOverlay(svg);
   }
 
   function placePen(svg: SVGSVGElement, point: DOMPoint): void {
@@ -131,7 +184,7 @@ function init(root: HTMLElement): void {
     const paths = inks(region);
     const total = paths.reduce((sum, path) => sum + path.getTotalLength(), 0) || 1;
     for (const path of paths) {
-      await drawPath(svg, path, Math.max(60, ((ms * 2) / 3) * (path.getTotalLength() / total)), t);
+      await drawPath(svg, path, Math.max(40, ((ms * 2) / 3) * (path.getTotalLength() / total)), t);
     }
     svg.querySelector('[data-pen]')?.removeAttribute('data-on');
     const colors = fills(region);
@@ -139,23 +192,21 @@ function init(root: HTMLElement): void {
   }
 
   /** Small cards travel from a point of the drawing toward the panel; one may be stopped. */
-  async function flyCards(scene: HTMLElement, svg: SVGSVGElement, step: HTMLElement, t: number) {
+  async function flyCards(svg: SVGSVGElement, step: HTMLElement, t: number) {
     const flow = svg.querySelector('[data-flow]');
     const anchors = JSON.parse(svg.dataset.anchors ?? '{}') as Record<string, [number, number]>;
     const from = anchors[step.dataset.fly ?? ''];
     if (!flow || !from) return;
-    const filtered = step.dataset.filtered !== undefined;
-    const board = scene.querySelector('.sk__board');
-    const panel = scene.querySelector('.sk__panel');
-    // The panel is to the right of the drawing on a wide screen and below it on a narrow one.
-    const below =
-      !!board &&
-      !!panel &&
-      panel.getBoundingClientRect().top >= board.getBoundingClientRect().bottom - 4;
+    const held = step.dataset.filtered !== undefined;
     const [x, y] = from;
-    const d = below
+    // Toward the panel: down when it is below the drawing, to the right when it is beside it.
+    // A source close to the right edge gets a low arch, or the wire would fold back on itself.
+    const edge = 792;
+    const d = narrow.matches
       ? `M${x} ${y} C ${Math.min(x + 90, 760)} ${y + 70}, 640 330, 690 442`
-      : `M${x} ${y} C ${Math.min(x + 140, 770)} ${Math.max(y - 80, 20)}, 740 110, 792 228`;
+      : x > 680
+        ? `M${x} ${y} C ${x + (edge - x) / 3} ${y - 60}, ${x + (2 * (edge - x)) / 3} ${y - 60}, ${edge} 228`
+        : `M${x} ${y} C ${Math.min(x + 140, 770)} ${Math.max(y - 80, 20)}, 740 110, ${edge} 228`;
     flow.replaceChildren();
     const wire = document.createElementNS(SVG_NS, 'path');
     wire.setAttribute('d', d);
@@ -167,7 +218,7 @@ function init(root: HTMLElement): void {
     await drawPath(svg, wire, 700, t);
     svg.querySelector('[data-pen]')?.removeAttribute('data-on');
 
-    const count = filtered ? 5 : 3;
+    const count = held ? 5 : 3;
     const cards: SVGGElement[] = [];
     for (let i = 0; i < count; i++) {
       const card = document.createElementNS(SVG_NS, 'g');
@@ -178,7 +229,7 @@ function init(root: HTMLElement): void {
       const lines = document.createElementNS(SVG_NS, 'path');
       lines.setAttribute('d', 'M-8 -3 L8 -3 M-8 3 L4 3');
       card.append(box, lines);
-      if (filtered && i === 2) {
+      if (held && i === 2) {
         const cross = document.createElementNS(SVG_NS, 'path');
         cross.setAttribute('class', 'sk__card-x');
         cross.setAttribute('d', 'M-16 -12 L16 12 M16 -12 L-16 12');
@@ -187,7 +238,7 @@ function init(root: HTMLElement): void {
       flow.append(card);
       cards.push(card);
     }
-    const duration = (filtered ? 1700 : 1200) / speed();
+    const duration = (held ? 1700 : 1200) / speed();
     const lag = 160 / speed();
     const start = performance.now();
     for (;;) {
@@ -195,8 +246,8 @@ function init(root: HTMLElement): void {
       const elapsed = performance.now() - start;
       let done = true;
       cards.forEach((card, i) => {
-        // The filtered sample stops a little way along and stays there.
-        const stopped = filtered && i === 2;
+        // The sample that is held back stops a little way along and stays there.
+        const stopped = held && i === 2;
         let k = Math.max(0, Math.min(1, (elapsed - i * lag) / (duration - lag * (count - 1))));
         if (stopped) k = Math.min(k, 0.28);
         else if (k < 1) done = false;
@@ -223,7 +274,11 @@ function init(root: HTMLElement): void {
       el.classList.remove('is-current');
     }
     const svg = svgOf(scene);
-    if (svg) hideDrawing(svg);
+    if (!svg) return;
+    // The flood scene's map cell starts empty and fills as the channels report (see play()).
+    if (kind(scene) === 'toggle') svg.setAttribute('data-count', '0');
+    hideDrawing(svg);
+    clearOverlay(svg);
   }
 
   /** The finished drawing, every caption and every row; the step is the visitor's to do. */
@@ -236,11 +291,14 @@ function init(root: HTMLElement): void {
     }
     const svg = svgOf(scene);
     if (svg) showDrawing(svg);
+    // Back from the count the drawing had reached to what the switches say.
+    if (kind(scene) === 'toggle') applyChannels(scene);
   }
 
   function finish(scene: HTMLElement): void {
     token++;
     armed = false;
+    hush();
     settle(scene);
   }
 
@@ -258,22 +316,37 @@ function init(root: HTMLElement): void {
           other.classList.remove('is-current');
         step.setAttribute('data-on', '');
         step.classList.add('is-current');
-        if (announce) say(step.textContent ?? '');
         const region = step.dataset.draw === undefined ? undefined : regions[+step.dataset.draw];
         if (region) await drawRegion(svg, region, t);
-        if (step.dataset.fly) await flyCards(scene, svg, step, t);
+        if (step.dataset.fly) await flyCards(svg, step, t);
         for (const index of (step.dataset.reveal ?? '').split(',').filter(Boolean)) {
           scene.removeAttribute('data-empty');
           entries[+index]?.setAttribute('data-on', '');
+          if (kind(scene) === 'toggle') showChannelCount(scene, svg);
           await sleep(380, t);
         }
         await sleep(450, t);
       }
       settle(scene);
-      // The drawing is done and the step is open: say so to whoever asked for the scene.
+      // The captions are all in the page to be read at any moment, so they are not read out one
+      // by one. What is said, to whoever asked for the scene, is that the step is now open.
       if (announce) say(visibleText(scene, '.sk__prompt'));
     } catch (error) {
       if (error !== STOP) throw error;
+    }
+  }
+
+  /**
+   * While the flood scene draws, its map cell follows the channels that have reported so far:
+   * empty with one, hatched with two (the verification quest), filled and ticked with three.
+   */
+  function showChannelCount(scene: HTMLElement, svg: SVGSVGElement): void {
+    svg.setAttribute('data-count', String(all(scene, '[data-entry][data-on]').length));
+    // The cell's marks were hidden when their region was drawn, so they were not drawn then.
+    for (const mark of all<SVGPathElement>(svg, '[data-part^="cell"]')) {
+      mark.style.strokeDasharray = '';
+      mark.style.strokeDashoffset = '';
+      mark.style.opacity = '';
     }
   }
 
@@ -299,10 +372,13 @@ function init(root: HTMLElement): void {
     if (tally) tally.textContent = '';
   }
 
-  function completeTask(scene: HTMLElement): void {
+  /** Marks the step done. Returns true the first time, when the results come into view. */
+  function completeTask(scene: HTMLElement): boolean {
+    const first = !scene.hasAttribute('data-task-done');
     scene.setAttribute('data-task-done', '');
     if (scene.dataset.state !== 'playing') scene.dataset.state = 'done';
     syncLearner();
+    return first;
   }
 
   /** The city scene: what the map cell shows follows the number of channels switched on. */
@@ -390,11 +466,30 @@ function init(root: HTMLElement): void {
     completeTask(scene);
   }
 
+  /**
+   * A page that the browser rebuilds from its history (Back, a restored tab) gets its old form
+   * states put back after this script has reset them. The scenes hold the truth, so the
+   * controls are set from them once the page is shown.
+   */
+  function syncInputs(): void {
+    for (const scene of scenes) {
+      for (const input of all<HTMLInputElement>(scene, 'input')) {
+        const row = input.closest<HTMLElement>('[data-entry]');
+        if (input.type === 'checkbox') input.checked = !row?.hasAttribute('data-off');
+        else if (kind(scene) === 'answer') input.checked = input.value === scene.dataset.answer;
+        else input.checked = input.value === row?.dataset.mark;
+      }
+    }
+  }
+
   // ------------------------------------------------------------------ controls
 
   function select(scene: HTMLElement): void {
     if (scene === current) return;
     token++;
+    hush();
+    // The first scene was still waiting to be drawn: it draws when the visitor comes back to it.
+    if (armed) seen.delete(current);
     armed = false;
     // Leave the scene we are leaving in a finished state, so coming back never shows half of it.
     if (current.dataset.state === 'playing') settle(current);
@@ -408,8 +503,10 @@ function init(root: HTMLElement): void {
     syncLearner();
     if (seen.has(scene)) return;
     seen.add(scene);
-    if (reduce.matches) settle(scene);
-    else void play(scene, true);
+    if (reduce.matches) {
+      settle(scene);
+      say(visibleText(scene, '.sk__prompt'));
+    } else void play(scene, true);
   }
 
   root.addEventListener('click', (event) => {
@@ -423,8 +520,11 @@ function init(root: HTMLElement): void {
     if (target?.closest('[data-replay]')) {
       resetTask(current);
       syncLearner();
-      if (reduce.matches) finish(current);
-      else void play(current, true);
+      seen.add(current);
+      if (reduce.matches) {
+        finish(current);
+        say(visibleText(current, '.sk__prompt'));
+      } else void play(current, true);
       return;
     }
     if (target?.closest('[data-show-all]')) {
@@ -444,8 +544,7 @@ function init(root: HTMLElement): void {
     const scene = turn?.closest<HTMLElement>('[data-scene]');
     if (turn && scene && scene.dataset.state !== 'playing') {
       scene.dataset.facing = scene.dataset.facing === 'left' ? 'right' : 'left';
-      completeTask(scene);
-      say(visibleText(scene, '.sk__status .sk__when'));
+      sayStep(scene, '.sk__status .sk__when', completeTask(scene));
     }
   });
 
@@ -453,6 +552,8 @@ function init(root: HTMLElement): void {
     const input = event.target as HTMLInputElement | null;
     const scene = input?.closest<HTMLElement>('[data-scene]');
     if (!input || !scene) return;
+    // A control used while its scene is still drawing ends the drawing: the visitor has moved on.
+    if (scene.dataset.state === 'playing') finish(scene);
     if (kind(scene) === 'judge') {
       const row = input.closest<HTMLElement>('[data-entry]');
       if (!row) return;
@@ -466,31 +567,32 @@ function init(root: HTMLElement): void {
       );
       if (entries.every((entry) => entry.dataset.mark)) {
         updateTally(scene);
-        const wasDone = scene.hasAttribute('data-task-done');
-        completeTask(scene);
-        if (!wasDone)
-          say(
-            `${visibleText(scene, '[data-tally]')} ${visibleText(scene, '.sk__results .sk__result')}`,
-          );
+        if (completeTask(scene)) sayStep(scene, '[data-tally]', true);
       } else {
         syncLearner();
       }
     } else if (kind(scene) === 'answer') {
       scene.dataset.answer = input.value;
       scene.removeAttribute('data-sampled');
-      completeTask(scene);
-      say(visibleText(scene, '.sk__entry--label .sk__when'));
+      sayStep(scene, '.sk__entry--label .sk__when', completeTask(scene));
     } else if (kind(scene) === 'toggle') {
       applyChannels(scene);
-      completeTask(scene);
-      say(visibleText(scene, '.sk__status .sk__when'));
+      sayStep(scene, '.sk__status .sk__when', completeTask(scene));
     }
   });
+
+  root.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab' || event.shiftKey || current.dataset.state !== 'playing') return;
+    // A scene's own controls are out of reach while it draws, so Tab from the last button would
+    // jump past the scene. The drawing ends instead, and the step takes the focus.
+    if ((event.target as Element | null)?.closest('[data-show-all]')) finish(current);
+  });
+
+  window.addEventListener('pageshow', syncInputs);
 
   // ------------------------------------------------------------------ start
 
   root.setAttribute('data-enhanced', '');
-  root.removeAttribute('data-failed');
   for (const scene of scenes) {
     resetTask(scene);
     settle(scene);
@@ -498,26 +600,20 @@ function init(root: HTMLElement): void {
   syncLearner();
   seen.add(first);
 
-  const start = (): void => {
-    if (!armed) return;
-    if (reduce.matches) finish(first);
-    else void play(current, false);
-  };
-
   if (!reduce.matches && 'IntersectionObserver' in window) {
-    // The first scene waits as blank paper until the visitor reaches it.
+    // The first scene waits as blank paper until half of its drawing is in the window.
     clear(first);
     armed = true;
     new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) start();
+        if (armed && entries.some((entry) => entry.isIntersecting)) void play(current, false);
       },
-      { rootMargin: '-25% 0px -25% 0px' },
-    ).observe(root);
+      { threshold: 0.5 },
+    ).observe(svgOf(first) ?? root);
     new IntersectionObserver((entries) => {
-      inView = entries.some((entry) => entry.isIntersecting);
       // Scrolled away in the middle of a drawing: show it finished rather than draw unseen.
-      if (!inView && !armed && current.dataset.state === 'playing') finish(current);
+      const gone = entries.every((entry) => !entry.isIntersecting);
+      if (gone && !armed && current.dataset.state === 'playing') finish(current);
     }).observe(root);
   }
 

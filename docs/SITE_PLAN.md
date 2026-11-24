@@ -74,16 +74,6 @@ Top to bottom (D21):
   Zhihu, and whichever of ORCID and LinkedIn facts.md §13 lists. In a 390 × 844 viewport it fits in the first screen with the top of the cloud
   visible below it; with the browser's bars showing, or on a shorter phone, the cloud starts one
   scroll lower (D64).
-- **How AI learns about people and places** (D66, D68; right after the word cloud until the
-  portals arrive; the section's id stays `learners-and-teachers`). First, five sketch scenes:
-  a browser tracker (prototype), a dorm laptop and a dining-hall phone (synthetic student), a
-  classroom puppet, and a flooded street (simulated). Each is a line drawing with a caption per
-  region, a panel showing what the system builds, one hands-on step and the result it leads to.
-  Words in `src/data/sketch-scenes.ts`, drawings in `src/data/sketch-drawings.ts`, behavior in
-  `src/scripts/sketch-scenes.ts` (about 3 KB gzipped, no library). Without JavaScript all five
-  show finished. Then the learner and teacher work: one line of work as a diagram, four study
-  cards, the Study 2 figure with the grounding check, the teacher-facing papers and the
-  supporting papers (`src/data/learners-teachers.ts`).
 - **Word cloud** (`content/wordcloud.yaml`): ~40 terms weighted by prominence and tagged by portal
   (hands / ask / life). Layout `d3-cloud`, gentle drift with `motion`. Hovering or focusing a
   portal makes its words glow and drift toward it. Clicking a word opens a one-line blurb with a
@@ -92,6 +82,16 @@ Top to bottom (D21):
 - **Three portals** under or around the cloud: Hands (camera glyph), Ask (speech glyph),
   Life & You (spark glyph). Each has one line of copy and a clear action. Desktop: left, middle,
   right. Mobile: stacked in the same order.
+- **How AI learns about people and places** (D66, D68; right after the word cloud until the
+  portals arrive; the section's id stays `learners-and-teachers`). First, five sketch scenes:
+  a browser tracker (prototype), a dorm laptop and a dining-hall phone (synthetic student), a
+  classroom puppet, and a flooded street (simulated). Each is a line drawing with a caption per
+  region, a panel showing what the system builds, one hands-on step and the result it leads to.
+  Words in `src/data/sketch-scenes.ts`, drawings in `src/data/sketch-drawings.ts`, behavior in
+  `src/scripts/sketch-scenes.ts` (under 4 KB gzipped, no library). Without JavaScript all five
+  show finished. Then the learner and teacher work: one line of work as a diagram, four study
+  cards, the Study 2 figure with the grounding check, the teacher-facing papers and the
+  supporting papers (`src/data/learners-teachers.ts`).
 - **Recent**: three dated news items with time-aware wording (D26), the latest blog post, the
   latest YouTube video (D50), and recent public GitHub activity (D40).
 - **Easter egg**: a small luopan glyph fixed at the bottom-right, low contrast until hovered or
@@ -102,7 +102,7 @@ Top to bottom (D21):
   cursor and settles with a slight damped spring. Static under reduced motion.
 - **Footer**: the annotation legend (D30), links, credits.
 - Budget: homepage JS ≤ 60 KB gzipped (CLAUDE.md's 50 KB for content pages is the stricter one
-  and holds here too: the word cloud and the sketch scenes together are under 8 KB); portals and
+  and holds here too: the word cloud and the sketch scenes together are under 10 KB); portals and
   the easter-egg teaser load on demand.
 
 ## 5. Portals

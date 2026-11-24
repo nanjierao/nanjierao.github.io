@@ -43,7 +43,7 @@ export interface Step {
   draw?: number;
   /** Anchor in the drawing that data cards leave from, toward the panel. */
   flyFrom?: string;
-  /** One card is stopped on the way: the sensitive-content filter. */
+  /** One card is stopped on the way: a sample that is not passed on. */
   filtered?: boolean;
   /** Rows of the panel that appear in this step. The tracker scene's label row comes after
    *  its entries, so its index is the number of entries. */
@@ -147,10 +147,10 @@ export const CONTROLS = {
   shown: 'The whole scene is shown.',
 } as const;
 
-/** The dorm scene's confirmed interests stay in the notebook when the dining-hall scene opens. */
+/** The dorm scene's confirmed interests stay in the learner model when the dining-hall scene opens. */
 export const CARRIED = {
-  title: 'Already in the notebook, from browsing history',
-  also: 'Also in the notebook from browsing history.',
+  title: 'Already in the learner model, from browsing history',
+  also: 'Also in the learner model, from browsing history.',
   both: {
     big: '38.2%',
     text: 'of each student’s validated interests, on average: confirmed interests the two sources added that were missing from the self-report form.',
@@ -162,7 +162,7 @@ const LEARNER_SOURCE =
   'Sample student, synthetic. Numbers from the dissertation’s records study (IEEE ICALT 2026), 32 participants after data-quality screening.';
 
 const LEARNER_NOTE =
-  'The student, the interests and the records in this scene are made up for illustration.';
+  'The student, the interests and the records in this scene are made up for illustration. Privacy protocol in the study: participant self-curation, sensitive-content filtering, non-retention.';
 
 export const SCENES: Scene[] = [
   {
@@ -206,7 +206,7 @@ export const SCENES: Scene[] = [
       question: 'Did you learn something in the last minute?',
       options: [
         { value: 'yes', label: 'Yes', outcome: 'Yes, I learned something.' },
-        { value: 'no', label: 'No', outcome: 'No, I did not learn something.' },
+        { value: 'no', label: 'No', outcome: 'No, I did not learn anything.' },
       ],
       row: { name: 'Self-report', waiting: 'no answer yet' },
       sample: 'yes',
@@ -224,7 +224,7 @@ export const SCENES: Scene[] = [
       checkedBy: 'The learner, in a self-report once a minute',
     },
     source: 'Tracker Toolbox, a Chrome extension. Unpublished prototype.',
-    note: 'The records in this scene are made up for illustration.',
+    note: 'The records in this scene are made up for illustration, and the pop-up’s question is an example.',
   },
   {
     id: 'dorm',
@@ -237,12 +237,12 @@ export const SCENES: Scene[] = [
       { line: 'A student sits down at the desk.', draw: 1 },
       { line: 'Their browsing history holds traces of what they care about.', draw: 2 },
       {
-        line: 'They choose which samples of it to share. Sensitive content is filtered out, and nothing is kept.',
+        line: 'They choose which samples of it to share.',
         flyFrom: 'lens',
         filtered: true,
       },
       {
-        line: 'An LLM reads the samples and extracts interests, each with an explanation.',
+        line: 'An LLM reads the samples and extracts interests, each with an explanation. Sensitive content is left out.',
         reveal: [0, 1, 2, 3],
       },
       { line: 'The student confirms or rejects each one.' },
@@ -301,12 +301,12 @@ export const SCENES: Scene[] = [
       { line: 'The same student, eating between classes.', draw: 1 },
       { line: 'Between bites, they scroll and post on social media.', draw: 2 },
       {
-        line: 'They choose which posts to share. Sensitive content is filtered out, and nothing is kept.',
+        line: 'They choose which posts to share.',
         flyFrom: 'lens',
         filtered: true,
       },
       {
-        line: 'An LLM reads the posts and extracts interests, each with an explanation.',
+        line: 'An LLM reads the posts and extracts interests, each with an explanation. Sensitive content is left out.',
         reveal: [0, 1, 2, 3],
       },
       { line: 'The student confirms or rejects each one.' },
@@ -342,7 +342,7 @@ export const SCENES: Scene[] = [
     results: [
       {
         big: '56.3%',
-        text: 'of the interests extracted from posts were confirmed, fewer than from browsing history.',
+        text: 'of the interests extracted from posts were confirmed, a smaller share than from browsing history.',
       },
       {
         big: '2.14',
@@ -352,7 +352,7 @@ export const SCENES: Scene[] = [
     locked: 'Mark all four to see what the students in the study did.',
     summary: {
       data: 'Samples of social-media posts that the student chose to share',
-      builds: 'The same learner model, with more grounded information about each interest',
+      builds: 'The same learner model, with more grounded information per confirmed interest',
       checkedBy: 'The student, who confirms or rejects each interest',
     },
     source: LEARNER_SOURCE,
@@ -423,7 +423,7 @@ export const SCENES: Scene[] = [
     label: 'Street, flood',
     heading: 'A flooded street, seen through three channels',
     badge: 'Simulated',
-    alt: 'Line drawing: a street with two houses under rain and flood water. A resident with an umbrella holds a phone next to a sensor post. A magnified view shows a map grid with one cell marked, and lines run to it from the sensor, the phone and a post card.',
+    alt: 'Line drawing: a street with two houses under rain and flood water. A resident with an umbrella holds a phone next to a sensor post. A magnified view shows a map grid with one cell marked, and lines run to it from the sensor, the phone and a card that stands for a social post.',
     steps: [
       { line: 'A street during a hurricane flood.', draw: 0 },
       { line: 'A resident steps outside with a phone.', draw: 1 },
@@ -453,7 +453,7 @@ export const SCENES: Scene[] = [
       empty: 'No channel has reported yet.',
       entries: [
         { glyph: 'sensor', name: 'Official sensor', why: 'an anomaly in this cell' },
-        { glyph: 'post', name: 'Social post', why: 'a public post, parsed by an LLM' },
+        { glyph: 'post', name: 'Social post', why: 'a post from this cell, parsed by an LLM' },
         { glyph: 'phone', name: 'Citizen report', why: 'a resident’s report, parsed by an LLM' },
       ],
     },

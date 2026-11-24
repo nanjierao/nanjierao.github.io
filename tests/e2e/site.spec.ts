@@ -2,8 +2,9 @@
 // Network access outside the site is blocked here, so tests also prove the pages work offline
 // and fall back quietly when GitHub or YouTube can't be reached.
 import { readFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import sharp from 'sharp';
 import { parse as parseYaml } from 'yaml';
 
@@ -605,6 +606,15 @@ test.describe('sketch scenes on the home page (D68)', () => {
   const SCENES = ['tracker', 'dorm', 'dining', 'puppet', 'city'];
   const scene = (page: Page, id: string) => page.locator(`${SK} [data-scene="${id}"]`);
   const tab = (page: Page, id: string) => page.locator(`${SK} [data-scene-button="${id}"]`);
+  /** The one line of a set that the scene's state shows (the others stay in the page, unseen). */
+  const shown = (scope: Locator) => scope.locator('.sk__when:visible');
+  /** Strokes of a drawing that are not fully drawn, by what the browser renders. */
+  const undrawn = (scope: Locator) =>
+    scope
+      .locator('.sk__ink')
+      .evaluateAll(
+        (paths) => paths.filter((p) => parseFloat(getComputedStyle(p).strokeDashoffset) > 0).length,
+      );
 
   /** The home page with motion reduced: scenes open finished, and the steps are the visitor's. */
   async function openStill(page: Page) {
@@ -612,6 +622,18 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await isolate(page);
     await page.goto('/');
     await page.locator(SK).scrollIntoViewIfNeeded();
+  }
+
+  /** The home page with motion on, at a given speed, scrolled so the first drawing is in view. */
+  async function openMoving(page: Page, speed: number) {
+    await isolate(page);
+    await page.goto('/');
+    await page.locator(SK).evaluate((el, value) => {
+      (el as HTMLElement).dataset.speed = String(value);
+    }, speed);
+    await scene(page, 'tracker')
+      .locator('svg[data-svg]')
+      .evaluate((el) => el.scrollIntoView({ block: 'center' }));
   }
 
   test('shows one scene at a time, in Jimmy’s order, with Replay and Show all', async ({
@@ -628,6 +650,15 @@ test.describe('sketch scenes on the home page (D68)', () => {
       'Classroom, puppet',
       'Street, flood',
     ]);
+    // Grouped by what is observed, and the groups are named for a screen reader too.
+    for (const [group, count] of [
+      ['Learners', 3],
+      ['Hands', 1],
+      ['City', 1],
+    ] as const)
+      await expect(
+        page.getByRole('group', { name: group, exact: true }).getByRole('button'),
+      ).toHaveCount(count);
     await expect(page.getByRole('button', { name: 'Replay' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Show all' })).toBeVisible();
     for (const id of SCENES) {
@@ -657,8 +688,9 @@ test.describe('sketch scenes on the home page (D68)', () => {
   }) => {
     await openStill(page);
     const tracker = scene(page, 'tracker');
+    const label = shown(tracker.locator('.sk__entry--label'));
     await expect(tracker).toHaveAttribute('data-state', 'ready');
-    await expect(tracker.locator('.sk__entry--label')).toContainText('no answer yet');
+    await expect(label).toHaveText('no answer yet');
     await expect(tracker.locator('.sk__results')).toBeHidden();
     const no = tracker.getByRole('radio', { name: 'No' });
     await expect(
@@ -668,11 +700,14 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await no.focus();
     await page.keyboard.press('Space');
     await expect(tracker).toHaveAttribute('data-state', 'done');
-    await expect(tracker.locator('.sk__entry--label')).toContainText(
-      'No, I did not learn something.',
-    );
+    await expect(label).toHaveText('No, I did not learn anything.');
     await expect(tracker.locator('.sk__results')).toBeVisible();
-    await expect(page.locator(`${SK} [data-live]`)).toHaveText('No, I did not learn something.');
+    // Said once: the answer, and the result it released.
+    await expect(page.locator(`${SK} [data-live]`)).toHaveText(
+      /^No, I did not learn anything\. The log shows what the learner did\./,
+    );
+    await tracker.getByRole('radio', { name: 'Yes' }).check();
+    await expect(label).toHaveText('Yes, I learned something.');
     expect(await tracker.innerText()).not.toMatch(/\d/);
   });
 
@@ -693,9 +728,13 @@ test.describe('sketch scenes on the home page (D68)', () => {
       await choice.focus();
       await page.keyboard.press('Space');
       await expect(choice).toBeChecked();
+      // Results wait for the last mark.
+      if (index < 3) await expect(dorm.locator('.sk__results')).toBeHidden();
     }
     await expect(dorm).toHaveAttribute('data-state', 'done');
+    await expect(dorm.locator('[data-tally]')).toBeVisible();
     await expect(dorm.locator('[data-tally]')).toHaveText('You confirmed 2 of 4.');
+    await expect(dorm.locator('.sk__results')).toBeVisible();
     await expect(dorm.locator('.sk__result')).toContainText(
       '69.8% of the interests extracted from browsing history were confirmed',
     );
@@ -704,6 +743,9 @@ test.describe('sketch scenes on the home page (D68)', () => {
     // The dining-hall scene keeps what the visitor confirmed, and notes the shared interest.
     await tab(page, 'dining').click();
     const dining = scene(page, 'dining');
+    await expect(dining.locator('.sk__carried-title')).toHaveText(
+      'Already in the learner model, from browsing history',
+    );
     await expect(dining.locator('[data-carried-list] li')).toHaveText([
       'bouldering',
       'film photography',
@@ -713,7 +755,8 @@ test.describe('sketch scenes on the home page (D68)', () => {
     for (const row of await dining.locator('.sk__marks').all())
       await row.getByRole('radio', { name: 'Confirm' }).check();
     await expect(dining.locator('[data-tally]')).toHaveText('You confirmed 4 of 4.');
-    const results = dining.locator('.sk__results');
+    const results = dining.locator('.sk__after > .sk__results');
+    await expect(results).toBeVisible();
     await expect(results).toContainText('56.3% of the interests extracted from posts');
     await expect(results).toContainText('2.14 grounded units of information per confirmed');
     await expect(results).toContainText('compared with 1.58 for browsing history');
@@ -722,13 +765,31 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await expect(dining.locator('.sk__result--both')).toContainText('38.2%');
   });
 
+  test('the dining-hall scene alone does not show what the two sources add together', async ({
+    page,
+  }) => {
+    await openStill(page);
+    await tab(page, 'dining').click();
+    const dining = scene(page, 'dining');
+    await expect(dining.locator('[data-carried]')).toBeHidden();
+    for (const row of await dining.locator('.sk__marks').all())
+      await row.getByRole('radio', { name: 'Reject' }).check();
+    await expect(dining).toHaveAttribute('data-state', 'done');
+    await expect(dining.locator('.sk__after > .sk__results .sk__result').first()).toBeVisible();
+    await expect(dining.locator('.sk__result--both')).toBeHidden();
+    await expect(dining.locator('.sk__both .sk__locked')).toBeVisible();
+  });
+
   test('the puppet scene: one tap turns the puppet and the character on the screen', async ({
     page,
   }) => {
     await openStill(page);
     await tab(page, 'puppet').click();
     const puppet = scene(page, 'puppet');
+    const status = shown(puppet.locator('.sk__status'));
     await expect(puppet).toHaveAttribute('data-facing', 'right');
+    await expect(status).toHaveText('The puppet faces right. The character on screen faces right.');
+    await expect(puppet.locator('.sk__results')).toBeHidden();
     const transformOf = (part: string) =>
       puppet
         .locator(`[data-part="${part}"]`)
@@ -742,12 +803,18 @@ test.describe('sketch scenes on the home page (D68)', () => {
     // Mirrored about its own upright axis, the puppet and its character alike.
     for (const part of ['puppet', 'avatar'])
       expect(await transformOf(part), part).toMatch(/^matrix\(-1, 0, 0, 1, /);
-    await expect(puppet.locator('.sk__status')).toContainText(
+    await expect(status).toHaveText(
       'The puppet faces left. The character on screen faces left too.',
     );
+    await expect(puppet.locator('.sk__results')).toBeVisible();
     await expect(puppet.locator('.sk__results')).toContainText('through the IMU');
-    await turn.click();
+    await expect(page.locator(`${SK} [data-live]`)).toHaveText(
+      /^The puppet faces left\. The character on screen faces left too\. The turn reaches the screen/,
+    );
+    // A tap on the character in the lens turns both back.
+    await puppet.locator('rect.sk__hit').last().click();
     await expect(puppet).toHaveAttribute('data-facing', 'right');
+    await expect(status).toHaveText('The puppet faces right. The character on screen faces right.');
   });
 
   test('the flood scene: switching channels off changes what the map cell shows', async ({
@@ -756,41 +823,51 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await openStill(page);
     await tab(page, 'city').click();
     const city = scene(page, 'city');
-    const status = city.locator('.sk__status');
+    const status = shown(city.locator('.sk__status'));
     const sensor = city.getByRole('switch', { name: 'Official sensor' });
     const report = city.getByRole('switch', { name: 'Citizen report' });
     const post = city.getByRole('switch', { name: 'Social post' });
     await expect(sensor).toBeChecked();
-    await expect(status.locator('.sk__when:visible')).toHaveText(/^Confirmed\. All three channels/);
+    await expect(status).toHaveText(/^Confirmed\. All three channels/);
     await expect(city.locator('[data-part="cell"]').first()).toBeVisible();
+    await expect(city.locator('[data-part="cell-tick"]')).toBeVisible();
+    await expect(city.locator('.sk__results')).toBeHidden();
+    const height = () => city.evaluate((el) => el.getBoundingClientRect().height);
+    const before = await height();
 
     await sensor.focus();
     await page.keyboard.press('Space');
     await expect(sensor).not.toBeChecked();
-    await expect(status.locator('.sk__when:visible')).toHaveText(
+    await expect(status).toHaveText(
       /^Verification quest\. Two channels agree\. Nearby residents get a one-tap verification quest/,
     );
     await expect(city.locator('svg[data-svg]')).toHaveAttribute('data-off', 'sensor');
     await expect(city.locator('[data-part="cell"]').first()).toBeHidden();
+    await expect(city.locator('[data-part="cell-tick"]')).toBeHidden();
     await expect(city.locator('[data-part="cell-hatch"]').first()).toBeVisible();
+    // A switched-off channel says so in the place of its description: the scene keeps its height.
+    await expect(city.locator('[data-entry][data-off] .sk__off-note')).toBeVisible();
     await expect(city.locator('[data-entry][data-off] .sk__off-note')).toHaveText('switched off');
+    await expect(city.locator('[data-entry][data-off] .sk__why')).toBeHidden();
+    expect(await height()).toBe(before);
     // The step is done: the replay's numbers, all from facts.md §5.3.
+    await expect(city.locator('.sk__results')).toBeVisible();
     await expect(city.locator('.sk__results')).toContainText('10.8 hours into a 30-hour');
     await expect(city.locator('.sk__results')).toContainText(
       'four confirmed cells and three open quests',
     );
 
     await report.uncheck();
-    await expect(status.locator('.sk__when:visible')).toHaveText(
-      /^Not confirmed\. One channel alone/,
-    );
+    await expect(status).toHaveText(/^Not confirmed\. One channel alone/);
     await expect(city.locator('[data-part="cell-hatch"]').first()).toBeHidden();
     await post.uncheck();
-    await expect(status.locator('.sk__when:visible')).toHaveText(/^No data\./);
+    await expect(status).toHaveText(/^No data\./);
+    expect(await height()).toBe(before);
     await sensor.check();
     await report.check();
     await post.check();
-    await expect(status.locator('.sk__when:visible')).toHaveText(/^Confirmed\./);
+    await expect(status).toHaveText(/^Confirmed\./);
+    await expect(city.locator('[data-part="cell-tick"]')).toBeVisible();
   });
 
   test('"Show all" shows results with sample answers, and Replay clears the step', async ({
@@ -810,60 +887,224 @@ test.describe('sketch scenes on the home page (D68)', () => {
       dorm.getByRole('group', { name: 'car insurance', exact: true }).getByLabel('Reject'),
     ).toBeChecked();
     await expect(dorm.locator('.sk__sample-note')).toBeVisible();
+    await expect(dorm.locator('[data-tally]')).toBeHidden();
+    await expect(dorm.locator('.sk__results')).toBeVisible();
     await expect(dorm.locator('.sk__results')).toContainText('69.8%');
     await page.getByRole('button', { name: 'Replay' }).click();
     await expect(dorm).toHaveAttribute('data-state', 'ready');
     await expect(dorm.locator('input:checked')).toHaveCount(0);
     await expect(dorm.locator('.sk__results')).toBeHidden();
+    await expect(dorm.locator('.sk__sample-note')).toBeHidden();
   });
 
-  test('draws a scene stroke by stroke and stops at "Show all"', async ({ page }) => {
-    await isolate(page);
-    await page.goto('/');
-    // Fast forward: the script reads its speed from the page.
-    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '25'));
-    await page.locator(SK).scrollIntoViewIfNeeded();
+  test('draws a scene stroke by stroke, caption by caption, and stops at "Show all"', async ({
+    page,
+  }) => {
+    test.slow();
+    await openMoving(page, 100);
+    await expect(scene(page, 'tracker')).toHaveAttribute('data-state', 'ready', {
+      timeout: 20_000,
+    });
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '3'));
     await tab(page, 'city').click();
     const city = scene(page, 'city');
     await expect(city).toHaveAttribute('data-state', 'playing');
-    // While it draws, the step and its results are out of reach.
-    await expect(city.getByRole('switch', { name: 'Official sensor' })).toBeHidden();
-    await expect(city).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
-    await expect(city.locator('.sk__steps li:visible')).toHaveCount(7);
-    await expect(city.getByRole('switch', { name: 'Official sensor' })).toBeVisible();
-    // No stroke is left hidden, and the pencil and the data cards are gone.
+    // Mid-drawing: some strokes are still to come, the pencil is on the paper, and only the
+    // captions and rows reached so far are shown.
+    expect(await undrawn(city)).toBeGreaterThan(5);
+    await expect(city.locator('.sk__pen[data-on]')).toHaveCount(1);
+    expect(await city.locator('.sk__steps li[data-on]').count()).toBeLessThan(7);
+    await expect(city.locator('[data-entry][data-on]')).toHaveCount(0);
+    await expect(city.locator('svg[data-svg]')).toHaveAttribute('data-count', '0');
+    // One stroke per path, so the pencil and the line it draws stay together.
     expect(
       await city
         .locator('.sk__ink')
-        .evaluateAll((paths) => paths.filter((p) => (p as SVGElement).style.strokeDashoffset)),
+        .evaluateAll((paths) => paths.filter((p) => /M[^M]*M/.test(p.getAttribute('d') ?? ''))),
     ).toHaveLength(0);
+    // The step, its status line and its results are out of reach while it draws.
+    await expect(city.getByRole('switch', { name: 'Official sensor' })).toBeHidden();
+    await expect(shown(city.locator('.sk__status'))).toHaveCount(0);
+    await expect(city.locator('.sk__after .sk__locked')).toBeHidden();
+    // Then the data arrives: cards on a wire, a first row, and the map cell starts to count.
+    await expect(city.locator('.sk__card').first()).toBeAttached({ timeout: 20_000 });
+    await expect(city.locator('[data-entry][data-on]')).toHaveCount(1, { timeout: 20_000 });
+    await expect(city.locator('svg[data-svg]')).toHaveAttribute('data-count', '1');
+    await expect(city.locator('[data-entry][data-on]')).toHaveCount(2, { timeout: 20_000 });
+    await expect(city.locator('[data-part="cell-hatch"]').first()).toBeVisible();
+
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
+    await expect(city).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await expect(city.locator('.sk__steps li[data-on]')).toHaveCount(7);
+    for (const caption of await city.locator('.sk__steps li').all())
+      await expect(caption).toHaveCSS('opacity', '1');
+    await expect(city.locator('[data-entry][data-on]')).toHaveCount(3);
+    await expect(city.getByRole('switch', { name: 'Official sensor' })).toBeVisible();
+    // With all three channels the cell is filled and ticked.
+    await expect(city.locator('svg[data-svg]')).toHaveAttribute('data-count', '3');
+    await expect(city.locator('[data-part="cell-tick"]')).toBeVisible();
+    // No stroke is left hidden, and the pencil, the wire and the cards are gone.
+    expect(await undrawn(city)).toBe(0);
     await expect(city.locator('.sk__pen')).toBeHidden();
-    await expect(city.locator('.sk__card')).toHaveCount(0);
+    await expect(city.locator('.sk__wire, .sk__card')).toHaveCount(0);
 
     // Replay at normal speed, then stop it.
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '1'));
     await page.getByRole('button', { name: 'Replay' }).click();
     await expect(city).toHaveAttribute('data-state', 'playing');
+    expect(await undrawn(city)).toBeGreaterThan(5);
     await page.getByRole('button', { name: 'Show all' }).click();
     await expect(city).toHaveAttribute('data-state', 'done');
+    expect(await undrawn(city)).toBe(0);
+    await expect(city.locator('.sk__results')).toBeVisible();
     await expect(city.locator('.sk__results')).toContainText('10.8 hours');
   });
 
-  test('keeps the page still while a scene draws and when its results appear', async ({ page }) => {
+  test('draws the first scene when its drawing is in view, once, and says nothing meanwhile', async ({
+    page,
+  }) => {
     await isolate(page);
     await page.goto('/');
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '25'));
+    const tracker = scene(page, 'tracker');
+    const live = page.locator(`${SK} [data-live]`);
+    // Waiting as blank paper: nothing has been drawn while it was out of view.
+    await expect(tracker).toHaveAttribute('data-state', 'playing');
+    await expect(tracker.locator('[data-step][data-on]')).toHaveCount(0);
+    expect(await undrawn(tracker)).toBeGreaterThan(20);
+    // The block's first line in view is not enough.
+    await page.locator(`${SK} .sk__sub`).evaluate((el) => el.scrollIntoView({ block: 'end' }));
+    await page.waitForTimeout(400);
+    await expect(tracker.locator('[data-step][data-on]')).toHaveCount(0);
+    // Record everything the live region is ever given during the automatic drawing.
+    await live.evaluate((el) => {
+      const said: string[] = [];
+      (window as unknown as { said: string[] }).said = said;
+      new MutationObserver(() => {
+        if (el.textContent) said.push(el.textContent);
+      }).observe(el, { childList: true, characterData: true, subtree: true });
+    });
+    await tracker.locator('svg[data-svg]').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await expect(tracker).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    expect(await page.evaluate(() => (window as unknown as { said: string[] }).said)).toEqual([]);
+    // Scrolling away and back does not draw it again.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await tracker.locator('svg[data-svg]').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await page.waitForTimeout(300);
+    await expect(tracker).toHaveAttribute('data-state', 'ready');
+    expect(await undrawn(tracker)).toBe(0);
+  });
+
+  test('a scene that was opened keeps its state; a first scene left undrawn draws on return', async ({
+    page,
+  }) => {
+    await openMoving(page, 100);
+    const tracker = scene(page, 'tracker');
+    await expect(tracker).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await tab(page, 'dorm').click();
+    const dorm = scene(page, 'dorm');
+    await expect(dorm).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    const mark = dorm.getByRole('group', { name: 'bouldering', exact: true }).getByLabel('Reject');
+    await mark.check();
+    await tab(page, 'tracker').click();
+    await expect(tracker).toHaveAttribute('data-state', 'ready');
+    await tab(page, 'dorm').click();
+    // Back in the dorm scene: not drawn again, and the mark is still there.
+    await expect(dorm).toHaveAttribute('data-state', 'ready');
+    await expect(mark).toBeChecked();
+
+    // On a fresh page, leave the first scene before it has drawn: it draws when picked again.
+    await page.goto('/');
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
+    await tab(page, 'puppet').click();
+    await expect(scene(page, 'puppet')).toHaveAttribute('data-state', 'ready', {
+      timeout: 20_000,
+    });
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '2'));
+    await tab(page, 'tracker').click();
+    await expect(scene(page, 'tracker')).toHaveAttribute('data-state', 'playing');
+    expect(await undrawn(scene(page, 'tracker'))).toBeGreaterThan(10);
+  });
+
+  test('keeps the page still while each scene draws and when its results appear', async ({
+    page,
+  }) => {
+    test.slow();
+    await openMoving(page, 100);
+    await expect(scene(page, 'tracker')).toHaveAttribute('data-state', 'ready', {
+      timeout: 20_000,
+    });
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '8'));
+    for (const id of ['dorm', 'dining', 'puppet', 'city']) {
+      await tab(page, id).click();
+      const active = scene(page, id);
+      // Sampled on every frame of the drawing: the caption being drawn, the rows and the
+      // cards must not change the height of the scene.
+      const heights = await active.evaluate(
+        (el) =>
+          new Promise<number[]>((resolve) => {
+            const seen = new Set<number>();
+            const sample = () => {
+              seen.add(Math.round(el.getBoundingClientRect().height * 10) / 10);
+              if ((el as HTMLElement).dataset.state === 'playing') requestAnimationFrame(sample);
+              else resolve([...seen]);
+            };
+            sample();
+          }),
+      );
+      expect(heights, id).toHaveLength(1);
+      await page.getByRole('button', { name: 'Show all' }).click();
+      await expect(active).toHaveAttribute('data-state', 'done');
+      expect(
+        Math.round((await active.evaluate((el) => el.getBoundingClientRect().height)) * 10) / 10,
+        `${id}, results shown`,
+      ).toBe(heights[0]);
+    }
+  });
+
+  test('a control used while its scene draws ends the drawing; Tab from "Show all" does too', async ({
+    page,
+  }) => {
+    await openMoving(page, 100);
+    await expect(scene(page, 'tracker')).toHaveAttribute('data-state', 'ready', {
+      timeout: 20_000,
+    });
+    // Normal speed: the drawing takes many seconds, so the scene is still drawing below.
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '1'));
+    await tab(page, 'dorm').click();
+    const dorm = scene(page, 'dorm');
+    await expect(dorm).toHaveAttribute('data-state', 'playing');
+    await page.getByRole('button', { name: 'Show all' }).focus();
+    await page.keyboard.press('Tab');
+    await expect(dorm).toHaveAttribute('data-state', 'ready');
+    // Focus is on the scene's first control, not somewhere down the page.
+    await expect(
+      dorm.getByRole('group', { name: 'bouldering', exact: true }).getByRole('radio').first(),
+    ).toBeFocused();
+
+    await page.getByRole('button', { name: 'Replay' }).click();
+    await expect(dorm).toHaveAttribute('data-state', 'playing');
+    // Replay starts from blank paper: no wire or card left from the drawing it interrupts.
+    await expect(dorm.locator('.sk__wire, .sk__card')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Show all' }).click();
+    await expect(dorm).toHaveAttribute('data-state', 'done');
+  });
+
+  test('after Back, the controls show what the scenes hold', async ({ page }) => {
+    await openStill(page);
+    await tab(page, 'dorm').click();
+    const dorm = scene(page, 'dorm');
+    for (const row of await dorm.locator('.sk__marks').all())
+      await row.getByRole('radio', { name: 'Confirm' }).check();
+    await expect(dorm).toHaveAttribute('data-state', 'done');
+    await page.goto('/about/');
+    await page.goBack();
     await page.locator(SK).scrollIntoViewIfNeeded();
-    await tab(page, 'dining').click();
-    const dining = scene(page, 'dining');
-    const height = () => dining.evaluate((el) => el.getBoundingClientRect().height);
-    const before = await height();
-    await expect(dining).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
-    expect(await height()).toBe(before);
-    for (const row of await dining.locator('.sk__marks').all())
-      await row.getByRole('radio', { name: 'Reject' }).check();
-    await expect(dining).toHaveAttribute('data-state', 'done');
-    expect(await height()).toBe(before);
+    await tab(page, 'dorm').click();
+    const state = await dorm.getAttribute('data-state');
+    const checked = await dorm.locator('input:checked').count();
+    // Either the page came back as it was, or it started over: never marks without their results.
+    expect([state, checked]).toEqual(state === 'done' ? ['done', 4] : ['ready', 0]);
   });
 
   test('without JavaScript, all five scenes are there, finished, with sample answers', async ({
@@ -883,45 +1124,72 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await expect(page.locator(`${SK} .sk__bar`)).toBeHidden();
     await expect(page.getByRole('button', { name: 'Turn the puppet' })).toBeHidden();
     await expect(page.locator(`${SK} .sk__locked:visible`)).toHaveCount(0);
-    // Finished drawings: every line is in the page, none waiting to be drawn.
     for (const id of SCENES) {
-      const drawing = scene(page, id).locator('svg[data-svg]');
-      expect(await drawing.locator('.sk__ink').count(), id).toBeGreaterThan(10);
-      expect(
-        await drawing
-          .locator('.sk__ink')
-          .evaluateAll((paths) => paths.filter((p) => (p as SVGElement).style.strokeDashoffset)),
-      ).toHaveLength(0);
-      await expect(scene(page, id).locator('.sk__steps li:visible')).not.toHaveCount(0);
+      const active = scene(page, id);
+      // Finished drawings, by what the browser renders: every line fully drawn, every fill in.
+      expect(await active.locator('.sk__ink').count(), id).toBeGreaterThan(10);
+      expect(await undrawn(active), id).toBe(0);
+      for (const fill of await active.locator('.sk__fill:visible').all())
+        await expect(fill).toHaveCSS('opacity', '1');
+      // Every caption is shown.
+      const captions = await active.locator('.sk__steps li').all();
+      expect(captions.length, id).toBeGreaterThanOrEqual(6);
+      for (const caption of captions) {
+        await expect(caption).toBeVisible();
+        await expect(caption).toHaveCSS('opacity', '1');
+      }
+      // The results are plain content.
+      await expect(active.locator('.sk__after > .sk__results')).toBeVisible();
     }
-    // Results and sample answers are plain content; the controls that show them can't be used.
     await expect(scene(page, 'dorm').locator('.sk__results')).toContainText('69.8%');
     await expect(scene(page, 'dining').locator('.sk__results')).toContainText('56.3%');
+    await expect(scene(page, 'dining').locator('.sk__result--both')).toBeVisible();
     await expect(scene(page, 'dining').locator('.sk__result--both')).toContainText('38.2%');
     await expect(scene(page, 'city').locator('.sk__results')).toContainText('10.8 hours');
+    // Sample answers, which cannot be changed, and a line that says they are samples.
     await expect(scene(page, 'dorm').locator('.sk__sample-note')).toBeVisible();
     await expect(scene(page, 'dorm').locator('input:checked')).toHaveCount(4);
     await expect(scene(page, 'dorm').locator('input:enabled')).toHaveCount(0);
-    await expect(scene(page, 'tracker').locator('.sk__entry--label')).toContainText(
+    await expect(shown(scene(page, 'tracker').locator('.sk__entry--label'))).toHaveText(
       'Yes, I learned something.',
     );
-    await expect(scene(page, 'city').locator('.sk__status .sk__when:visible')).toHaveText(
-      /^Confirmed\./,
+    await expect(shown(scene(page, 'puppet').locator('.sk__status'))).toHaveText(
+      'The puppet faces right. The character on screen faces right.',
     );
+    await expect(shown(scene(page, 'city').locator('.sk__status'))).toHaveText(/^Confirmed\./);
+    await expect(scene(page, 'city').locator('[data-part="cell-tick"]')).toBeVisible();
+    // Switches that could not be used are not shown.
+    await expect(scene(page, 'city').locator('.sk__switch:visible')).toHaveCount(0);
     await context.close();
+  });
+
+  test('falls back to the finished scenes if its script never starts, and stays there', async ({
+    page,
+  }) => {
+    test.slow();
+    await isolate(page);
+    await page.route(/SketchScenes.*\.js$/, (route) => route.abort());
+    await page.goto('/');
+    await expect(page.locator(SK)).toHaveAttribute('data-failed', '', { timeout: 8_000 });
+    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(5);
+    await expect(page.locator(`${SK} .sk__bar`)).toBeHidden();
+    await expect(scene(page, 'dining').locator('.sk__after > .sk__results')).toBeVisible();
+    await expect(scene(page, 'dining').locator('.sk__results')).toContainText('56.3%');
   });
 
   test('has no accessibility violations in any scene, light or dark, mid-step or finished', async ({
     page,
   }) => {
     test.slow();
-    await openStill(page);
     for (const colorScheme of ['light', 'dark'] as const) {
+      // A fresh page for each theme, so every scene is scanned before and after its step.
+      await openStill(page);
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
       for (const id of SCENES) {
         await tab(page, id).click();
         for (const finished of [false, true]) {
           if (finished) await page.getByRole('button', { name: 'Show all' }).click();
+          await expect(scene(page, id)).toHaveAttribute('data-state', finished ? 'done' : 'ready');
           const results = await new AxeBuilder({ page })
             .include('#learners-and-teachers .sk')
             .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -932,7 +1200,6 @@ test.describe('sketch scenes on the home page (D68)', () => {
           ).toEqual([]);
         }
       }
-      await page.getByRole('button', { name: 'Replay' }).click();
     }
   });
 
@@ -993,6 +1260,51 @@ test.describe('sketch scenes on the home page (D68)', () => {
       375,
     );
     await context.close();
+  });
+
+  test('on a phone held upright the drawing stays in view while its control is used', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await openStill(page);
+    await tab(page, 'puppet').click();
+    const puppet = scene(page, 'puppet');
+    const turn = puppet.getByRole('button', { name: 'Turn the puppet' });
+    await turn.scrollIntoViewIfNeeded();
+    await turn.click();
+    await expect(puppet).toHaveAttribute('data-facing', 'left');
+    // The button and the whole drawing are in the window together.
+    await expect(turn).toBeInViewport();
+    await expect(puppet.locator('svg[data-svg]')).toBeInViewport({ ratio: 1 });
+    // A wide window has the panel beside the drawing, and nothing is pinned.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    expect(await puppet.locator('.sk__board').evaluate((el) => getComputedStyle(el).position)).toBe(
+      'static',
+    );
+  });
+
+  test('loads under 50 KB of JavaScript on the home page, and no framework runtime', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto('/');
+    const sources = await page
+      .locator('script[src]')
+      .evaluateAll((scripts) => scripts.map((script) => script.getAttribute('src')!));
+    expect(sources.length).toBeGreaterThan(0);
+    let total = 0;
+    for (const src of sources) {
+      const file = readFileSync(new URL(`../../dist${src}`, import.meta.url));
+      total += gzipSync(file).length;
+      // Modules the scripts import are part of what the page loads.
+      for (const [, name] of file.toString().matchAll(/from\s*"\.\/([^"]+\.js)"/g))
+        total += gzipSync(
+          readFileSync(new URL(`../../dist/_astro/${name}`, import.meta.url)),
+        ).length;
+    }
+    expect(total).toBeLessThan(50_000);
+    // React's client runtime alone is larger than that (D68): the home page must not load it.
+    expect(sources.join(' ')).not.toMatch(/client\.[\w-]+\.js/);
   });
 });
 
