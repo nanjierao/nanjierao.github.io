@@ -103,7 +103,8 @@ Top to bottom (D21):
   刘克明's 中国技术思想研究, 2004), children and AI, and a personal decision digital twin. On phones,
   after a tap, the needle can turn to north using the device compass; on desktop it follows the
   cursor and settles with a slight damped spring. Static under reduced motion.
-- **Footer**: the annotation legend (D30), the public email address (D70), links, credits.
+- **Footer**: the annotation legend (D30), the public email address (D70), links (Daily notes,
+  Privacy, Credits, Blog RSS), credits.
 - Budget: homepage JS ≤ 60 KB gzipped (CLAUDE.md's 50 KB for content pages is the stricter one
   and holds here too: the word cloud and the sketch scenes together are under 10 KB); portals and
   the easter-egg teaser load on demand.

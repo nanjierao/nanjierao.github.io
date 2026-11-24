@@ -199,8 +199,12 @@ export const noteSchema = z.object({
         .refine((line) => line === line.trim(), {
           error: 'No space at the start or end of a line',
         })
-        .refine((line) => !/[\r\n]/.test(line), {
+        .refine((line) => !/[\r\n\u2028\u2029]/.test(line), {
           error: 'One sentence per line, without line breaks inside it',
+        })
+        .refine((line) => !/\p{Cc}/u.test(line), {
+          // "\t" in double quotes becomes a tab: such a line belongs in single quotes.
+          error: 'No tabs or other control characters (a backslash escape inside double quotes?)',
         }),
     )
     .min(1)

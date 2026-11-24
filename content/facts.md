@@ -20,8 +20,9 @@ checked by Jimmy against the final dissertation before they appear on the site.
 - Pronouns: he/him
 - Location (public, city level only): Gainesville, Florida
 - Public contact: raon@ufl.edu (Jimmy, Nov 24, 2026; D70). It is the one email address the site
-  shows: the intro strip, /about, /cv, /privacy, the footer, the JSON-LD `Person` and the Q&A
-  answer. Don't reuse the old site's mailto link; it pointed to someone else.
+  shows: the intro strip, /about, /cv, /privacy, the footer and the JSON-LD `Person`. The Q&A
+  answer `contact` in content/qa-library.yaml gives it too, for /ask once that page is built.
+  Don't reuse the old site's mailto link; it pointed to someone else.
 - Website: https://nanjierao.github.io (repository `nanjierao/nanjierao.github.io`, owned by the
   GitHub organization `nanjierao`).
 

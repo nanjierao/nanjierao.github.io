@@ -1,7 +1,7 @@
 // End-to-end checks against the production build (`npm run build`, then `npm run test:e2e`).
 // Network access outside the site is blocked here, so tests also prove the pages work offline
 // and fall back quietly when GitHub or YouTube can't be reached.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -79,6 +79,8 @@ test.describe('every page', () => {
       );
       // D70: the one public email address, in the footer of every page.
       await expect(page.locator('footer a[href^="mailto:"]')).toHaveText(['raon@ufl.edu']);
+      // D71: the footer links the Daily notes on every page, a second way in beside the home card.
+      await expect(page.locator('footer a[href="/notes/"]')).toHaveText('Daily notes');
       await expect(page.locator('footer a[href^="mailto:"]')).toHaveAttribute(
         'href',
         'mailto:raon@ufl.edu',
@@ -359,8 +361,30 @@ test.describe('feeds and crawlers', () => {
 
 test.describe('daily notes (D71)', () => {
   const CARD = 'section[aria-labelledby="daily-notes"]';
+  /** The notes a build can show: the real ones, or the synthetic ones (NOTES_FIXTURES=1). */
+  const onDisk = (dir: string) =>
+    readdirSync(new URL(`../../${dir}/`, import.meta.url))
+      .filter((name) => name.endsWith('.yaml'))
+      .map((name) => name.replace(/\.yaml$/, ''))
+      .sort()
+      .reverse();
+  /** Chinese characters must sit inside lang="zh-CN", and Latin letters outside it (WCAG 3.1.2). */
+  const misLabelled = (lists: Element[]) =>
+    lists.flatMap((list) => {
+      const found: string[] = [];
+      const walker = document.createTreeWalker(list, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const text = node.textContent ?? '';
+        const lang = node.parentElement?.closest('[lang]')?.getAttribute('lang');
+        if (/\p{Script=Han}/u.test(text) && lang !== 'zh-CN') found.push(`not Chinese: ${text}`);
+        if (/[A-Za-z]/.test(text) && lang === 'zh-CN') found.push(`marked Chinese: ${text}`);
+      }
+      return found;
+    });
 
-  test('is linked from the home page, at the start of Recent', async ({ page }) => {
+  test('is the first card in Recent on the home page, with a link to the page', async ({
+    page,
+  }) => {
     await isolate(page);
     await page.goto('/');
     const card = page.locator(`#recent-heading ~ .recent-grid > ${CARD}`);
@@ -387,6 +411,8 @@ test.describe('daily notes (D71)', () => {
     await page.goto('/notes/');
     const notes = page.locator('article.note');
     const ids = await notes.evaluateAll((els) => els.map((el) => el.id));
+    // Every note file the build read is on the page: nothing went missing on the way.
+    expect([onDisk('src/content/notes'), onDisk('tests/fixtures/notes')]).toContainEqual(ids);
     await page.goto('/');
     const card = page.locator(CARD);
     if (ids.length === 0) {
@@ -402,11 +428,22 @@ test.describe('daily notes (D71)', () => {
     }
     // Newest first: the ids are dates, and they sort.
     expect(ids).toEqual([...ids].sort().reverse());
-    // The home card shows the newest note, with the same lines.
+    // The home card shows the newest note, with the same lines, marked the same way.
     await expect(card.locator('time')).toHaveAttribute('datetime', ids[0]!);
-    const newest = await card.locator('li').allTextContents();
+    // Each line's lang, then its pieces: text, or a span's lang and text.
+    const markup = (lines: Element[]) =>
+      lines.map((line) => [
+        line.getAttribute('lang'),
+        ...[...line.childNodes].map((node) =>
+          node instanceof Element
+            ? `${node.getAttribute('lang')}: ${node.textContent}`
+            : node.textContent,
+        ),
+      ]);
+    const newest = await card.locator('li').evaluateAll(markup);
+    expect(await card.locator('ul').evaluateAll(misLabelled)).toEqual([]);
     await page.goto('/notes/');
-    expect(await notes.first().locator('li').allTextContents()).toEqual(newest);
+    expect(await notes.first().locator('li').evaluateAll(markup)).toEqual(newest);
     await expect(page.locator('.notes-empty')).toHaveCount(0);
     // One month heading per month, newest first; each day under its own month.
     const months = await page.locator('section.notes-month').evaluateAll((sections) =>
@@ -415,7 +452,9 @@ test.describe('daily notes (D71)', () => {
         days: [...section.querySelectorAll('article.note')].map((article) => article.id),
       })),
     );
-    expect(months.map((month) => month.days.flat()).flat()).toEqual(ids);
+    expect(months.flatMap((month) => month.days)).toEqual(ids);
+    expect(new Set(months.map((month) => month.heading)).size).toBe(months.length);
+    expect(months.every((month) => month.days.length > 0)).toBe(true);
     for (const month of months)
       for (const day of month.days) {
         const label = new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', {
@@ -425,21 +464,16 @@ test.describe('daily notes (D71)', () => {
         });
         expect(month.heading).toBe(label);
       }
-    // Each day: a heading with its date, one to five lines, Chinese lines marked as Chinese.
+    // Each day: a heading with its date, and one to five lines.
     for (const id of ids) {
       const note = page.locator(`article.note[id="${id}"]`);
       await expect(note.locator('h3 time')).toHaveAttribute('datetime', id);
       const count = await note.locator('li').count();
       expect(count).toBeGreaterThanOrEqual(1);
       expect(count).toBeLessThanOrEqual(5);
-      for (const line of await note.locator('li').all()) {
-        const text = (await line.textContent()) ?? '';
-        const han = text.match(/\p{Script=Han}/gu)?.length ?? 0;
-        const words = text.match(/\p{Script=Latin}+/gu)?.length ?? 0;
-        if (han > 0 && 2 * han >= 3 * words) await expect(line).toHaveAttribute('lang', 'zh-CN');
-        else expect(await line.getAttribute('lang')).toBeNull();
-      }
     }
+    // Chinese text is marked as Chinese, and nothing else is.
+    expect(await page.locator('.note__lines').evaluateAll(misLabelled)).toEqual([]);
   });
 
   test('keeps the words of a note exactly, and gives each day an address', async ({ page }) => {
@@ -458,10 +492,27 @@ test.describe('daily notes (D71)', () => {
     await expect(page.locator('article.note[id="2026-10-02"] li').nth(1)).toHaveText(
       "A second sentence with an apostrophe, so the quoting is tested: it's kept as written.",
     );
-    await expect(page.locator('article.note[id="2026-10-02"] li').nth(2)).toHaveAttribute(
-      'lang',
-      'zh-CN',
+    // A backslash stays as written (single quotes in the YAML read no escapes).
+    await expect(note.locator('li').nth(3)).toHaveText(
+      'A backslash stays as written in single quotes: \\textbf{bold} and C:\\temp.',
     );
+    // A line all in Chinese is marked as a whole; in a mixed line, each run of Chinese is.
+    const lines = (id: string) => page.locator(`article.note[id="${id}"] li`);
+    await expect(lines('2026-10-02').nth(2)).toHaveAttribute('lang', 'zh-CN');
+    await expect(lines('2026-10-02').nth(2).locator('span')).toHaveCount(0);
+    expect(await lines('2026-10-01').nth(1).getAttribute('lang')).toBeNull();
+    await expect(lines('2026-10-01').nth(1).locator('span[lang="zh-CN"]')).toHaveText([
+      '测试句子里也可以有一个英文词',
+      '。',
+    ]);
+    await expect(lines('2026-10-01').nth(4).locator('span[lang="zh-CN"]')).toHaveText(['测试短语']);
+    // The home card shows the newest test note, with its Chinese line marked.
+    await page.goto('/');
+    await expect(page.locator(`${CARD} li`)).toHaveCount(4);
+    await expect(page.locator(`${CARD} li[lang="zh-CN"]`)).toHaveText([
+      '这是一句用来检查中文排版的测试句子。',
+    ]);
+    await page.goto('/notes/');
     // /notes/#<date> brings that day into view: to the top, with a margin above its heading,
     // when the page is long enough below it, and at least fully on screen when it is the last.
     await page.setViewportSize({ width: 390, height: 700 });

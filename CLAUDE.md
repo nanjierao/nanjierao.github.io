@@ -139,10 +139,11 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
     repository. The page's words are Jimmy's; change them only with a new text from him.
 13. Daily notes (/notes/, D71) are Jimmy's words: add each day's note as he sends it, with the
     `add-note` skill (`.claude/skills/add-note/`), and merge once the checks pass. Don't correct,
-    translate or add to them. facts.md does not hold them, and no other page uses them as a
-    source. Rules 2 and 12 still apply: a line that touches facts.md §15 or the class study is
-    not published; ask Jimmy instead. A note changes no layout, so its pull request quotes the
-    note instead of attaching screenshots.
+    translate or add to them. facts.md does not hold them, and no other page takes facts from
+    them (the home page card only repeats the newest note). Rules 2 and 12 still apply: a line
+    that touches facts.md §15 or the class study is not written to the repository; ask Jimmy
+    instead. A note changes no layout, so its pull request quotes the note instead of attaching
+    screenshots; the end-to-end tests, run on the real build, check it.
 
 ## Design rules
 
@@ -150,8 +151,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
   one line, CV / Publications / Email) first, then the word cloud and portals, then the section
   "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
-  step, then the learner and teacher work. The footer carries the annotation legend (D30) and
-  the public email address (D70). Recent opens with a Daily notes card linking /notes/ (D71).
+  step, then the learner and teacher work. The footer carries the annotation legend (D30), the
+  public email address (D70) and a link to the Daily notes. In Recent, the cards after the three
+  news items start with Daily notes, which links to /notes/ and shows the newest note (D71).
 - Accessibility: WCAG 2.2 AA. Keyboard reachable, visible focus, semantic landmarks, skip link,
   alt text for every meaningful image, `prefers-reduced-motion` respected, color never the only
   carrier of meaning. The grounded/inferred convention always uses line style + label + color.
@@ -253,7 +255,8 @@ Device-orientation access only after a tap, and only on the easter-egg panel.
 - Conventional commits (`feat:`, `fix:`, `content:`, `style:`, `chore:`, `docs:`).
 - Before opening the PR: run build, check, lint, test, and `check:privacy`. GitHub Pages has no
   per-PR preview, so attach screenshots of every changed page (phone 390 px and desktop, light and
-  dark). If browsers can't run in the session, say so instead of skipping silently.
+  dark; a daily note's pull request quotes the note instead, rule 13). If browsers can't run in
+  the session, say so instead of skipping silently.
 - PR description: what changed and why, what the checks found, and a checklist of every
   `TODO(jimmy)`. Don't call anything "ready"; say what the checks found.
 - Never commit secrets, files Jimmy shared only for reference, or anything in the facts.md §15
@@ -265,4 +268,4 @@ Device-orientation access only after a tap, and only on the easter-egg panel.
 
 Build, check, lint, tests and the privacy check pass; no console errors; axe reports no
 violations; budgets met or the deviation explained; every fact traceable to `content/facts.md`;
-screenshots and TODOs in the PR.
+screenshots (for a daily note, the quoted note: rule 13) and TODOs in the PR.

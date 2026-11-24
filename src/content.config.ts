@@ -11,7 +11,7 @@ import {
   themeSchema,
   wordSchema,
 } from './content/schemas.ts';
-import { isNoteDate } from './lib/notes.ts';
+import { isNoteDate, notesDir } from './lib/notes.ts';
 
 const themes = defineCollection({
   loader: glob({ base: './src/content/themes', pattern: '*.{md,mdx}' }),
@@ -55,7 +55,7 @@ const blog = defineCollection({
 // end-to-end tests and layout screenshots; it is never set for the real site.
 const notes = defineCollection({
   loader: glob({
-    base: process.env.NOTES_FIXTURES === '1' ? './tests/fixtures/notes' : './src/content/notes',
+    base: `./${notesDir()}`,
     pattern: '*.yaml',
     generateId: ({ entry }) => {
       const id = entry.replace(/\.yaml$/, '');

@@ -49,14 +49,38 @@ export function groupNotesByMonth<T extends { id: string }>(
   return groups;
 }
 
+/** The folder the notes collection reads: the real notes, or the synthetic ones for the tests. */
+export function notesDir(): string {
+  return process.env.NOTES_FIXTURES === '1' ? 'tests/fixtures/notes' : 'src/content/notes';
+}
+
+/** Chinese characters, CJK punctuation and full-width forms. */
+const CJK = '\\p{Script=Han}\\u3000-\\u303F\\uFF00-\\uFFEF';
+/** What may sit between two stretches of Chinese and still belong to them. */
+const GLUE = '\\s\\d\\u00B7\\u2014\\u2018-\\u201F\\u2026';
+/** One run of Chinese, with an opening quote before it and a closing quote after it. */
+const CHINESE_RUN = new RegExp(
+  `([\\u2018\\u201C]?[${CJK}]+(?:[${GLUE}]*[${CJK}]+)*[\\u2019\\u201D]?)`,
+  'u',
+);
+
+export interface NoteRun {
+  text: string;
+  lang?: 'zh-CN';
+}
+
 /**
- * The language of one line, for its lang attribute (WCAG 2.2, 3.1.2): Chinese when its Han
- * characters reach one and a half times its Latin words, so a Chinese sentence with an English
- * term stays Chinese and an English sentence with a Chinese term stays English. Undefined means
- * the page's English.
+ * One line of a note, marked for language (WCAG 2.2, 3.1.2) without guessing at the line as a
+ * whole: Chinese characters are Chinese, everything else is the page's English. A line that is
+ * all Chinese gets lang="zh-CN" itself. In a mixed line each run of Chinese gets its own, so a
+ * Chinese sentence with English terms and an English sentence with a Chinese phrase both come
+ * out right. The runs join back into the line, character for character.
  */
-export function lineLang(line: string): 'zh-CN' | undefined {
-  const han = line.match(/\p{Script=Han}/gu)?.length ?? 0;
-  const latinWords = line.match(/\p{Script=Latin}+/gu)?.length ?? 0;
-  return han > 0 && 2 * han >= 3 * latinWords ? 'zh-CN' : undefined;
+export function noteLine(line: string): { lang?: 'zh-CN'; runs: NoteRun[] } {
+  const runs: NoteRun[] = line
+    .split(CHINESE_RUN)
+    .map((text, i) => (i % 2 === 1 ? { text, lang: 'zh-CN' as const } : { text }))
+    .filter((run) => run.text !== '');
+  if (runs.length === 1 && runs[0]?.lang) return { lang: 'zh-CN', runs: [{ text: line }] };
+  return { runs };
 }
