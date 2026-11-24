@@ -1,6 +1,6 @@
-// /learners-and-teachers/ (D66): every sentence and number the page shows comes from one data
-// module, so the checks here cover them (section headings and fixed labels are in the template;
-// the end-to-end test reads the rendered page). Numbers must be in content/facts.md and stay
+// The home page's "Modeling Learners and Teachers" section (D66): every sentence and number it
+// shows comes from one data module, so the checks here cover them (section headings and fixed
+// labels are in the component; the end-to-end test reads the rendered section). Numbers must be in content/facts.md and stay
 // with the study facts.md gives them to, the term is "learner model", and the copy has no em
 // dashes.
 import { existsSync, readFileSync } from 'node:fs';
@@ -28,7 +28,7 @@ function strings(value: unknown): string[] {
 const COPY = strings(page).filter((text) => !text.startsWith('/') && !/^[a-z0-9-]+$/.test(text));
 const LINKS = strings(page).filter((text) => text.startsWith('/'));
 
-describe('copy of /learners-and-teachers/', () => {
+describe('copy of the learners-and-teachers section', () => {
   it('shows only numbers that are in facts.md', () => {
     for (const text of COPY) {
       const numbers = (
@@ -138,7 +138,7 @@ describe('copy of /learners-and-teachers/', () => {
   });
 });
 
-describe('publications and links on /learners-and-teachers/', () => {
+describe('publications and links in the learners-and-teachers section', () => {
   const publications = parseYaml(
     readFileSync(join(ROOT, 'src', 'content', 'publications.yaml'), 'utf8'),
   ) as Array<{ id: string; type: string; verify?: boolean; firstAuthor: boolean }>;
@@ -184,9 +184,21 @@ describe('publications and links on /learners-and-teachers/', () => {
     }
   });
 
-  it('has its own tab, with a shorter name than the page so the phone menu keeps two rows', () => {
-    const label = NAV.find((item) => item.href === '/learners-and-teachers/')?.label;
-    expect(label).toBe('Learners and Teachers');
-    expect(page.TITLE).toContain(label);
+  it('is a section of the home page, with no tab of its own', () => {
+    expect(NAV.map((item) => item.href)).toEqual([
+      '/research/',
+      '/publications/',
+      '/builds/',
+      '/teaching/',
+      '/cv/',
+      '/blog/',
+      '/about/',
+    ]);
+    expect(existsSync(join(ROOT, 'src', 'pages', 'learners-and-teachers.astro'))).toBe(false);
+    const home = readFileSync(join(ROOT, 'src', 'pages', 'index.astro'), 'utf8');
+    expect(home.indexOf('<WordCloud />')).toBeLessThan(home.indexOf('<LearnersTeachers />'));
+    expect(home.indexOf('<LearnersTeachers />')).toBeLessThan(
+      home.indexOf('id="research-heading"'),
+    );
   });
 });

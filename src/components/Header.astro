@@ -48,10 +48,6 @@ const current = (href: string) =>
     color: var(--color-text);
     text-decoration: none;
     margin-right: auto;
-    /* As tall as the toggle beside it, so the row keeps one height at every width. */
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
   }
 
   .site-header__name:hover {
@@ -92,9 +88,7 @@ const current = (href: string) =>
     font-weight: 600;
   }
 
-  /* Up to 66rem the name and the theme toggle share the first row and the menu takes the row
-     below; from there up all eight items fit beside them on one row. */
-  @media (max-width: 66rem) {
+  @media (max-width: 40rem) {
     .site-header__inner {
       gap: 0 var(--space-3);
     }
@@ -103,22 +97,6 @@ const current = (href: string) =>
       order: 3;
       width: 100%;
       margin-inline: calc(-1 * var(--space-2));
-    }
-  }
-
-  /* Small phones: closer spacing keeps the menu on two rows from 360px up. The targets stay
-     44px tall. */
-  @media (max-width: 24.5rem) {
-    nav {
-      margin-inline: -5px;
-    }
-
-    .site-nav {
-      gap: 0;
-    }
-
-    .site-nav a {
-      padding: 0 5px;
     }
   }
 </style>

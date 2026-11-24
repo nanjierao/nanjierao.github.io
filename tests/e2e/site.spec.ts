@@ -15,7 +15,6 @@ const PAGES = [
   '/research/civic-digital-twins/',
   '/research/embodied-learning/',
   '/research/teacher-support/',
-  '/learners-and-teachers/',
   '/publications/',
   '/builds/',
   '/builds/cs-udt/',
@@ -483,41 +482,60 @@ test.describe('CS-UDT phone demo', () => {
   });
 });
 
-test.describe('one page for the learner and teacher work (D66)', () => {
-  test('has its tab, its four sections in order, and the shared citations', async ({ page }) => {
+test.describe('learners and teachers on the home page (D66)', () => {
+  const SECTION = '#learners-and-teachers';
+
+  test('is a section after the word cloud, with its parts in order and the shared citations', async ({
+    page,
+  }) => {
     await isolate(page);
-    await page.goto('/learners-and-teachers/');
-    const tab = page.locator('.site-nav a[href="/learners-and-teachers/"]');
-    await expect(tab).toHaveText('Learners and Teachers');
-    await expect(tab).toHaveAttribute('aria-current', 'page');
-    await expect(page.locator('h1')).toHaveText('Modeling Learners and Teachers');
-    await expect(page.locator('main h2')).toHaveText([
+    await page.goto('/');
+    const section = page.locator(SECTION);
+    await expect(section.locator('h2')).toHaveText('Modeling Learners and Teachers');
+    await expect(section.locator('h3')).toHaveText([
       'Observing learners',
       'Modeling teachers',
       'Supporting breadth',
-      'CV and publications',
     ]);
-    await expect(page.locator('.study')).toHaveCount(4);
+    // Home page order: intro strip, word cloud, this section, then Research and Recent.
+    await expect(page.locator('main h2')).toHaveText([
+      'Topics',
+      'Modeling Learners and Teachers',
+      'Research',
+      'Recent',
+    ]);
+    await expect(section.locator('.study')).toHaveCount(4);
     // Each card: a short label as its heading, then the work's own title as a citation.
-    await expect(page.locator('.study h3').first()).toHaveText(
+    await expect(section.locator('.study h4').first()).toHaveText(
       'The dissertation: asking students, and reading their records',
     );
-    await expect(page.locator('.study cite')).toHaveCount(4);
-    await expect(page.locator('#teachers-heading ~ .pub-list .pub')).toHaveCount(3);
-    await expect(page.locator('#breadth-heading ~ .pub-list .pub')).toHaveCount(4);
-    await expect(page.locator('.more-actions a')).toHaveText([
-      /^CV/,
+    await expect(section.locator('.study cite')).toHaveCount(4);
+    await expect(section.locator('#teachers-heading ~ .pub-list .pub')).toHaveCount(3);
+    await expect(section.locator('#breadth-heading ~ .pub-list .pub')).toHaveCount(4);
+  });
+
+  test('has no tab and no page of its own', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/');
+    await expect(page.locator('.site-nav a')).toHaveText([
+      'Research',
       'Publications',
-      'Research overview',
+      'Builds',
+      'Teaching',
+      'CV',
+      'Blog',
+      'About',
     ]);
+    const response = await page.goto('/learners-and-teachers/');
+    expect(response?.status()).toBe(404);
   });
 
   test('says "learner model", never "world model", and has no em dash in its text', async ({
     page,
   }) => {
     await isolate(page);
-    await page.goto('/learners-and-teachers/');
-    const text = await page.locator('main').innerText();
+    await page.goto('/');
+    const text = await page.locator(SECTION).innerText();
     expect(text).toContain('learner model');
     expect(text).not.toMatch(/world model/i);
     expect(text).not.toContain('—');
@@ -525,9 +543,9 @@ test.describe('one page for the learner and teacher work (D66)', () => {
 
   test('every link in the study cards leads to a page that has its target', async ({ page }) => {
     await isolate(page);
-    await page.goto('/learners-and-teachers/');
+    await page.goto('/');
     const hrefs = await page
-      .locator('.study__links a')
+      .locator(`${SECTION} .study__links a`)
       .evaluateAll((links) => links.map((link) => link.getAttribute('href')!));
     expect(hrefs.length).toBeGreaterThan(7);
     // One visit per page, then every anchor on it: going from one anchor to another on the same
@@ -548,8 +566,8 @@ test.describe('one page for the learner and teacher work (D66)', () => {
 
   test('a citation link marks the citation it points at', async ({ page }) => {
     await isolate(page);
-    await page.goto('/learners-and-teachers/');
-    const link = page.locator('#ieeevr-2020 .study__links a', { hasText: 'Citation' });
+    await page.goto('/');
+    const link = page.locator(`${SECTION} #ieeevr-2020 .study__links a`, { hasText: 'Citation' });
     await expect(link).toHaveAccessibleName('Citation: IEEE VR 2020');
     await link.click();
     await expect(page).toHaveURL(/\/publications\/#ieeevr-2020-ar-smart-glasses$/);
@@ -559,43 +577,16 @@ test.describe('one page for the learner and teacher work (D66)', () => {
     );
   });
 
-  test('keeps the menu on two rows on a phone, from 360 px up', async ({ page }) => {
+  test('fits the page at every width, cards and figures included', async ({ page }) => {
     await isolate(page);
-    for (const width of [360, 375, 390, 412, 430]) {
+    for (const width of [320, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 800 });
-      await page.goto('/learners-and-teachers/');
-      const tops = await page
-        .locator('.site-nav a')
-        .evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().top)));
-      expect(new Set(tops).size, `${width}px`).toBe(2);
-      // Every item stays a 44 px tall target, at least 24 px wide.
-      const sizes = await page.locator('.site-nav a').evaluateAll((links) =>
-        links.map((link) => {
-          const box = link.getBoundingClientRect();
-          return [box.width, box.height];
-        }),
-      );
-      for (const [w, h] of sizes) {
-        expect(w, `${width}px`).toBeGreaterThanOrEqual(24);
-        expect(h, `${width}px`).toBeGreaterThanOrEqual(44);
-      }
-    }
-  });
-
-  test('keeps the theme toggle beside the name, never on a row of its own', async ({ page }) => {
-    await isolate(page);
-    for (const width of [360, 700, 768, 900, 1024, 1140, 1280]) {
-      await page.setViewportSize({ width, height: 800 });
-      await page.goto('/learners-and-teachers/');
-      const name = (await page.locator('.site-header__name').boundingBox())!;
-      const toggle = (await page.locator('.site-header button').boundingBox())!;
+      await page.goto('/');
+      await expect(page.locator(`${SECTION} .study`).first()).toBeVisible();
       expect(
-        Math.abs(name.y + name.height / 2 - (toggle.y + toggle.height / 2)),
+        await page.evaluate(() => document.documentElement.scrollWidth),
         `${width}px`,
-      ).toBeLessThan(8);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
-        width,
-      );
+      ).toBeLessThanOrEqual(width);
     }
   });
 });

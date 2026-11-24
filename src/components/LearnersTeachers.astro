@@ -1,23 +1,20 @@
 ---
-// One line of work across the papers (D66): observing learners, the teacher's side, and the
-// checks. The sentences and numbers live in src/data/learners-teachers.ts so a test can read
-// them; headings and fixed labels are here. The citations come from the publication list the
-// rest of the site uses.
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Figure from '../components/figures/Figure.astro';
-import Flow from '../components/figures/Flow.astro';
-import PairedBars from '../components/figures/PairedBars.astro';
-import PublicationList from '../components/PublicationList.astro';
+// The home page's section on the learner and teacher work (D66): observing learners, the
+// teacher's side, and the checks. The sentences and numbers live in
+// src/data/learners-teachers.ts so a test can read them; headings and fixed labels are here.
+// The citations come from the publication list the rest of the site uses.
+import Figure from './figures/Figure.astro';
+import Flow from './figures/Flow.astro';
+import PairedBars from './figures/PairedBars.astro';
+import PublicationList from './PublicationList.astro';
 import { STUDY2_SOURCES } from '../data/figures.ts';
 import {
   BREADTH_INTRO,
   BREADTH_PUBLICATIONS,
-  DESCRIPTION,
   GROUNDING_NOTE,
   INTRO,
   LEARNER_STUDIES,
   LEDE,
-  MORE_INTRO,
   SOURCES_FIGURE,
   STEPS,
   STEPS_NOTE,
@@ -27,15 +24,13 @@ import {
   TITLE,
 } from '../data/learners-teachers.ts';
 import { getPublicationsByIds } from '../lib/content.ts';
-import { CV_PDF_HREF, hasCvPdf } from '../lib/cv-pdf.ts';
 
 const teacherPapers = await getPublicationsByIds(TEACHER_PUBLICATIONS);
 const breadthPapers = await getPublicationsByIds(BREADTH_PUBLICATIONS);
-const cvPdf = hasCvPdf();
 ---
 
-<BaseLayout title={TITLE} description={DESCRIPTION}>
-  <h1>{TITLE}</h1>
+<section class="lt" id="learners-and-teachers" aria-labelledby="lt-heading">
+  <h2 id="lt-heading">{TITLE}</h2>
   <p class="lede">{LEDE}</p>
   <div class="prose">
     {INTRO.map((paragraph) => (
@@ -47,12 +42,12 @@ const cvPdf = hasCvPdf();
     <Flow label="Observe, model, check" steps={STEPS} />
   </Figure>
 
-  <section aria-labelledby="learners-heading">
-    <h2 id="learners-heading">Observing learners</h2>
+  <div class="lt__part">
+    <h3 id="learners-heading">Observing learners</h3>
     <ul class="studies">
       {LEARNER_STUDIES.map((study) => (
         <li class="study" id={study.id}>
-          <h3 class="study__title">{study.label}</h3>
+          <h4 class="study__title">{study.label}</h4>
           <p class="study__where small muted">
             <cite>{study.title}</cite>. {study.where}
           </p>
@@ -80,7 +75,7 @@ const cvPdf = hasCvPdf();
       ))}
     </ul>
 
-    <h3 id="worth-heading">What the observations are worth</h3>
+    <h4 id="worth-heading">What the observations are worth</h4>
     <Figure title={SOURCES_FIGURE.title} note={SOURCES_FIGURE.note}>
       <PairedBars series={STUDY2_SOURCES.series} metrics={STUDY2_SOURCES.metrics} />
     </Figure>
@@ -92,10 +87,10 @@ const cvPdf = hasCvPdf();
         <a href="/research/grounding/">How the grounding check works</a>
       </p>
     </div>
-  </section>
+  </div>
 
-  <section aria-labelledby="teachers-heading">
-    <h2 id="teachers-heading">Modeling teachers</h2>
+  <div class="lt__part">
+    <h3 id="teachers-heading">Modeling teachers</h3>
     <p class="prose">{TEACHER_INTRO}</p>
     <dl class="teacher-items">
       {TEACHER_ITEMS.map((item) => (
@@ -107,41 +102,19 @@ const cvPdf = hasCvPdf();
         </div>
       ))}
     </dl>
-    <h3 id="teacher-papers-heading">The three papers</h3>
+    <h4 id="teacher-papers-heading">The three papers</h4>
     <PublicationList publications={teacherPapers} compact />
     <p>
       <a href="/research/teacher-support/">Teacher support technologies</a>
     </p>
-  </section>
+  </div>
 
-  <section aria-labelledby="breadth-heading">
-    <h2 id="breadth-heading">Supporting breadth</h2>
+  <div class="lt__part">
+    <h3 id="breadth-heading">Supporting breadth</h3>
     <p class="prose">{BREADTH_INTRO}</p>
     <PublicationList publications={breadthPapers} compact />
-  </section>
-
-  <section aria-labelledby="more-heading">
-    <h2 id="more-heading">CV and publications</h2>
-    <p class="prose">{MORE_INTRO}</p>
-    <ul class="more-actions">
-      <li>
-        <a class="button button--primary" href={cvPdf ? CV_PDF_HREF : '/cv/'}>
-          {cvPdf ? 'CV (PDF)' : 'CV'}
-        </a>
-      </li>
-      <li>
-        <a class="button" href="/publications/">
-          Publications
-        </a>
-      </li>
-      <li>
-        <a class="button" href="/research/">
-          Research overview
-        </a>
-      </li>
-    </ul>
-  </section>
-</BaseLayout>
+  </div>
+</section>
 
 <style>
   .studies {
@@ -231,16 +204,12 @@ const cvPdf = hasCvPdf();
     margin: var(--space-1) 0 0;
   }
 
-  .more-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    margin: 0;
-    padding: 0;
-    list-style: none;
+  .lt {
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--color-rule);
   }
 
-  .more-actions li {
-    margin: 0;
+  .lt__part > h3 {
+    margin-top: var(--space-6);
   }
 </style>

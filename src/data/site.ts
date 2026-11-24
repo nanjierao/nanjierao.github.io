@@ -82,7 +82,6 @@ export const ELSEWHERE: readonly ElsewhereLink[] = [
 
 export const NAV = [
   { href: '/research/', label: 'Research' },
-  { href: '/learners-and-teachers/', label: 'Learners and Teachers' },
   { href: '/publications/', label: 'Publications' },
   { href: '/builds/', label: 'Builds' },
   { href: '/teaching/', label: 'Teaching' },

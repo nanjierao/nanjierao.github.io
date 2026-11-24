@@ -1,12 +1,9 @@
-// Copy for /learners-and-teachers/ (D66). Every statement comes from content/facts.md (§5.1, §5.2,
+// Copy for the home page's "Modeling Learners and Teachers" section (D66). Every statement comes from content/facts.md (§5.1, §5.2,
 // §5.4, §5.5, §5.7, §6); tests/unit/learners-teachers.test.ts checks its numbers against that file.
 // Plain data only, so the test can read every sentence and number the page shows. Section
 // headings and the fixed labels are in the template.
 
 export const TITLE = 'Modeling Learners and Teachers';
-
-export const DESCRIPTION =
-  'One line of work by Nanjie (Jimmy) Rao: systems that observe how people learn, and checks of what those observations are worth.';
 
 export const LEDE =
   'One line of work runs through these papers: I build systems that observe how people learn, and I check what those observations are worth.';
@@ -232,6 +229,3 @@ export const BREADTH_PUBLICATIONS = [
   'interact-2023-everyday-inspired-movies',
   'icids-2019-emotional-priming',
 ] as const;
-
-export const MORE_INTRO =
-  'The CV and the publications page list the published papers with full citations.';

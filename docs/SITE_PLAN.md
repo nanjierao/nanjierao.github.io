@@ -54,7 +54,6 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 /life                  Right portal: reflections → sample person or your own AI (+ live, S8) → lesson
 /research              Overview (Personal · Embodied · Civic) + theme pages: interest-identification ·
                        grounding · civic-digital-twins · embodied-learning · teacher-support
-/learners-and-teachers One line of work: observing learners, the teacher's side, the checks (D66)
 /publications          Filterable list, TL;DRs, links, BibTeX
 /builds, /builds/[slug] Datasheet cards + "On GitHub" (JimmyRaoUF's public repositories)
 /blog, /blog/[slug]    Zhihu answers in Chinese, each with an English title and summary; RSS
@@ -75,6 +74,9 @@ Top to bottom (D21):
   Zhihu, and whichever of ORCID and LinkedIn facts.md §13 lists. In a 390 × 844 viewport it fits in the first screen with the top of the cloud
   visible below it; with the browser's bars showing, or on a shorter phone, the cloud starts one
   scroll lower (D64).
+- **Modeling Learners and Teachers** (D66; right after the word cloud until the portals arrive):
+  one line of work as a diagram, four study cards, the Study 2 figure with the grounding check,
+  the teacher-facing papers and the supporting papers. Its copy is `src/data/learners-teachers.ts`.
 - **Word cloud** (`content/wordcloud.yaml`): ~40 terms weighted by prominence and tagged by portal
   (hands / ask / life). Layout `d3-cloud`, gentle drift with `motion`. Hovering or focusing a
   portal makes its words glow and drift toward it. Clicking a word opens a one-line blurb with a

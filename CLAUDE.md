@@ -132,7 +132,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 
 - Follow `docs/DESIGN.md`. Until it exists, use the neutral baseline in SITE_PLAN §8.
 - Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
-  one line, CV / Publications / Email) first, then the word cloud and portals. The footer carries the annotation legend (D30).
+  one line, CV / Publications / Email) first, then the word cloud and portals, then the
+  "Modeling Learners and Teachers" section (D66). The footer carries the annotation legend (D30).
 - Accessibility: WCAG 2.2 AA. Keyboard reachable, visible focus, semantic landmarks, skip link,
   alt text for every meaningful image, `prefers-reduced-motion` respected, color never the only
   carrier of meaning. The grounded/inferred convention always uses line style + label + color.

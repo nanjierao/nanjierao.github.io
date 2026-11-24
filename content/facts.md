@@ -211,14 +211,15 @@ they supersede the CVs and the research statement wherever they differ.
 - Explanation types and user motivations in recommender systems (AAAI HCOMP 2020, co-author).
 - Everyday-inspired movie recommendation from personal social media (IFIP INTERACT 2023, co-author).
 
-### 5.7 Learner and teacher modeling (the /learners-and-teachers/ page, D66)
-Source: Jimmy's outline for the page (Nov 24, 2026). The items marked "check" are not in the
-sections above: they are wording from the outline, or choices made while writing the page. He
-checks them when he reviews the page; until then they appear on this page only.
+### 5.7 Learner and teacher modeling (the home page's "Modeling Learners and Teachers" section, D66)
+Source: Jimmy's outline (Nov 24, 2026), first for a page of its own, then moved to the home
+page the same day. The items marked "check" are not in the sections above: they are wording
+from the outline, or choices made while writing it. He checks them when he reviews the section;
+until then they appear in this section only.
 
 - Framing: one line of work, building systems that observe how people learn and checking what
   those observations are worth. The term is "learner model", never "world model".
-- The page's intro also says "a learner model is only as good as what reaches it". That sentence
+- The section's intro also says "a learner model is only as good as what reaches it". That sentence
   is not in the outline; it widens §5.1's core idea from a tutor to a learner model (check).
 - Section headings from the outline: "Observing learners" (the ICIDS 2026 study observed people
   writing stories), "Modeling teachers" (§5.5 calls these papers teacher-facing, not models of
@@ -231,11 +232,11 @@ checks them when he reviews the page; until then they appear on this page only.
 - Dissertation participants: college students (§5.1 says so for Study 1; check: Study 2).
 - IEEE ICALT 2023: focus groups with K-12 teachers (check).
 - HCI International 2022: the system is called PRIS (check; what PRIS stands for: `TODO(jimmy)`).
-- The survey may be named on this page. The outline calls it an "81-paper survey"; §5.5 and §6
+- The survey may be named in this section. The outline calls it an "81-paper survey"; §5.5 and §6
   say 81 studies (check which word). Listing working papers anywhere else still waits on D28.
-- §6 [11]: the venue is written "HCI International 2022, Late Breaking Posters" since this page;
+- §6 [11]: the venue is written "HCI International 2022, Late Breaking Posters" since this section;
   it had a dash between the two parts (check against the proceedings title).
-- IEEE VR 2020: this page says only that the speech-triggered display led to better learning
+- IEEE VR 2020: this section says only that the speech-triggered display led to better learning
   scores. §5.4 also says "task scores" (check against the paper; if task scores did not differ,
   §5.4, the TL;DR draft for [12], the embodied-learning page and the Q&A answer need the same fix).
 
