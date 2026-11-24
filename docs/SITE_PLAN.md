@@ -54,6 +54,7 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 /life                  Right portal: reflections → sample person or your own AI (+ live, S8) → lesson
 /research              Overview (Personal · Embodied · Civic) + theme pages: interest-identification ·
                        grounding · civic-digital-twins · embodied-learning · teacher-support
+/learners-and-teachers One line of work: observing learners, the teacher's side, the checks (D66)
 /publications          Filterable list, TL;DRs, links, BibTeX
 /builds, /builds/[slug] Datasheet cards + "On GitHub" (JimmyRaoUF's public repositories)
 /blog, /blog/[slug]    Zhihu answers in Chinese, each with an English title and summary; RSS

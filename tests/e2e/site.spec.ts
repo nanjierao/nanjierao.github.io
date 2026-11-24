@@ -15,6 +15,7 @@ const PAGES = [
   '/research/civic-digital-twins/',
   '/research/embodied-learning/',
   '/research/teacher-support/',
+  '/learners-and-teachers/',
   '/publications/',
   '/builds/',
   '/builds/cs-udt/',
@@ -479,6 +480,57 @@ test.describe('CS-UDT phone demo', () => {
     await expect(page.locator('#toast')).toContainText("Couldn't save in this browser");
     await expect(page.locator('#feedList .feeditem').first()).toContainText('@You');
     await expect(page.locator('#feedList .feeditem').first().locator('img')).toHaveCount(1);
+  });
+});
+
+test.describe('one page for the learner and teacher work (D66)', () => {
+  test('has its tab, its four sections in order, and the shared citations', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/learners-and-teachers/');
+    const tab = page.locator('.site-nav a[href="/learners-and-teachers/"]');
+    await expect(tab).toHaveText('Modeling Learners and Teachers');
+    await expect(tab).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('h1')).toHaveText('Modeling Learners and Teachers');
+    await expect(page.locator('main h2')).toHaveText([
+      'Observing learners',
+      'Modeling teachers',
+      'Supporting breadth',
+      'CV and publications',
+    ]);
+    await expect(page.locator('.study')).toHaveCount(4);
+    await expect(page.locator('#teachers-heading ~ .pub-list .pub')).toHaveCount(3);
+    await expect(page.locator('#breadth-heading ~ .pub-list .pub')).toHaveCount(4);
+    await expect(page.locator('.more-actions a')).toHaveText([
+      /^CV/,
+      'Publications',
+      'Research overview',
+    ]);
+  });
+
+  test('says "learner model", never "world model", and has no em dash in its text', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto('/learners-and-teachers/');
+    const text = await page.locator('main').innerText();
+    expect(text).toContain('learner model');
+    expect(text).not.toMatch(/world model/i);
+    expect(text).not.toContain('—');
+  });
+
+  test('every link in the study cards leads to a page that has its target', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/learners-and-teachers/');
+    const hrefs = await page
+      .locator('.study__links a')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href')!));
+    expect(hrefs.length).toBeGreaterThan(7);
+    for (const href of new Set(hrefs)) {
+      const response = await page.goto(href);
+      expect(response?.status(), href).toBe(200);
+      const anchor = href.split('#')[1];
+      if (anchor) await expect(page.locator(`[id="${anchor}"]`), href).toHaveCount(1);
+    }
   });
 });
 

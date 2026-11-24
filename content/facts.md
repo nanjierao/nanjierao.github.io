@@ -211,6 +211,27 @@ they supersede the CVs and the research statement wherever they differ.
 - Explanation types and user motivations in recommender systems (AAAI HCOMP 2020, co-author).
 - Everyday-inspired movie recommendation from personal social media (IFIP INTERACT 2023, co-author).
 
+### 5.7 Learner and teacher modeling (the /learners-and-teachers/ page, D66)
+Source: Jimmy's outline for the page (Nov 24, 2026). The items marked "check" are his wording,
+not yet in the sections above; he checks them against the papers when he reviews the page.
+
+- Framing: one line of work, building systems that observe how people learn and checking what
+  those observations are worth. The term is "learner model", never "world model". A learner
+  model is only as good as what reaches it (the same idea as §5.1's core idea).
+- Observing learners: the dissertation, IEEE ICALT 2026, ICIDS 2026 (gaze and interaction logs;
+  accepted, to appear), IEEE VR 2020.
+- Modeling teachers: IEEE ICALT 2023, HCI International 2022, IEEE ICALT 2021, and the survey of
+  81 studies on teacher autonomy and automation (§5.5).
+- Supporting breadth: ACM CHI 2020, AAAI HCOMP 2020, IFIP INTERACT 2023, ICIDS 2019.
+- Dissertation participants: college students (§5.1 says so for Study 1; check: Study 2).
+- IEEE ICALT 2023: focus groups with K-12 teachers (check).
+- HCI International 2022: the system is called PRIS (check; what PRIS stands for: `TODO(jimmy)`).
+- The survey may be named on this page. The outline calls it an "81-paper survey"; §5.5 and §6
+  say 81 studies (check which word). Listing working papers anywhere else still waits on D28.
+- IEEE VR 2020: this page says only that the speech-triggered display led to better learning
+  scores. §5.4 also says "task scores" (check against the paper; if task scores did not differ,
+  §5.4, the TL;DR draft for [12], the embodied-learning page and the Q&A answer need the same fix).
+
 ## 6. Publications (12 peer-reviewed; * = first author)
 
 Do not hard-code citation counts or h-index on the site (they go stale) — link to Google Scholar.
@@ -246,7 +267,7 @@ Extended abstracts, posters, workshop papers
     appear in EPiC Series in Technology. **VERIFY** authors and title against the v2 extended
     abstract.
 11. *Rao, N., Chu, S. L., Jing, Z., Kuang, H., Tang, Y., & Dong, Z. (2022). Exploring Information
-    Retrieval for Personalized Teaching Support. HCI International 2022 — Late Breaking Posters,
+    Retrieval for Personalized Teaching Support. HCI International 2022, Late Breaking Posters,
     Springer, pp. 191–197.
 12. *Rao, N., Zhang, L., Chu, S. L., Jurczyk, K., Candelora, C., Su, S., & Kozlin, C. (2020).
     Investigating the Necessity of Meaningful Context Anchoring in Augmented Reality Smart Glasses
