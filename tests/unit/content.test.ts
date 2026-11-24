@@ -226,7 +226,9 @@ describe('the ongoing class study (facts.md §5.9, D69)', () => {
       sitePlan.indexOf('no names and no course number.'),
     ),
   ].join('\n');
-  const rule = /^12\. The ongoing class study[\s\S]*?(?=\n\n)/m.exec(read('CLAUDE.md'))![0];
+  const rule = /^12\. The ongoing class study[\s\S]*?(?=\n\d+\. |\n\n)/m.exec(
+    read('CLAUDE.md'),
+  )![0];
   const qa = (
     parseYaml(read('content', 'qa-library.yaml')) as {
       items: Array<{ id: string; q: string; a: string; sources: string[] }>;

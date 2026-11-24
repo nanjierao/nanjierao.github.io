@@ -34,6 +34,7 @@ const PAGES = [
   '/cv/',
   '/about/',
   '/blog/',
+  '/notes/',
   '/privacy/',
   '/credits/',
   '/hands/',
@@ -353,6 +354,143 @@ test.describe('feeds and crawlers', () => {
     expect(json.email).toBe('mailto:raon@ufl.edu');
     expect(json.sameAs).toContain('https://github.com/JimmyRaoUF');
     expect(json.sameAs).toContain('https://www.zhihu.com/people/daozhu');
+  });
+});
+
+test.describe('daily notes (D71)', () => {
+  const CARD = 'section[aria-labelledby="daily-notes"]';
+
+  test('is linked from the home page, at the start of Recent', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/');
+    const card = page.locator(`#recent-heading ~ .recent-grid > ${CARD}`);
+    await expect(card).toHaveCount(1);
+    await expect(page.locator('.recent-grid > .card').first()).toHaveAttribute(
+      'aria-labelledby',
+      'daily-notes',
+    );
+    await card
+      .getByRole('heading', { level: 3 })
+      .getByRole('link', { name: 'Daily notes' })
+      .click();
+    await expect(page).toHaveURL(/\/notes\/$/);
+    await expect(page.locator('h1')).toHaveText('Daily notes');
+    await expect(page.locator('main .lede')).toHaveText(
+      'Each entry is a date and three short sentences: what I did that day, and what I learned, at work or outside it.',
+    );
+  });
+
+  test('lists the notes newest first by month, or says that there are none yet', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto('/notes/');
+    const notes = page.locator('article.note');
+    const ids = await notes.evaluateAll((els) => els.map((el) => el.id));
+    await page.goto('/');
+    const card = page.locator(CARD);
+    if (ids.length === 0) {
+      await page.goto('/notes/');
+      await expect(page.locator('.notes-empty')).toHaveText('No notes yet.');
+      await expect(page.locator('main h2')).toHaveCount(0);
+      await page.goto('/');
+      await expect(card.locator('p')).toHaveText(
+        'A date and three short sentences a day: what I did, and what I learned.',
+      );
+      await expect(card.locator('li')).toHaveCount(0);
+      return;
+    }
+    // Newest first: the ids are dates, and they sort.
+    expect(ids).toEqual([...ids].sort().reverse());
+    // The home card shows the newest note, with the same lines.
+    await expect(card.locator('time')).toHaveAttribute('datetime', ids[0]!);
+    const newest = await card.locator('li').allTextContents();
+    await page.goto('/notes/');
+    expect(await notes.first().locator('li').allTextContents()).toEqual(newest);
+    await expect(page.locator('.notes-empty')).toHaveCount(0);
+    // One month heading per month, newest first; each day under its own month.
+    const months = await page.locator('section.notes-month').evaluateAll((sections) =>
+      sections.map((section) => ({
+        heading: section.querySelector('h2')?.textContent ?? '',
+        days: [...section.querySelectorAll('article.note')].map((article) => article.id),
+      })),
+    );
+    expect(months.map((month) => month.days.flat()).flat()).toEqual(ids);
+    for (const month of months)
+      for (const day of month.days) {
+        const label = new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'UTC',
+        });
+        expect(month.heading).toBe(label);
+      }
+    // Each day: a heading with its date, one to five lines, Chinese lines marked as Chinese.
+    for (const id of ids) {
+      const note = page.locator(`article.note[id="${id}"]`);
+      await expect(note.locator('h3 time')).toHaveAttribute('datetime', id);
+      const count = await note.locator('li').count();
+      expect(count).toBeGreaterThanOrEqual(1);
+      expect(count).toBeLessThanOrEqual(5);
+      for (const line of await note.locator('li').all()) {
+        const text = (await line.textContent()) ?? '';
+        const han = text.match(/\p{Script=Han}/gu)?.length ?? 0;
+        const words = text.match(/\p{Script=Latin}+/gu)?.length ?? 0;
+        if (han > 0 && 2 * han >= 3 * words) await expect(line).toHaveAttribute('lang', 'zh-CN');
+        else expect(await line.getAttribute('lang')).toBeNull();
+      }
+    }
+  });
+
+  test('keeps the words of a note exactly, and gives each day an address', async ({ page }) => {
+    await isolate(page);
+    const response = await page.goto('/notes/');
+    expect(response?.status()).toBe(200);
+    test.skip(
+      (await page.locator('article.note[id="2026-10-01"]').count()) === 0,
+      'Build with NOTES_FIXTURES=1 to test the notes layout',
+    );
+    const note = page.locator('article.note[id="2026-10-01"]');
+    await expect(note.locator('h3')).toHaveText('Thursday, October 1');
+    await expect(note.locator('li').first()).toHaveText(
+      'Test note: issue #12 keeps its hash sign, because every line is quoted.',
+    );
+    await expect(page.locator('article.note[id="2026-10-02"] li').nth(1)).toHaveText(
+      "A second sentence with an apostrophe, so the quoting is tested: it's kept as written.",
+    );
+    await expect(page.locator('article.note[id="2026-10-02"] li').nth(2)).toHaveAttribute(
+      'lang',
+      'zh-CN',
+    );
+    // /notes/#<date> brings that day into view: to the top, with a margin above its heading,
+    // when the page is long enough below it, and at least fully on screen when it is the last.
+    await page.setViewportSize({ width: 390, height: 700 });
+    const heading = (id: string) =>
+      page
+        .locator(`article.note[id="${id}"] h3`)
+        .evaluate((el) => [el.getBoundingClientRect().top, el.getBoundingClientRect().bottom]);
+    await page.goto('/notes/#2026-10-01');
+    const [top] = await heading('2026-10-01');
+    expect(top).toBeGreaterThan(0);
+    expect(top).toBeLessThan(80);
+    await page.goto('/notes/#2026-09-30');
+    const [lastTop, lastBottom] = await heading('2026-09-30');
+    expect(lastTop).toBeGreaterThan(0);
+    expect(lastBottom).toBeLessThanOrEqual(700);
+  });
+
+  test('fits the page at every width', async ({ page }) => {
+    await isolate(page);
+    for (const width of [320, 390, 1024]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const path of ['/notes/', '/']) {
+        await page.goto(path);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+          `${path} at ${width}px`,
+        ).toBeLessThanOrEqual(width);
+      }
+    }
   });
 });
 

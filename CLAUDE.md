@@ -93,8 +93,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - `npm run lint` · `npm run format` — ESLint and `prettier --check` · `prettier --write`
 - `npm run test` — Vitest, including content checks (every publication has year, venue, authors)
 - `npm run test:e2e` — Playwright smoke tests and axe accessibility checks against `dist/` (build
-  first). For the full set, build with `EXTERNAL_DATA=fixtures BLOG_FIXTURES=1 npm run build`
-  (a synthetic blog post; never for the real site). Agents: `astro preview` runs in the
+  first). For the full set, build with
+  `EXTERNAL_DATA=fixtures BLOG_FIXTURES=1 NOTES_FIXTURES=1 npm run build` (a synthetic blog post
+  and synthetic daily notes; never for the real site). Agents: `astro preview` runs in the
   background unless `--ignore-lock` is passed (the Playwright config does this).
 - `npm run check:privacy` — scans the repository and the build output for phone numbers,
   unexpected email addresses, street addresses, facts.md §15 terms, and image GPS/EXIF. Runs in CI.
@@ -136,6 +137,12 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
     who or how many take part: not in a page, a test, a file name, a commit message or a pull
     request. Its study materials (emails, forms, the exempt determination) stay out of the
     repository. The page's words are Jimmy's; change them only with a new text from him.
+13. Daily notes (/notes/, D71) are Jimmy's words: add each day's note as he sends it, with the
+    `add-note` skill (`.claude/skills/add-note/`), and merge once the checks pass. Don't correct,
+    translate or add to them. facts.md does not hold them, and no other page uses them as a
+    source. Rules 2 and 12 still apply: a line that touches facts.md §15 or the class study is
+    not published; ask Jimmy instead. A note changes no layout, so its pull request quotes the
+    note instead of attaching screenshots.
 
 ## Design rules
 
@@ -144,7 +151,7 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   one line, CV / Publications / Email) first, then the word cloud and portals, then the section
   "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
   step, then the learner and teacher work. The footer carries the annotation legend (D30) and
-  the public email address (D70).
+  the public email address (D70). Recent opens with a Daily notes card linking /notes/ (D71).
 - Accessibility: WCAG 2.2 AA. Keyboard reachable, visible focus, semantic landmarks, skip link,
   alt text for every meaningful image, `prefers-reduced-motion` respected, color never the only
   carrier of meaning. The grounded/inferred convention always uses line style + label + color.

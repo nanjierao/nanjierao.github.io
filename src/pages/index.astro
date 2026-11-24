@@ -13,7 +13,14 @@ import WordCloud from '../components/WordCloud.astro';
 import { HEADSHOT_ALT, PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
 import { STATUS } from '../data/cv.ts';
 import { CONTEXT_LABELS, ONGOING_LABEL } from '../content/schemas.ts';
-import { getNews, getOngoingThemes, getPosts, getThemesByContext } from '../lib/content.ts';
+import {
+  getNews,
+  getNotes,
+  getOngoingThemes,
+  getPosts,
+  getThemesByContext,
+} from '../lib/content.ts';
+import { lineLang } from '../lib/notes.ts';
 import { getExternalData } from '../lib/external.ts';
 import { formatDay, formatPartialDate, isoDay } from '../lib/format.ts';
 import { CV_PDF_HREF, hasCvPdf } from '../lib/cv-pdf.ts';
@@ -24,6 +31,7 @@ const contexts = await getThemesByContext();
 const ongoing = await getOngoingThemes();
 const news = await getNews(3);
 const [latestPost] = await getPosts();
+const [latestNote] = await getNotes();
 const external = getExternalData();
 const cvPdf = hasCvPdf();
 // Status line (D21): none until Jimmy approves one in facts.md §2. TODO(jimmy)
@@ -156,6 +164,27 @@ const cvPdf = hasCvPdf();
     </ol>
 
     <div class="recent-grid">
+      <section class="card" aria-labelledby="daily-notes">
+        <h3 id="daily-notes">
+          <a href="/notes/">Daily notes</a>
+        </h3>
+        {latestNote ? (
+          <>
+            <p class="muted small">
+              <time datetime={latestNote.id}>{formatPartialDate(latestNote.id)}</time>
+            </p>
+            <ul class="daily-note small">
+              {latestNote.data.lines.map((line) => (
+                <li lang={lineLang(line)}>{line}</li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p class="small">
+            A date and three short sentences a day: what I did, and what I learned.
+          </p>
+        )}
+      </section>
       {latestPost && (
         <section class="card" aria-labelledby="latest-post">
           <h3 id="latest-post">Latest blog post</h3>
@@ -326,5 +355,14 @@ const cvPdf = hasCvPdf();
 
   .recent-grid h3 {
     margin-top: 0;
+  }
+
+  .daily-note {
+    margin: 0;
+    padding-left: var(--space-4);
+  }
+
+  .daily-note li + li {
+    margin-top: var(--space-1);
   }
 </style>

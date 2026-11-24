@@ -3,6 +3,12 @@
 Newest first. Status: **proposed** (drafted for Jimmy, in effect unless he objects) ·
 **needs Jimmy** (blocked on his choice) · **accepted** · **superseded**.
 
+## 2026-11-24 — Daily notes
+
+| ID | Decision | Why | Status |
+|---|---|---|---|
+| D71 | **Daily notes at /notes/.** One entry a day: a date and about three short sentences, on what Jimmy did that day and what he learned, at work or outside it. Each day is one file, `src/content/notes/<YYYY-MM-DD>.yaml`, whose name is the date and whose `lines` are the sentences, one per line and quoted (`noteSchema`: one to five lines of at most 300 characters). The page lists the notes newest first under month headings; each day has an address (`/notes/#2026-11-25`), and a line in Chinese carries `lang="zh-CN"`. The home page's Recent section opens with a Daily notes card that links to the page and shows the newest note. The page started empty, without sample entries. **The notes are Jimmy's words:** each day's note arrives as a message, is added as written with the `add-note` skill, and is merged once the checks pass (D67). facts.md does not hold them, and no other page uses them as a source. A line that touches facts.md §15 or the class study (D69) is not published; Jimmy is asked instead. A note's pull request quotes the note instead of attaching screenshots, since a note changes no layout and the end-to-end tests cover the layout. Synthetic notes in `tests/fixtures/notes/` (`NOTES_FIXTURES=1`) test the layout and never reach the site. | Jimmy's message of Nov 24, 2026: a Daily notes page in English, reachable from the home page; each entry a date and three short sentences on what he did and learned; start with an empty page; each day's text arrives as a message, is added as written, and is pushed and merged once the checks pass. One file per day means two notes never edit the same file, and quoting every line keeps a `#` or a `: ` in a sentence from changing what YAML reads. | accepted (Jimmy's instruction) |
+
 ## 2026-11-24 — The public email address
 
 | ID | Decision | Why | Status |

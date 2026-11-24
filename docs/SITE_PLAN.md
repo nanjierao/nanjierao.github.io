@@ -58,6 +58,7 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 /publications          Filterable list, TL;DRs, links, BibTeX
 /builds, /builds/[slug] Datasheet cards + "On GitHub" (JimmyRaoUF's public repositories)
 /blog, /blog/[slug]    Zhihu answers in Chinese, each with an English title and summary; RSS
+/notes                 Daily notes (D71): a date and three short sentences a day, in Jimmy's words
 /demos/csudt           CS-UDT flood digital twin (existing demo files)
 /talks/dtrue-2026      Talk page + QR target
 /teaching · /cv (HTML + PDF) · /about · /privacy · /credits · /404
@@ -93,15 +94,16 @@ Top to bottom (D21):
   show finished. Then the learner and teacher work: one line of work as a diagram, four study
   cards, the Study 2 figure with the grounding check, the teacher-facing papers and the
   supporting papers (`src/data/learners-teachers.ts`).
-- **Recent**: three dated news items with time-aware wording (D26), the latest blog post, the
-  latest YouTube video (D50), and recent public GitHub activity (D40).
+- **Recent**: three dated news items with time-aware wording (D26), then cards: Daily notes
+  (D71: links to /notes/ and shows the newest note), the latest blog post, the latest YouTube
+  video (D50), and recent public GitHub activity (D40).
 - **Easter egg**: a small luopan glyph fixed at the bottom-right, low contrast until hovered or
   focused, hint "未完待续 / to be continued". It opens a side panel, "Things I want to try / 想尝试的事",
   with three bilingual idea cards (`content/ideas.yaml`): feng shui × HCI × AI (inspired by
   刘克明's 中国技术思想研究, 2004), children and AI, and a personal decision digital twin. On phones,
   after a tap, the needle can turn to north using the device compass; on desktop it follows the
   cursor and settles with a slight damped spring. Static under reduced motion.
-- **Footer**: the annotation legend (D30), links, credits.
+- **Footer**: the annotation legend (D30), the public email address (D70), links, credits.
 - Budget: homepage JS ≤ 60 KB gzipped (CLAUDE.md's 50 KB for content pages is the stricter one
   and holds here too: the word cloud and the sketch scenes together are under 10 KB); portals and
   the easter-egg teaser load on demand.

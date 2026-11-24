@@ -1,0 +1,73 @@
+---
+// Daily notes (D71): one entry a day in Jimmy's words, newest first, grouped by month. Each day
+// is a file in src/content/notes/; the add-note skill adds them.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getNotes } from '../lib/content.ts';
+import { formatNoteDay, formatNoteMonth, groupNotesByMonth, lineLang } from '../lib/notes.ts';
+
+const months = groupNotesByMonth(await getNotes());
+---
+
+<BaseLayout
+  title="Daily notes"
+  description="Nanjie (Jimmy) Rao’s daily notes: a date and three short sentences on what he did that day and what he learned."
+>
+  <h1>Daily notes</h1>
+  <p class="lede">
+    Each entry is a date and three short sentences: what I did that day, and what I learned, at work
+    or outside it.
+  </p>
+
+  {months.length === 0 ? (
+    <p class="notes-empty">No notes yet.</p>
+  ) : (
+    months.map(({ month, notes }) => (
+      <section class="notes-month" aria-labelledby={`month-${month}`}>
+        <h2 id={`month-${month}`}>{formatNoteMonth(month)}</h2>
+        {notes.map((note) => (
+          <article class="note" id={note.id} aria-labelledby={`day-${note.id}`}>
+            <h3 id={`day-${note.id}`} class="note__day">
+              <time datetime={note.id}>{formatNoteDay(note.id)}</time>
+            </h3>
+            <ul class="note__lines">
+              {note.data.lines.map((line) => (
+                <li lang={lineLang(line)}>{line}</li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </section>
+    ))
+  )}
+</BaseLayout>
+
+<style>
+  .notes-month,
+  .notes-empty {
+    max-width: var(--measure);
+  }
+
+  .notes-month + .notes-month {
+    margin-top: var(--space-6);
+  }
+
+  .note {
+    margin: 0 0 var(--space-5);
+    /* A link to /notes/#<date> lands with the day's heading clear of the window's top edge. */
+    scroll-margin-top: var(--space-5);
+  }
+
+  .note__day {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-lg);
+  }
+
+  .note__lines {
+    margin: 0;
+    padding-left: var(--space-5);
+  }
+
+  .note__lines li + li {
+    margin-top: var(--space-1);
+  }
+</style>

@@ -14,6 +14,7 @@ export type Build = CollectionEntry<'builds'>;
 export type Post = CollectionEntry<'blog'>;
 export type Talk = CollectionEntry<'talks'>['data'];
 export type NewsItem = CollectionEntry<'news'>['data'];
+export type Note = CollectionEntry<'notes'>;
 
 /** Published work shown on the site, newest first (VERIFY items hidden). */
 export async function getPublications(): Promise<Publication[]> {
@@ -53,6 +54,11 @@ export async function getThemesByContext(): Promise<
 /** Studies that are still running (D69), listed after the three contexts. */
 export async function getOngoingThemes(): Promise<Theme[]> {
   return (await getThemes()).filter((theme) => theme.data.status === 'ongoing');
+}
+
+/** Daily notes (D71), newest first. A note's id is its date. */
+export async function getNotes(): Promise<Note[]> {
+  return (await getCollection('notes')).sort((a, b) => b.id.localeCompare(a.id));
 }
 
 export async function getBuilds(): Promise<Build[]> {
