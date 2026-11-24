@@ -12,8 +12,8 @@ import TimeAware from '../components/TimeAware.astro';
 import WordCloud from '../components/WordCloud.astro';
 import { HEADSHOT_ALT, PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
 import { STATUS } from '../data/cv.ts';
-import { CONTEXT_LABELS } from '../content/schemas.ts';
-import { getNews, getPosts, getThemesByContext } from '../lib/content.ts';
+import { CONTEXT_LABELS, ONGOING_LABEL } from '../content/schemas.ts';
+import { getNews, getOngoingThemes, getPosts, getThemesByContext } from '../lib/content.ts';
 import { getExternalData } from '../lib/external.ts';
 import { formatDay, formatPartialDate, isoDay } from '../lib/format.ts';
 import { CV_PDF_HREF, hasCvPdf } from '../lib/cv-pdf.ts';
@@ -21,6 +21,7 @@ import { personJsonLd } from '../lib/seo.ts';
 import headshot from '../assets/images/nanjie-rao-headshot.jpg';
 
 const contexts = await getThemesByContext();
+const ongoing = await getOngoingThemes();
 const news = await getNews(3);
 const [latestPost] = await getPosts();
 const external = getExternalData();
@@ -105,6 +106,18 @@ const cvPdf = hasCvPdf();
         </section>
       ))}
     </div>
+    {ongoing.length > 0 && (
+      <section class="context" aria-labelledby="context-ongoing">
+        <h3 id="context-ongoing">{ONGOING_LABEL}</h3>
+        <ul class="plain-list">
+          {ongoing.map((theme) => (
+            <li>
+              <a href={`/research/${theme.id}/`}>{theme.data.title}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
     <p>
       <a href="/research/">Research overview</a>
     </p>

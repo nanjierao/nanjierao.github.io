@@ -3,10 +3,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Figure from '../../components/figures/Figure.astro';
 import Flow from '../../components/figures/Flow.astro';
 import { UMBRELLA } from '../../data/site.ts';
-import { CONTEXT_LABELS } from '../../content/schemas.ts';
-import { getThemesByContext } from '../../lib/content.ts';
+import { CONTEXT_LABELS, ONGOING_LABEL } from '../../content/schemas.ts';
+import { getOngoingThemes, getThemesByContext } from '../../lib/content.ts';
 
 const contexts = await getThemesByContext();
+const ongoing = await getOngoingThemes();
 ---
 
 <BaseLayout
@@ -81,6 +82,24 @@ const contexts = await getThemesByContext();
       )}
     </section>
   ))}
+
+  {ongoing.length > 0 && (
+    <section aria-labelledby="context-ongoing">
+      <h2 id="context-ongoing">{ONGOING_LABEL}</h2>
+      <ul class="card-grid">
+        {ongoing.map((theme) => (
+          <li>
+            <article class="card">
+              <h3>
+                <a href={`/research/${theme.id}/`}>{theme.data.title}</a>
+              </h3>
+              <p>{theme.data.summary}</p>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 </BaseLayout>
 
 <style>

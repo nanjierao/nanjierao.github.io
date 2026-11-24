@@ -1,0 +1,210 @@
+---
+title: 'Analyzing data through an AI assistant without a programming background: a first-person study of one course'
+status: ongoing
+order: 6
+summary: An ongoing first-person study of one university course in which students without programming experience do data mining through an AI assistant.
+# The page opens with its own status line and summary, so the card sentence is not repeated.
+lede: false
+facts: ['5.9']
+# The words below are Jimmy's, from his page text of Nov 24, 2026 (facts.md §5.9). Change them
+# only with a new text from him.
+# This page names no participants: no instructor, teaching assistant or student names, and no
+# course number or course title, here or anywhere else in this repository. It says nothing about
+# who takes part or how many. Study materials stay off the site (facts.md §5.9).
+# TODO(jimmy): his text closes with one more section, "## Contact": "Questions about the project
+# are welcome. My contact details are on this site." The site shows no address yet (facts.md
+# §1), so the section is left out. It returns, in these words, when the site shows one.
+# TODO(jimmy): when the study ends, change together: the status line and "Last updated" below;
+# `status` above (src/content/schemas.ts has no value for a finished study yet); `summary`; the
+# word-cloud blurb (content/wordcloud.yaml); the news item and the Q&A answer `class-study`;
+# facts.md §5.9.
+---
+
+**Status:** ongoing since November 2026. This page describes the design of the study. It holds no data and no results, and it does not say who takes part.
+
+**Last updated:** 24 November 2026
+
+## In short
+
+Students from non-technical fields now do data mining within one semester. They start without programming experience and work through an AI assistant: they ask it for code, run the code, change it, and have to decide whether what comes back is right. This project studies that practice in one university course, from the inside. The instructor who designed the course, the teaching assistant, students who choose to join and I each record and reflect on our own experience. Then we compare what we saw.
+
+## Why I started it
+
+- I took the course in Fall 2024, as a PhD student in human-centered computing. The instructor acknowledged that students use large language models, encouraged it and taught us how to use them, and we still learned the subject.
+- In November 2026 I happened to meet the course's teaching assistant, and we talked about the course. I thought that it deserves a paper: a whole semester built around working through an AI assistant, for students who start without programming experience.
+- Much of the published work that I have read looks at programmers and computing students, and tools for programming with AI are built for people who can read code. These students are new to code.
+- I think that now, with large language models, each student's exchanges with an AI matter, and so do the story and the reasoning behind them. They matter most when the students themselves are willing to describe their lived experience.
+
+## The course
+
+- One semester at the University of Florida, for students from fields outside computing.
+- Each lab comes with printed instructions. They give the prompt to send to the AI assistant, show the code that came back and explain it. They include cases in which the code runs and the result is still wrong. Some steps ask the student to change code by hand or to use earlier code again, and there are tasks to do alone.
+- The course ends with a group project on a problem that the students choose. It has no printed prompts.
+
+## What I ask
+
+One open question: what are the challenges and strategies of analyzing data through an AI assistant, in guided labs and in one open project, for students who do not program?
+
+It has four parts:
+
+1. **Time and attention.** How does a work session run in time: asking, waiting, reading, running, repairing? What do people do while the assistant is writing or the code is running? When does the head feel too full?
+2. **Knowing that a result is right.** How do people who are new to code decide that a result can be trusted? In the labs the page shows what to expect. In the project nothing does.
+3. **The printed prompt script.** What does it ask of the student, lab by lab, and what was each part built to do? When do students follow a printed prompt, change it or drop it?
+4. **The view from each position.** Where do the accounts of the same moment differ, and what can each position not see?
+
+The study belongs to human-computer interaction more than to classroom research. It looks at the interaction itself. It uses no grades and makes no claim about how much anyone learned.
+
+## How the study works
+
+**A first-person study with several authors.** The method is collaborative autoethnography: each author writes about their own experience, and the authors analyze the accounts together. Every author is the researcher and the participant of their own experience.
+
+**The positions.** The table gives my starting assumptions about what each position can and cannot see. The study is there to test them.
+
+{/* The table is HTML so that each position is the header of its row. Every cell stays on one
+    line: text on a line of its own would become a paragraph inside the cell. */}
+{/* prettier-ignore */}
+<div class="table-wrap table-wrap--wide" role="region" aria-label="What each position sees, does not see and writes" tabindex="0">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Position</th>
+        <th scope="col">Sees</th>
+        <th scope="col">Does not see</th>
+        <th scope="col">Writes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">Student now (those who choose to join)</th>
+        <td>Their own desk: what they asked, what came back, how they judged it, the waits, the full head</td>
+        <td>Why the script is built as it is; what its designer expected at each step</td>
+        <td>A project diary; notes on three labs from their own chats and notebooks; an account</td>
+      </tr>
+      <tr>
+        <th scope="row">Former student, now analyst (I)</th>
+        <td>The labs of 2024 from a student's seat; the code, since I can read it; the script as a designed text</td>
+        <td>What it is like to be new to code; the assistants of 2026</td>
+        <td>Notes from my own records of 2024; the coding of the lab instructions; notes on my own use of AI in this study</td>
+      </tr>
+      <tr>
+        <th scope="row">Teaching assistant</th>
+        <td>The questions that students bring; where they get stuck; what they hand in</td>
+        <td>What students do alone with the assistant; what they never ask</td>
+        <td>An account; if wanted, a short log during the project weeks, without names</td>
+      </tr>
+      <tr>
+        <th scope="row">Designer and instructor</th>
+        <td>The intent of each part; how the material changed from one offering to the next; the class from the front</td>
+        <td>What happens at the desk; what students keep to themselves</td>
+        <td>An account of the three labs; an interview</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+**The same moments from each position.** Everyone writes about the same anchors: three labs and the final project. For each anchor, everyone answers the same five questions from where they stand:
+
+1. What is this step for?
+2. What happens at the printed prompt? For the project: at the first request.
+3. What goes wrong, and who notices?
+4. How does one know that the result is right?
+5. What happens during the waits?
+
+**The sources.**
+
+- **A project diary** by each student co-author: a short entry after each session with the assistant, typed or dictated. It asks four things: what they were trying to get done and what they asked for; what came back and how they could tell whether it was right; what they did while the assistant was writing or the code was running; and when their head felt most full, and with what.
+- **Notes on three labs,** which each student co-author makes from their own saved chats and notebooks, with the exact lines pasted in. The chats and notebooks themselves stay with the student.
+- **A written account** by each author. The teaching side writes before it reads anything from the students, and I write mine before I read theirs.
+- **A coding of the printed lab instructions,** move by move: who writes the code at each step, how the assistant is addressed, how failures are shown and repaired, and how results are judged.
+- **Meetings of all authors,** in which the accounts are compared.
+- **A class survey** that asks for no names. The class is small, so the study does not aim at statistics. It aims at close accounts.
+
+**The analysis.**
+
+- Each author first codes their own material.
+- The material is then laid out by anchor and by position, so that accounts of the same moment stand side by side.
+- The themes come from the meetings.
+- Each author checks how their words are read, and can change or withdraw them until the paper is submitted. The first version of each text is kept.
+- In the paper, every episode points to a dated record, and a quotation needs its author's approval.
+- The coding of the lab instructions follows the method of my dissertation: open coding, a codebook with a definition and an example for each code, check-coding of a sample by a second coder with the agreement reported, and written rules for disagreements.
+
+## How the students are protected
+
+- The University of Florida determined the study exempt in November 2026.
+- The class survey asks for no names. The instructor and the teaching assistant cannot see who answered, and they see no answers before course grades are posted.
+- The instructor and the teaching assistant do not learn whether a student joined as a co-author, or who, until course grades are posted. Taking part, or not, has no effect on a grade.
+- A student's diary and notes stay with me. I am not part of the teaching team. The instructor and the teaching assistant read only the passages that the student releases.
+- Until the paper is submitted, a student can change or remove anything they wrote, and can leave. What they wrote is then removed.
+- No course records and no grades are used.
+- A student's text goes into an AI tool only if that student agrees.
+
+## What this study can and cannot show
+
+- It is one course in one semester, with a small number of people. It can show how the work is lived and where the positions differ. It cannot say how common anything is.
+- The diary covers the weeks of the final project, not the semester. The labs are recalled with the help of saved chats and notebooks, and entries written from memory are marked.
+- A diary question can change what it asks about. A person who is asked what they do while waiting may start to wait differently. The first entries are marked for this reason.
+- Students write knowing that their instructor is a co-author. The timing and the rule of release are there for this. They do not remove it.
+- I can program. My records of 2024 are the records of another position, not of a student who is new to code.
+- The study uses no grades, so it cannot say whether anyone learned more or less.
+
+## What may be new
+
+This rests on what I have read so far, not on a systematic review.
+
+- **The people.** An account by people who are new to code, in their own words, across guided labs and an open project.
+- **Records explained by those who made them.** A study of students' chat histories (Ammari and colleagues, 2025) notes that logs alone do not show intentions or feelings. Here the people who made the records are among the authors.
+- **Time and attention.** What people do while an assistant is working is a recent topic. In the work I have read, it is studied in experiments, lab studies and interviews.
+- **The printed prompt script as a designed object.** I have not found a study of it.
+- **Several positions on the same moments.** In the autoethnography by Kang and colleagues (2025), co-authors examine one person's long record. Here each author keeps a record of their own, over a much shorter time.
+
+## Work I build on (selected)
+
+First-person and collaborative methods:
+
+- Kang, Li, Leshed, Rzeszotarski and Lu (2025). Towards Hormone Health: An Autoethnography of Long-Term Holistic Tracking to Manage PCOS. CHI 2025. https://doi.org/10.1145/3706598.3713619
+- Chang, Ngunjiri and Hernandez (2016). Collaborative Autoethnography. Routledge. https://doi.org/10.4324/9781315432137
+- Gandhi and Muldner (2025). "That's Not the Way I Would Explain It": A Teacher-Researcher's Autoethnography of Learning to Program With ChatGPT. ICER 2025. https://doi.org/10.1145/3702652.3744228
+- Glazko, Cha, Lewis, Kosa, Wimer, Zheng, Zheng and Mankoff (2025). Autoethnographic Insights from Neurodivergent GAI "Power Users". CHI 2025. https://doi.org/10.1145/3706598.3713670
+- Ren, McDowell and Zhou (2026). Beyond Perspectives: A Trio-Ethnography of Interpretation Evolution in LLM-Supported Programming Education. https://arxiv.org/abs/2607.22463
+- Ammari, Chen, Zaman and Garimella (2025). How Students (Really) Use ChatGPT: Uncovering Experiences Among Undergraduate Students. https://arxiv.org/abs/2505.24126
+
+Time and attention:
+
+- Tan, Messerschmidt, Yin and Nov (2026). The Impact of Response Latency and Task Type on Human-LLM Interaction and Perception. https://arxiv.org/abs/2604.06183
+- Pu, Truong, Terry, Cai, Liu and Petridis (2026). Too Long to Watch, Too Short to Leave: Designing for Agent Micro-Waits. https://arxiv.org/abs/2610.27170
+- Su, Brasser, Reich, Jäger and Wang (2026). From Tokens to Structure: Investigating Visual Attention in Progressive Code Rendering. https://arxiv.org/abs/2609.24616
+- Mozannar, Bansal, Fourney and Horvitz (2024). Reading Between the Lines: Modeling User Behavior and Costs in AI-Assisted Programming. CHI 2024. https://doi.org/10.1145/3613904.3641936
+
+Judging results from code that an AI wrote:
+
+- Virk and Liu (2025). Non-programmers Assessing AI-Generated Code: A Case Study of Business Users Analyzing Data. https://arxiv.org/abs/2508.06484
+- Gu, Shang, Althoff, Wang and Drucker (2024). How Do Analysts Understand and Verify AI-Assisted Data Analyses? CHI 2024. https://doi.org/10.1145/3613904.3642497
+
+Prompts and the people who write them:
+
+- Tankelevitch, Kewenig, Simkute, Scott, Sarkar, Sellen and Rintel (2024). The Metacognitive Demands and Opportunities of Generative AI. CHI 2024. https://doi.org/10.1145/3613904.3642902
+- Liu, Sarkar, Negreanu, Zorn, Williams, Toronto and Gordon (2023). "What It Wants Me To Say": Bridging the Abstraction Gap Between End-User Programmers and Code-Generating Large Language Models. CHI 2023. https://doi.org/10.1145/3544548.3580817
+
+## Timeline
+
+- **November 2026.** The study is designed and determined exempt. The class survey opens. Students can sign up as co-authors. Those who do keep the diary during the weeks of the final project.
+- **December 2026.** The project ends. Each author writes an account. After course grades are posted, the authors meet.
+- **January to March 2027.** Meetings, analysis and writing.
+- **2027.** Writing for publication.
+
+## How this connects to my other work
+
+- My dissertation is on interest-based learning: how a tutor built on a large language model can identify a student's personal interests. The final project of this course starts from a problem that the students choose from their own interests.
+- The method is first-person here: the researcher is one of the participants.
+
+## How AI is used in this research
+
+- An AI assistant helps me organize notes and draft documents.
+- It made the first pass of the coding of the lab instructions, under my direction. I check-code a sample by hand, and the paper will report the agreement.
+- No student text goes into an AI tool without that student's agreement.
+- The paper will state what AI did in the study.
+
+## Team
+
+- I designed the study and lead it.
+- Co-authors: the course's instructor, the course's teaching assistant, and students of the course who choose to join.

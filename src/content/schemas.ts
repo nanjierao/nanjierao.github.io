@@ -22,18 +22,33 @@ export const CONTEXT_LABELS: Record<(typeof CONTEXTS)[number], string> = {
   civic: 'Civic',
 };
 
-/** Research themes (D27, D45): five pages grouped under three contexts. */
-export const themeSchema = z.object({
-  title: z.string().min(1),
-  context: z.enum(CONTEXTS),
-  order: z.number().int(),
-  /** One plain sentence for cards and the meta description. */
-  summary: z.string().min(1).max(200),
-  facts: factsRefs,
-  /** Publication ids (see publications.yaml) to list at the end of the page. */
-  publications: z.array(z.string()).default([]),
-  builds: z.array(z.string()).default([]),
-});
+/** Label of the group that lists studies still running (D69), after the three contexts. */
+export const ONGOING_LABEL = 'Ongoing';
+
+/**
+ * Research pages (D27, D45, D69): five themes grouped under three contexts, and studies that are
+ * still running, which are listed apart from the contexts under "Ongoing".
+ */
+export const themeSchema = z
+  .object({
+    title: z.string().min(1),
+    /** One of the three contexts. A study that is still running has none. */
+    context: z.enum(CONTEXTS).optional(),
+    /** A study that is still running. */
+    status: z.enum(['ongoing']).optional(),
+    order: z.number().int(),
+    /** One plain sentence for cards and the meta description. */
+    summary: z.string().min(1).max(200),
+    /** False where the page opens with its own summary, so the card sentence is not repeated. */
+    lede: z.boolean().default(true),
+    facts: factsRefs,
+    /** Publication ids (see publications.yaml) to list at the end of the page. */
+    publications: z.array(z.string()).default([]),
+    builds: z.array(z.string()).default([]),
+  })
+  .refine((theme) => Boolean(theme.context) !== (theme.status === 'ongoing'), {
+    error: 'A research page has one of the three contexts, or is ongoing: not both, not neither',
+  });
 
 export const PUBLICATION_TYPES = ['conference', 'extended-abstract', 'in-preparation'] as const;
 

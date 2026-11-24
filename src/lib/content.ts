@@ -50,6 +50,11 @@ export async function getThemesByContext(): Promise<
   }));
 }
 
+/** Studies that are still running (D69), listed after the three contexts. */
+export async function getOngoingThemes(): Promise<Theme[]> {
+  return (await getThemes()).filter((theme) => theme.data.status === 'ongoing');
+}
+
 export async function getBuilds(): Promise<Build[]> {
   return (await getCollection('builds', (entry) => !entry.data.draft)).sort(
     (a, b) => a.data.order - b.data.order,

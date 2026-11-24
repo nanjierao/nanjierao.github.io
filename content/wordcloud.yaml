@@ -26,6 +26,7 @@ words:
   - { text: 'mixed methods', weight: 2, portal: ask, link: /research/, blurb: 'Qualitative coding with a second coder, plus GEE, bootstrap and jackknife.' }
   - { text: 'coding schemes', weight: 2, portal: ask, link: /research/interest-identification/, blurb: '28 codes in four categories measure what a tutor learns about an interest.' }
   - { text: 'interest phases', weight: 2, portal: ask, link: /research/interest-identification/, blurb: 'My Phase construct: where an interest is in its development, situational or individual.' }
+  - { text: 'collaborative autoethnography', weight: 2, portal: ask, link: /research/data-analysis-through-ai/, blurb: 'Ongoing: a first-person study of one course where students analyze data through an AI assistant.' }
   # ── Building and sensing (hands) ──────────────────────────────────────
   - { text: 'hand enactment', weight: 4, portal: hands, link: /research/embodied-learning/, blurb: 'How writers return to recorded hand enactments (ICIDS 2026, N = 24).' }
   - { text: 'idea reuptake', weight: 2, portal: hands, link: /research/embodied-learning/, blurb: 'Hands as Narrators (ICIDS 2026) characterizes idea reuptake from hand enactment.' }

@@ -13,6 +13,12 @@
   link: { href: /research/civic-digital-twins/, label: Civic digital twins }
   facts: ['5.3', '11']
 
+- id: class-study
+  date: '2026-11'
+  text: 'Started a first-person study of one university course in which students without programming experience do data mining through an AI assistant. The method is collaborative autoethnography.'
+  link: { href: /research/data-analysis-through-ai/, label: The study’s design }
+  facts: ['5.9']
+
 - id: academic-revision-checklist
   date: '2026-10-29'
   text: 'Published academic-revision-checklist, an open checklist for revising academic English: 66 rules and a 16-item quick list from five weeks and more than 60 revision rounds of my dissertation. It also works as a Claude Code skill.'

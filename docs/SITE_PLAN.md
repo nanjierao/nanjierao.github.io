@@ -53,7 +53,8 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 /ask                   Middle portal: Q&A library + in-browser search (+ live chat and Fit check, S8)
 /life                  Right portal: reflections → sample person or your own AI (+ live, S8) → lesson
 /research              Overview (Personal · Embodied · Civic) + theme pages: interest-identification ·
-                       grounding · civic-digital-twins · embodied-learning · teacher-support
+                       grounding · civic-digital-twins · embodied-learning · teacher-support;
+                       then "Ongoing" (D69): data-analysis-through-ai
 /publications          Filterable list, TL;DRs, links, BibTeX
 /builds, /builds/[slug] Datasheet cards + "On GitHub" (JimmyRaoUF's public repositories)
 /blog, /blog/[slug]    Zhihu answers in Chinese, each with an English title and summary; RSS
@@ -174,6 +175,9 @@ Full spec and copy: `content/life-portal.md`. Five acts:
 
 - **Research**: overview with the umbrella line and the three contexts (D27, D45), then theme
   pages adapted from facts.md and `source/dissertation-abstract.md`; no job-specific framing.
+  A study that is still running gets its own page, listed after the contexts under "Ongoing"
+  on the overview, the home page and the CV page (D69). The first one is the class study
+  (facts.md §5.9): Jimmy's words, design only, no names and no course number.
 - **Publications**: from facts.md §6, a TL;DR under first-author papers once approved (D28),
   filters that work without JS, BibTeX copy; Working papers only if approved.
 - **Builds**: datasheet cards with an optional "Hardest bug & fix" (D29), plus "On GitHub".

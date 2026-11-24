@@ -16,6 +16,7 @@ const PAGES = [
   '/research/civic-digital-twins/',
   '/research/embodied-learning/',
   '/research/teacher-support/',
+  '/research/data-analysis-through-ai/',
   '/publications/',
   '/builds/',
   '/builds/cs-udt/',
@@ -1305,6 +1306,169 @@ test.describe('sketch scenes on the home page (D68)', () => {
     expect(total).toBeLessThan(50_000);
     // React's client runtime alone is larger than that (D68): the home page must not load it.
     expect(sources.join(' ')).not.toMatch(/client\.[\w-]+\.js/);
+  });
+});
+
+test.describe('the ongoing class study (D69)', () => {
+  const PATH = '/research/data-analysis-through-ai/';
+  const TITLE =
+    'Analyzing data through an AI assistant without a programming background: a first-person study of one course';
+
+  test('is a research page marked ongoing, with Jimmy’s sections and no card sentence on top', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto(PATH);
+    await expect(page.locator('.breadcrumb')).toHaveText('Research · Ongoing');
+    await expect(page.locator('h1')).toHaveText(TITLE);
+    await expect(page.locator('main .lede')).toHaveCount(0);
+    await expect(page.locator('main .prose > p').first()).toHaveText(
+      'Status: ongoing since November 2026. This page describes the design of the study. It holds no data and no results, and it does not say who takes part.',
+    );
+    await expect(page.locator('main .prose h2')).toHaveText([
+      'In short',
+      'Why I started it',
+      'The course',
+      'What I ask',
+      'How the study works',
+      'How the students are protected',
+      'What this study can and cannot show',
+      'What may be new',
+      'Work I build on (selected)',
+      'Timeline',
+      'How this connects to my other work',
+      'How AI is used in this research',
+      'Team',
+    ]);
+    // Every reference links to its DOI or its arXiv page.
+    const references = page.locator('main .prose a[href^="https://"]');
+    await expect(references).toHaveCount(14);
+    for (const href of await references.evaluateAll((links) =>
+      links.map((link) => link.getAttribute('href')!),
+    ))
+      expect(href).toMatch(/^https:\/\/(?:doi\.org\/10\.\d{4}\/|arxiv\.org\/abs\/\d{4}\.\d{5}$)/);
+  });
+
+  test('names nobody and no course in what a visitor reads', async ({ page }) => {
+    await isolate(page);
+    for (const path of [PATH, '/', '/research/', '/cv/']) {
+      await page.goto(path);
+      const text = await page.locator('main').innerText();
+      if (path === PATH) {
+        // Three letters and four digits, however written, are a course number; a venue with
+        // its year ("CHI 2025") is not. The unit tests hold the sources to the same patterns.
+        const prose = text.replace(/\b(?:CHI|ICER) 20\d{2}\b/g, '');
+        expect(prose).not.toMatch(
+          /(?<![A-Za-z])[A-Za-z]{3}[\s-]*(?!(?:19|20)\d{2}(?!\d))\d{4}[A-Za-z]?(?![A-Za-z\d])/,
+        );
+        expect(prose).not.toMatch(/(?<![A-Za-z])[A-Z]{3}[\s-]*\d{4}[A-Za-z]?(?![A-Za-z\d])/);
+        expect(text).not.toMatch(/\b(?:Dr|Prof|Professor|Mr|Mrs|Ms|Mx)\.?\s+\p{Lu}/u);
+        expect(text).not.toMatch(/[\w.+-]+@[\w-]+\.[\w.]+/);
+        expect(text).not.toMatch(/\bIRB/);
+        expect(text).toContain('it does not say who takes part');
+      }
+      // A review-board or protocol number, on any page that lists the study. (The CV page
+      // names "IRB protocols" as a skill, without a number.)
+      expect(text, path).not.toMatch(/\bIRB[\s#:-]*\d|\bprotocol\s+\S*\d/);
+    }
+  });
+
+  test('is listed under "Ongoing" on the research overview, the home page and the CV page', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto('/research/');
+    await expect(page.locator('main h2')).toHaveText(['Personal', 'Embodied', 'Civic', 'Ongoing']);
+    const card = page.locator('section[aria-labelledby="context-ongoing"] .card');
+    await expect(card).toHaveCount(1);
+    await expect(card.locator('a')).toHaveText(TITLE);
+    await expect(card.locator('a')).toHaveAttribute('href', PATH);
+    await expect(card.locator('p')).toHaveText(
+      'An ongoing first-person study of one university course in which students without programming experience do data mining through an AI assistant.',
+    );
+
+    await page.goto('/');
+    const research = page.locator('section[aria-labelledby="research-heading"]');
+    await expect(research.locator('h3')).toHaveText(['Personal', 'Embodied', 'Civic', 'Ongoing']);
+    await expect(research.locator('section[aria-labelledby="context-ongoing"] a')).toHaveAttribute(
+      'href',
+      PATH,
+    );
+    // Recent: the study's start is one of the three news items, with a link to the page.
+    await expect(page.locator('.news__item')).toHaveCount(3);
+    const started = page.locator('.news__item', { has: page.locator(`a[href="${PATH}"]`) });
+    await expect(started).toHaveCount(1);
+    await expect(started).toContainText('Started a first-person study of one university course');
+
+    await page.goto('/cv/');
+    await expect(
+      page.locator('section[aria-labelledby="cv-research"] li', { hasText: TITLE }),
+    ).toHaveText(`${TITLE} (ongoing)`);
+  });
+
+  test('keeps its four-column table inside a frame that scrolls, shows it and takes focus', async ({
+    page,
+  }) => {
+    await isolate(page);
+    for (const width of [320, 360, 390, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(PATH);
+      const frame = page.getByRole('region', {
+        name: 'What each position sees, does not see and writes',
+      });
+      await expect(frame.locator('thead th[scope="col"]')).toHaveText([
+        'Position',
+        'Sees',
+        'Does not see',
+        'Writes',
+      ]);
+      // Each position is the header of its row.
+      await expect(frame.locator('tbody th[scope="row"]')).toHaveText([
+        'Student now (those who choose to join)',
+        'Former student, now analyst (I)',
+        'Teaching assistant',
+        'Designer and instructor',
+      ]);
+      await expect(frame.locator('tbody td')).toHaveCount(12);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+        `${width}px`,
+      ).toBeLessThanOrEqual(width);
+      const shade = await frame.evaluate((el) => getComputedStyle(el).backgroundImage);
+      if (width < 700) {
+        // Narrower than the table: the frame scrolls, an edge shadow says so, and the keyboard
+        // can reach it.
+        expect(await frame.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+        expect(shade, `${width}px`).toContain('linear-gradient');
+        await frame.focus();
+        await expect(frame).toBeFocused();
+        expect(await frame.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe('solid');
+      } else {
+        expect(await frame.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(false);
+        expect(shade).toBe('none');
+      }
+    }
+  });
+
+  test('prints its table whole', async ({ page }) => {
+    await isolate(page);
+    // A Letter page with one-inch margins leaves 6.5 inches: 624 px, narrower than the table's
+    // width on a screen. Paper cannot scroll, so the table has to fit there.
+    await page.setViewportSize({ width: 624, height: 900 });
+    await page.goto(PATH);
+    const frame = page.getByRole('region', {
+      name: 'What each position sees, does not see and writes',
+    });
+    const fits = () =>
+      frame.locator('table').evaluate((el) => {
+        const frame = el.parentElement!;
+        return el.getBoundingClientRect().right <= frame.getBoundingClientRect().right + 1;
+      });
+    expect(await fits(), 'on a screen this narrow the frame scrolls').toBe(false);
+    await page.emulateMedia({ media: 'print' });
+    expect(await fits(), 'on paper').toBe(true);
+    expect(await frame.evaluate((el) => getComputedStyle(el).overflowX)).toBe('visible');
+    expect(await frame.evaluate((el) => getComputedStyle(el).backgroundImage)).toBe('none');
   });
 });
 
