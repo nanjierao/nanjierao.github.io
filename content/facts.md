@@ -19,8 +19,9 @@ checked by Jimmy against the final dissertation before they appear on the site.
   it": `TODO(jimmy)`.
 - Pronouns: he/him
 - Location (public, city level only): Gainesville, Florida
-- Public contact: `TODO(jimmy)`: pick the one email address the site shows (intro strip, /about).
-  Don't reuse the old site's mailto link; it pointed to someone else.
+- Public contact: raon@ufl.edu (Jimmy, Nov 24, 2026; D70). It is the one email address the site
+  shows: the intro strip, /about, /cv, /privacy, the footer, the JSON-LD `Person` and the Q&A
+  answer. Don't reuse the old site's mailto link; it pointed to someone else.
 - Website: https://nanjierao.github.io (repository `nanjierao/nanjierao.github.io`, owned by the
   GitHub organization `nanjierao`).
 
@@ -292,9 +293,8 @@ messages and pull requests):
 - Only the page goes on the site. Study materials (emails, forms, survey questions, the exempt
   determination and its protocol number) stay off the site and out of this repository.
 - No data and no results, and nothing about who takes part or how many, until Jimmy says so.
-- His text closes with a Contact section that points to the contact details on this site. The
-  site shows no address yet (§1), so the page leaves the section out. `TODO(jimmy)`: pick the
-  public address; the section then returns.
+- His text closes with a Contact section that points to the contact details on this site: the
+  public email address in §1.
 
 Facts, in the page's order:
 - Status: ongoing since November 2026. The page describes the design of the study; it holds no

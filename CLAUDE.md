@@ -143,7 +143,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
   one line, CV / Publications / Email) first, then the word cloud and portals, then the section
   "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
-  step, then the learner and teacher work. The footer carries the annotation legend (D30).
+  step, then the learner and teacher work. The footer carries the annotation legend (D30) and
+  the public email address (D70).
 - Accessibility: WCAG 2.2 AA. Keyboard reachable, visible focus, semantic landmarks, skip link,
   alt text for every meaningful image, `prefers-reduced-motion` respected, color never the only
   carrier of meaning. The grounded/inferred convention always uses line style + label + color.

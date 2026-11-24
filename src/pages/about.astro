@@ -8,8 +8,7 @@ import { HEADSHOT_ALT, PERSON, UMBRELLA } from '../data/site.ts';
 import { STATUS } from '../data/cv.ts';
 import { personJsonLd } from '../lib/seo.ts';
 import headshot from '../assets/images/nanjie-rao-headshot.jpg';
-// TODO(jimmy): approve a short and a long bio (facts.md §3 drafts) for copy buttons here (S3),
-// and pick the public email (facts.md §1).
+// TODO(jimmy): approve a short and a long bio (facts.md §3 drafts) for copy buttons here (S3).
 ---
 
 <BaseLayout
@@ -47,6 +46,15 @@ import headshot from '../assets/images/nanjie-rao-headshot.jpg';
       <p>Pronouns: he/him.</p>
     </div>
   </div>
+
+  {PERSON.email && (
+    <section aria-labelledby="about-contact">
+      <h2 id="about-contact">Contact</h2>
+      <p class="prose">
+        Email me at <a href={`mailto:${PERSON.email}`}>{PERSON.email}</a>.
+      </p>
+    </section>
+  )}
 
   <section aria-labelledby="about-talks">
     <h2 id="about-talks">Talks</h2>

@@ -15,9 +15,11 @@ export const PERSON = {
   chineseName: '饶楠杰',
   /** facts.md §1: city level only. */
   city: 'Gainesville, Florida',
-  // TODO(jimmy): pick the one public email address the site shows (facts.md §1). Until then the
-  // intro strip and /about show no email link, and check:privacy allows no email address.
-  email: null as string | null,
+  /**
+   * facts.md §1 (Jimmy, Nov 24, 2026; D70): the one public email address. The intro strip, /about,
+   * /cv, /privacy, the footer and the JSON-LD show it, and check:privacy allows it and no other.
+   */
+  email: 'raon@ufl.edu' as string | null,
 } as const;
 
 /** Alt text of the headshot (homepage intro strip and /about). */

@@ -76,6 +76,12 @@ test.describe('every page', () => {
       await expect(page.locator('footer .legend')).toContainText(
         'Solid underline: shown in the source · Dotted: inferred',
       );
+      // D70: the one public email address, in the footer of every page.
+      await expect(page.locator('footer a[href^="mailto:"]')).toHaveText(['raon@ufl.edu']);
+      await expect(page.locator('footer a[href^="mailto:"]')).toHaveAttribute(
+        'href',
+        'mailto:raon@ufl.edu',
+      );
       // Every image has alt text (empty only for decoration).
       for (const img of await page.locator('img').all()) {
         expect(await img.getAttribute('alt')).not.toBeNull();
@@ -301,13 +307,50 @@ test.describe('feeds and crawlers', () => {
     expect(robots).toContain('Sitemap: https://nanjierao.github.io/sitemap-index.xml');
   });
 
+  test('gives the public email wherever the site offers contact details (D70)', async ({
+    page,
+  }) => {
+    await isolate(page);
+    const MAILTO = 'mailto:raon@ufl.edu';
+    await page.goto('/');
+    await expect(
+      page.getByRole('list', { name: 'Quick links' }).getByRole('link', { name: 'Email' }),
+    ).toHaveAttribute('href', MAILTO);
+    await page.goto('/about/');
+    const contact = page.locator('section[aria-labelledby="about-contact"]');
+    await expect(contact.locator('h2')).toHaveText('Contact');
+    await expect(contact.locator('p')).toHaveText('Email me at raon@ufl.edu.');
+    await expect(contact.getByRole('link', { name: 'raon@ufl.edu' })).toHaveAttribute(
+      'href',
+      MAILTO,
+    );
+    await page.goto('/cv/');
+    await expect(
+      page.locator('.cv-header').getByRole('link', { name: 'raon@ufl.edu' }),
+    ).toHaveAttribute('href', MAILTO);
+    await page.goto('/privacy/');
+    await expect(page.locator('main').getByRole('link', { name: 'raon@ufl.edu' })).toHaveAttribute(
+      'href',
+      MAILTO,
+    );
+    // No page links any other address.
+    for (const path of PAGES) {
+      await page.goto(path);
+      for (const href of await page
+        .locator('a[href^="mailto:"]')
+        .evaluateAll((links) => links.map((link) => link.getAttribute('href'))))
+        expect(href, path).toBe(MAILTO);
+    }
+  });
+
   test('home and about carry a JSON-LD Person with sameAs links', async ({ page }) => {
     await isolate(page);
     await page.goto('/about/');
     const json = JSON.parse(
       (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
-    ) as { '@type': string; sameAs: string[] };
+    ) as { '@type': string; sameAs: string[]; email: string };
     expect(json['@type']).toBe('Person');
+    expect(json.email).toBe('mailto:raon@ufl.edu');
     expect(json.sameAs).toContain('https://github.com/JimmyRaoUF');
     expect(json.sameAs).toContain('https://www.zhihu.com/people/daozhu');
   });
@@ -1339,6 +1382,7 @@ test.describe('the ongoing class study (D69)', () => {
       'How this connects to my other work',
       'How AI is used in this research',
       'Team',
+      'Contact',
     ]);
     // Every reference links to its DOI or its arXiv page.
     const references = page.locator('main .prose a[href^="https://"]');

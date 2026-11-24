@@ -67,6 +67,11 @@ describe('identity in the intro strip (facts.md §1, §2; D64)', () => {
     expect(section(1).match(/^- Chinese name: (\S+)/m)?.[1]).toBe(PERSON.chineseName);
   });
 
+  it('shows the public email exactly as facts.md §1 gives it (D70)', () => {
+    expect(section(1).match(/^- Public contact: (\S+@\S+?) /m)?.[1]).toBe(PERSON.email);
+    expect(PERSON.email).toBe('raon@ufl.edu');
+  });
+
   it('builds the role line only from facts.md §2', () => {
     const lines = section(2);
     const status = lines.replace(/\s+/g, ' ');
@@ -293,12 +298,14 @@ describe('the ongoing class study (facts.md §5.9, D69)', () => {
     );
   });
 
-  it('holds back the Contact section until the site shows a contact address', () => {
-    // His text closes with "My contact details are on this site." That is only true once
-    // facts.md §1 names the public address, so the section returns together with it.
+  it('closes with his Contact section only while the site shows a contact address', () => {
+    // His text closes with "My contact details are on this site." That is true only while
+    // facts.md §1 names the public address (D70), so the two go together.
     expect(page.body.includes('My contact details are on this site.')).toBe(PERSON.email !== null);
-    expect(source).toContain('# TODO(jimmy): his text closes with one more section, "## Contact"');
-    expect(record).toContain('`TODO(jimmy)`: pick the\n  public address');
+    expect(page.body.trimEnd()).toMatch(
+      /\n## Contact\n\nQuestions about the project are welcome\. My contact details are on this site\.$/,
+    );
+    expect(record).toContain('the\n  public email address in §1.');
   });
 
   it('gives each position a row header in its table, with his words', () => {
@@ -376,7 +383,7 @@ describe('the ongoing class study (facts.md §5.9, D69)', () => {
   // course title is taken out of the text instead (facts.md §5.9).
   const KNOWN_CAPITALS = new Set(
     (
-      'A After AI Ammari An Analysis Analyzing Change Co-authors Connection Contact CV D45 D69 ' +
+      'A After AI Ammari An Analysis Analyzing Change Co-authors Connection Contact CV D45 D69 D70 ' +
       'December Designer Does Each Every Everyone Facts Fall Florida For Former Four Here His How HTML ' +
       'I In It Its January Jimmy Kang Knowing Last Limits March Meetings Method Much My Never No ' +
       'Notes Nov November One Ongoing Only PhD Position Protection Q Questions Records Research ' +

@@ -304,8 +304,9 @@ Before S1 (in the browser; steps in SESSION_PROMPTS "Setup in the browser")
 While S1 is open
 5. Make a public CV PDF (no phone number or home address; Study 1's name-only figure as 29%) and
    upload it to `inbox/`.
-6. Pick the headline (facts.md §3), the status line (§2), the public email (§1), and whether to
-   link LinkedIn and ORCID (§13). Check the DTRUE author list (§5.3, VERIFY).
+6. Pick the headline (facts.md §3), the status line (§2), and whether to link LinkedIn and
+   ORCID (§13). Check the DTRUE author list (§5.3, VERIFY). (The public email is set:
+   raon@ufl.edu, §1, D70.)
 
 Later
 7. S2: pick a design. (The CISE redirect is done: D63, `migration/cise/HOWTO.md`.)
@@ -320,6 +321,6 @@ Later
 
 ## 17. Open decisions for Jimmy
 
-Headline (facts.md §3) and bio; status line (§2); public email (§1); umbrella line (D45); working
+Headline (facts.md §3) and bio; status line (§2); umbrella line (D45); working
 papers and the 2019 Chinese paper (D28); reflections (D12, D34); design direction (S2); optional
 touches (D36); statement PDFs on /cv; whether and when to switch on live AI (S8).

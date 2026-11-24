@@ -65,6 +65,8 @@ describe('SEO', () => {
       'https://www.zhihu.com/people/daozhu',
     ]);
     expect(ELSEWHERE.map((link) => link.id)).toEqual(['scholar', 'github', 'youtube', 'zhihu']);
+    // D70: the one public email address.
+    expect(person.email).toBe('mailto:raon@ufl.edu');
   });
 
   it('cannot close its script element', () => {
