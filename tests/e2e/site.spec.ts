@@ -498,6 +498,11 @@ test.describe('one page for the learner and teacher work (D66)', () => {
       'CV and publications',
     ]);
     await expect(page.locator('.study')).toHaveCount(4);
+    // Each card: a short label as its heading, then the work's own title as a citation.
+    await expect(page.locator('.study h3').first()).toHaveText(
+      'The dissertation: asking students, and reading their records',
+    );
+    await expect(page.locator('.study cite')).toHaveCount(4);
     await expect(page.locator('#teachers-heading ~ .pub-list .pub')).toHaveCount(3);
     await expect(page.locator('#breadth-heading ~ .pub-list .pub')).toHaveCount(4);
     await expect(page.locator('.more-actions a')).toHaveText([
@@ -525,11 +530,49 @@ test.describe('one page for the learner and teacher work (D66)', () => {
       .locator('.study__links a')
       .evaluateAll((links) => links.map((link) => link.getAttribute('href')!));
     expect(hrefs.length).toBeGreaterThan(7);
-    for (const href of new Set(hrefs)) {
-      const response = await page.goto(href);
-      expect(response?.status(), href).toBe(200);
-      const anchor = href.split('#')[1];
-      if (anchor) await expect(page.locator(`[id="${anchor}"]`), href).toHaveCount(1);
+    // One visit per page, then every anchor on it: going from one anchor to another on the same
+    // page is not a navigation, so it has no response to check.
+    const anchorsByPath = new Map<string, string[]>();
+    for (const href of hrefs) {
+      const [path, anchor] = href.split('#') as [string, string | undefined];
+      anchorsByPath.set(path, [...(anchorsByPath.get(path) ?? []), ...(anchor ? [anchor] : [])]);
+    }
+    for (const [path, anchors] of anchorsByPath) {
+      const response = await page.goto(path);
+      expect(response?.status(), path).toBe(200);
+      for (const anchor of anchors) {
+        await expect(page.locator(`[id="${anchor}"]`), `${path}#${anchor}`).toHaveCount(1);
+      }
+    }
+  });
+
+  test('a citation link marks the citation it points at', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/learners-and-teachers/');
+    const link = page.locator('#ieeevr-2020 .study__links a', { hasText: 'Citation' });
+    await expect(link).toHaveAccessibleName('Citation: IEEE VR 2020');
+    await link.click();
+    await expect(page).toHaveURL(/\/publications\/#ieeevr-2020-ar-smart-glasses$/);
+    await expect(page.locator('#ieeevr-2020-ar-smart-glasses')).toHaveCSS(
+      'border-left-width',
+      '6px',
+    );
+  });
+
+  test('keeps the theme toggle beside the name, never on a row of its own', async ({ page }) => {
+    await isolate(page);
+    for (const width of [360, 700, 768, 900, 1024, 1140, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/learners-and-teachers/');
+      const name = (await page.locator('.site-header__name').boundingBox())!;
+      const toggle = (await page.locator('.site-header button').boundingBox())!;
+      expect(
+        Math.abs(name.y + name.height / 2 - (toggle.y + toggle.height / 2)),
+        `${width}px`,
+      ).toBeLessThan(8);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
     }
   });
 });

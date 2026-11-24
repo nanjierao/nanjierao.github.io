@@ -1,6 +1,8 @@
-// /learners-and-teachers/ (D66): every string the page shows comes from one data module, so the
-// checks here cover all of its copy. Numbers must be in content/facts.md, the term is "learner
-// model", and the copy has no em dashes.
+// /learners-and-teachers/ (D66): every sentence and number the page shows comes from one data
+// module, so the checks here cover them (section headings and fixed labels are in the template;
+// the end-to-end test reads the rendered page). Numbers must be in content/facts.md and stay
+// with the study facts.md gives them to, the term is "learner model", and the copy has no em
+// dashes.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -10,6 +12,10 @@ import { NAV } from '../../src/data/site.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const FACTS = readFileSync(join(ROOT, 'content', 'facts.md'), 'utf8').replace(/\*\*/g, '');
+/** facts.md on one line, without emphasis marks, for matching sentences and titles. */
+const FACTS_LINE = FACTS.replace(/[*_]/g, '').replace(/\s+/g, ' ');
+/** The page uses typographic apostrophes; facts.md uses straight ones. */
+const plain = (text: string) => text.replace(/’/g, "'");
 
 /** Every string in the module, however deeply nested. */
 function strings(value: unknown): string[] {
@@ -58,7 +64,77 @@ describe('copy of /learners-and-teachers/', () => {
 
   it('quotes the dissertation takeaway word for word', () => {
     const quote = /“([^”]+)”/.exec(page.LEARNER_STUDIES[0]!.found)![1]!;
-    expect(FACTS.replace(/\s+/g, ' ')).toContain(quote);
+    expect(FACTS_LINE).toContain(plain(quote));
+  });
+
+  it('gives every work its own title, exactly as facts.md has it', () => {
+    for (const study of page.LEARNER_STUDIES) {
+      expect(FACTS_LINE, study.id).toContain(plain(study.title));
+      expect(study.label, study.id).not.toBe(study.title);
+    }
+  });
+
+  it('keeps each number with the study and the meaning facts.md gives it', () => {
+    const [dissertation, icalt, icids, ieeevr] = page.LEARNER_STUDIES;
+    const coding = page.STEPS[2]!.items[2]!.detail;
+    const pinned: Array<[inFacts: RegExp, copy: string, inCopy: RegExp]> = [
+      [/transcripts of 35 college students/, dissertation!.who, /35 in the asking study/],
+      [
+        /77 initial participants, 32 retained after data-quality screening/,
+        dissertation!.who,
+        /77 initial participants in the records study, 32 after data-quality screening/,
+      ],
+      [
+        /Browsing history had higher precision: 69\.8% confirmed vs\. 56\.3% for posts/,
+        icalt!.found,
+        /69\.8% of the interests found in browsing history and 56\.3% of those found in posts/,
+      ],
+      [
+        /Posts' explanations carried more grounded information per confirmed interest \(2\.14 vs\. 1\.58/,
+        icalt!.found,
+        /Posts’ explanations carried more grounded information .*\(2\.14 units compared with 1\.58\)/,
+      ],
+      [/Hands as Narrators \(ICIDS 2026.{0,200}?N = 24/, icids!.who, /^24 participants/],
+      [/took about a quarter of writing time/, icids!.found, /about a quarter of writing time/],
+      [
+        /IEEE VR 2020\): Latin-square within-subjects study, N = 25/,
+        ieeevr!.who,
+        /^25 participants/,
+      ],
+      [
+        /1,130 units . 625 grounded and 505 \(44\.7%\) inferred/,
+        page.GROUNDING_NOTE[0]!,
+        /Of 1,130 units in its explanations, 505 \(44\.7%\) were inferred/,
+      ],
+      [
+        /Study 1 \(asking\).*two coders; on 25 double-coded transcripts they agreed on 90\.7% of 700 code-by-transcript decisions; code-level Cohen's κ = \.51/,
+        coding,
+        /^in the asking study, two coders agreed on 90\.7% of decisions on 25 double-coded transcripts \(Cohen’s κ = \.51\)$/,
+      ],
+      [
+        /Survey of 81 studies on teacher autonomy vs\. automation/,
+        page.TEACHER_ITEMS[3]!.text,
+        /^A survey of 81 studies on teacher autonomy and automation/,
+      ],
+      [
+        /32 retained after data-quality screening/,
+        page.SOURCES_FIGURE.note,
+        /^32 participants after/,
+      ],
+    ];
+    for (const [inFacts, copy, inCopy] of pinned) {
+      expect(FACTS_LINE, String(inFacts)).toMatch(inFacts);
+      expect(copy).toMatch(inCopy);
+    }
+  });
+
+  it('credits the dataset the asking study used, and scopes the diagram to the dissertation', () => {
+    expect(page.LEARNER_STUDIES[0]!.observed).toContain('existing transcripts');
+    expect(page.LEARNER_STUDIES[0]!.observed).toContain('Dr. Abhishek Kulkarni’s dataset');
+    expect(FACTS_LINE).toContain("Dr. Abhishek Kulkarni's dataset");
+    const diagram = page.STEPS.flatMap((step) => step.items.map((item) => item.detail)).join(' ');
+    expect(diagram).not.toMatch(/gaze|keystroke/);
+    expect(page.STEPS_NOTE).toContain('dissertation');
   });
 });
 

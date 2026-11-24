@@ -1,7 +1,8 @@
 ---
 // One line of work across the papers (D66): observing learners, the teacher's side, and the
-// checks. The copy lives in src/data/learners-teachers.ts so a test can read all of it; the
-// citations come from the publication list the rest of the site uses.
+// checks. The sentences and numbers live in src/data/learners-teachers.ts so a test can read
+// them; headings and fixed labels are here. The citations come from the publication list the
+// rest of the site uses.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Figure from '../components/figures/Figure.astro';
 import Flow from '../components/figures/Flow.astro';
@@ -17,7 +18,9 @@ import {
   LEARNER_STUDIES,
   LEDE,
   MORE_INTRO,
+  SOURCES_FIGURE,
   STEPS,
+  STEPS_NOTE,
   TEACHER_INTRO,
   TEACHER_ITEMS,
   TEACHER_PUBLICATIONS,
@@ -40,7 +43,7 @@ const cvPdf = hasCvPdf();
     ))}
   </div>
 
-  <Figure title="Observe, model, check">
+  <Figure title="Observe, model, check" note={STEPS_NOTE}>
     <Flow label="Observe, model, check" steps={STEPS} />
   </Figure>
 
@@ -49,10 +52,12 @@ const cvPdf = hasCvPdf();
     <ul class="studies">
       {LEARNER_STUDIES.map((study) => (
         <li class="study" id={study.id}>
-          <h3 class="study__title">{study.title}</h3>
-          <p class="study__where small muted">{study.where}</p>
+          <h3 class="study__title">{study.label}</h3>
+          <p class="study__where small muted">
+            <cite>{study.title}</cite>. {study.where}
+          </p>
           <dl class="study__facts">
-            <dt>Observed</dt>
+            <dt>{study.firstLabel ?? 'Observed'}</dt>
             <dd>{study.observed}</dd>
             <dt>Who</dt>
             <dd>{study.who}</dd>
@@ -62,7 +67,12 @@ const cvPdf = hasCvPdf();
           <ul class="study__links">
             {study.links.map((link) => (
               <li>
-                <a href={link.href}>{link.label}</a>
+                <a
+                  href={link.href}
+                  aria-label={link.context ? `${link.label}: ${link.context}` : undefined}
+                >
+                  {link.label}
+                </a>
               </li>
             ))}
           </ul>
@@ -71,10 +81,7 @@ const cvPdf = hasCvPdf();
     </ul>
 
     <h3 id="worth-heading">What the observations are worth</h3>
-    <Figure
-      title="Browsing history compared with social-media posts (IEEE ICALT 2026)"
-      note="32 participants after data-quality screening. Students confirmed or rejected each interest the LLM extracted."
-    >
+    <Figure title={SOURCES_FIGURE.title} note={SOURCES_FIGURE.note}>
       <PairedBars series={STUDY2_SOURCES.series} metrics={STUDY2_SOURCES.metrics} />
     </Figure>
     <div class="prose">
@@ -160,6 +167,10 @@ const cvPdf = hasCvPdf();
 
   .study__where {
     margin: var(--space-1) 0 var(--space-3);
+  }
+
+  .study__where cite {
+    font-style: italic;
   }
 
   .study__facts {

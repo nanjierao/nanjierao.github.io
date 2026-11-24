@@ -1,6 +1,7 @@
 // Copy for /learners-and-teachers/ (D66). Every statement comes from content/facts.md (§5.1, §5.2,
 // §5.4, §5.5, §5.7, §6); tests/unit/learners-teachers.test.ts checks its numbers against that file.
-// Plain data only, so the test can read every string the page shows.
+// Plain data only, so the test can read every sentence and number the page shows. Section
+// headings and the fixed labels are in the template.
 
 export const TITLE = 'Modeling Learners and Teachers';
 
@@ -20,17 +21,19 @@ export interface Step {
   items: Array<{ term: string; detail: string }>;
 }
 
-/** The line of work as three steps (facts.md §5.1, §5.2, §5.4). */
+/** The dissertation's two studies as three steps (facts.md §5.1, §5.2). */
 export const STEPS: Step[] = [
   {
     title: 'Observe',
     items: [
-      { term: 'What students say when asked', detail: 'sessions with an LLM tutor' },
+      {
+        term: 'What students say when asked',
+        detail: 'existing transcripts of sessions with an LLM tutor',
+      },
       {
         term: 'Records students already produce',
         detail: 'browsing history and social-media posts',
       },
-      { term: 'What people do while they work', detail: 'gaze, video scrubs and keystrokes' },
     ],
   },
   {
@@ -38,7 +41,7 @@ export const STEPS: Step[] = [
     items: [
       {
         term: 'A learner model',
-        detail: 'here, a student’s interests and the information stated about each',
+        detail: 'in the dissertation, a student’s interests and the information stated about each',
       },
     ],
   },
@@ -47,44 +50,66 @@ export const STEPS: Step[] = [
     items: [
       {
         term: 'Ask the learner',
-        detail: 'students confirmed or rejected each extracted interest',
+        detail: 'in the records study, students confirmed or rejected each extracted interest',
       },
       {
         term: 'Check the source',
         detail: 'is each claim shown in the student’s material, or inferred?',
       },
-      { term: 'Check the coding', detail: 'two coders, with agreement reported' },
+      {
+        term: 'Check the coding',
+        detail:
+          'in the asking study, two coders agreed on 90.7% of decisions on 25 double-coded transcripts (Cohen’s κ = .51)',
+      },
     ],
   },
 ];
 
+export const STEPS_NOTE =
+  'The steps as the dissertation’s two studies ran them. The gaze and log study and the AR glasses study are in the cards below.';
+
+export interface StudyLink {
+  href: string;
+  label: string;
+  /** Read out after the label where several links share it, e.g. "Citation". */
+  context?: string;
+}
+
 export interface Study {
   id: string;
+  /** What the card is about, in a few words. */
+  label: string;
+  /** The work's own title, exactly as facts.md gives it. */
   title: string;
   where: string;
+  /** Label of the first row; "Observed" unless the study compared conditions. */
+  firstLabel?: string;
   observed: string;
   who: string;
   found: string;
-  links: Array<{ href: string; label: string }>;
+  links: StudyLink[];
 }
 
-/** Section 1 (facts.md §5.1, §5.4, §5.7). */
+/** Section 1 (facts.md §4, §5.1, §5.4, §5.7, §6). */
 export const LEARNER_STUDIES: Study[] = [
   {
     id: 'dissertation',
+    label: 'The dissertation: asking students, and reading their records',
     title:
       'Toward Scalable Interest-Based Learning: Comparing Data Sources for AI-Based Automated Identification of Students’ Personal Interests',
     where: 'Dissertation, 2026',
     observed:
-      'Two ways to learn a student’s interests: asking, in sessions with an interest-based LLM tutor, and reading samples of the student’s browsing history and social-media posts.',
+      'Two ways to learn a student’s interests. Asking: existing transcripts of students tutored by an interest-based LLM tutor (Dr. Abhishek Kulkarni’s dataset). Reading records: samples of each student’s browsing history and social-media posts.',
     who: 'College students: 35 in the asking study; 77 initial participants in the records study, 32 after data-quality screening.',
     found:
-      'In the dissertation’s words: “Browsing history suits finding the right interest, posts suit learning about it, and both suit covering more interests.”',
+      'In the dissertation’s words: “Asking gives the interest in the student’s own words, teaching draws out what the student knows about it, and data sources, used with consent, add interests the student did not name.”',
     links: [{ href: '/research/interest-identification/', label: 'The dissertation in detail' }],
   },
   {
     id: 'icalt-2026',
-    title: 'Browsing history compared with social-media posts',
+    label: 'Browsing history compared with social-media posts',
+    title:
+      'Identifying Student Interests for Interest-Based Learning: A Comparison of Interest Extraction from Browsing History and Social Media Posts',
     where: 'IEEE ICALT 2026, full paper',
     observed:
       'An LLM extracted interests, with explanations, from samples of each student’s browsing history and social-media posts.',
@@ -93,12 +118,17 @@ export const LEARNER_STUDIES: Study[] = [
       'Students confirmed 69.8% of the interests found in browsing history and 56.3% of those found in posts. Posts’ explanations carried more grounded information per confirmed interest (2.14 units compared with 1.58).',
     links: [
       { href: '/research/interest-identification/', label: 'Study and figures' },
-      { href: '/publications/#icalt-2026-interest-extraction', label: 'Citation' },
+      {
+        href: '/publications/#icalt-2026-interest-extraction',
+        label: 'Citation',
+        context: 'IEEE ICALT 2026',
+      },
     ],
   },
   {
     id: 'icids-2026',
-    title: 'Hands as Narrators: gaze and interaction logs in story writing',
+    label: 'Gaze and interaction logs in story writing',
+    title: 'Hands as Narrators: Characterizing Idea Reuptake from Hand Enactment in Story Writing',
     where: 'ICIDS 2026, full paper, accepted (to appear)',
     observed:
       'A remote web platform logged every video scrub and keystroke alongside a WebGazer.js gaze stream.',
@@ -108,13 +138,20 @@ export const LEARNER_STUDIES: Study[] = [
     links: [
       { href: '/research/embodied-learning/', label: 'Embodied and creative learning' },
       { href: '/builds/gaze-log-platform/', label: 'The study platform' },
-      { href: '/publications/#icids-2026-hands-as-narrators', label: 'Citation' },
+      {
+        href: '/publications/#icids-2026-hands-as-narrators',
+        label: 'Citation',
+        context: 'ICIDS 2026',
+      },
     ],
   },
   {
     id: 'ieeevr-2020',
-    title: 'AR smart glasses for everyday learning',
+    label: 'AR smart glasses for everyday learning',
+    title:
+      'Investigating the Necessity of Meaningful Context Anchoring in Augmented Reality Smart Glasses Interaction for Everyday Learning',
     where: 'IEEE VR 2020, workshop paper and poster',
+    firstLabel: 'Compared',
     observed:
       'Two ways for the glasses to show information: on a spoken request, or on object detection.',
     who: '25 participants in a Latin-square, within-subjects study.',
@@ -123,10 +160,21 @@ export const LEARNER_STUDIES: Study[] = [
     links: [
       { href: '/research/embodied-learning/', label: 'Embodied and creative learning' },
       { href: '/builds/ar-smart-glasses/', label: 'The two apps' },
-      { href: '/publications/#ieeevr-2020-ar-smart-glasses', label: 'Citation' },
+      {
+        href: '/publications/#ieeevr-2020-ar-smart-glasses',
+        label: 'Citation',
+        context: 'IEEE VR 2020',
+      },
     ],
   },
 ];
+
+/** Caption of the Study 2 figure (facts.md §5.1). */
+export const SOURCES_FIGURE = {
+  title:
+    'Browsing history compared with social-media posts, in the dissertation’s records study (IEEE ICALT 2026)',
+  note: '32 participants after data-quality screening. Students confirmed or rejected each interest the LLM extracted. Each panel has its own scale, starting at zero.',
+};
 
 /** The check behind "what those observations are worth" (facts.md §5.2, with its caveat). */
 export const GROUNDING_NOTE = [
@@ -173,8 +221,9 @@ export const TEACHER_PUBLICATIONS = [
   'icalt-2021-visual-efficiency',
 ] as const;
 
+/** Topics in the order of the citations below them. */
 export const BREADTH_INTRO =
-  'Four more papers, three of them as a co-author: avatars in children’s creative storytelling, emotional priming in storytelling, explanations in recommender systems, and movie recommendation from personal social media.';
+  'Four more papers, three as a co-author and one as first author: avatars in children’s creative storytelling, explanations in recommender systems, movie recommendation from personal social media, and emotional priming in storytelling (first author).';
 
 /** Section 3, in the order Jimmy gave (facts.md §5.4, §5.6, §6). */
 export const BREADTH_PUBLICATIONS = [
@@ -185,4 +234,4 @@ export const BREADTH_PUBLICATIONS = [
 ] as const;
 
 export const MORE_INTRO =
-  'The CV lists everything in one place, and the publications page has the full citations.';
+  'The CV and the publications page list the published papers with full citations.';
