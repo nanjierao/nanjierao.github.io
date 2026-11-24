@@ -321,7 +321,7 @@ Optional (on Google Scholar, omitted from recent CVs — ask Jimmy): 饶正寿, 
 | Humanoid telepresence robot — ANA Avatar XPRIZE | Sept 2021 | On-site leader of four-person Team Limitless; 300+ lb humanoid telepresence robot (NVIDIA Jetson) with motion-capture teleoperation; 37 teams from 15 countries; semifinalist; re-scoped the system overnight after the power converter failed | YouTube `u9nYUBc-_s0` (XPRIZE channel; start at 74 s) |
 | Humanoid robot behavior imitation (B.S. thesis) | 2016 | Kinect-based human action recognition driving a humanoid robot over Wi-Fi; Outstanding Thesis Award (top 1%) | `TODO` |
 | Wearable baby thermometer (Galaxy Studio) | 2012–16 | Designed and iterated; later commercialized and sold in the U.S. | `TODO` |
-| IoT Curiosity Detector for Connected Learning | `TODO` | `TODO(jimmy): one-paragraph description` | YouTube `zzlthBSD1ns` |
+| IoT Curiosity Detector for Connected Learning: the Tracker Toolbox | 2020–22 | Tracker Toolbox, a Chrome extension (2020 to 2022, unpublished): it logs clicks, scrolls, searches and WebGazer.js gaze, maps them to page content, and asks learners two self-report questions every 60 seconds. Don't mention a competition placement. (Jimmy, Nov 24, 2026.) | YouTube `zzlthBSD1ns` (`TODO(jimmy)`: confirm this video shows the Tracker Toolbox before the build page uses it) |
 | Engagement dashboards — The Teaching Lab (internship) | 2022 | Two interactive dashboards of student-engagement data for program directors; centralized web grading system | `TODO` |
 
 Other videos from the old site (ask Jimmy what they are before using):
