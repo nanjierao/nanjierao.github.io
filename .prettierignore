@@ -10,6 +10,9 @@
 /.claude/
 src/content/**/*.md
 tests/fixtures/blog/
+# The class-study page (D69): its table is HTML with one cell per line. Prettier would wrap the
+# long cells, and MDX turns a wrapped cell's text into a paragraph inside the cell.
+src/content/themes/data-analysis-through-ai.mdx
 
 # Self-contained demo files (don't modify) and build or test output.
 /public/demos/

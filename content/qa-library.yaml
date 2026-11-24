@@ -215,6 +215,19 @@ items:
     sources: [/builds/, /research/]
     audience: [industry]
     status: ready
+  - id: class-study
+    q: "What is he working on now?"
+    a: >-
+      Since November 2026 he has led a first-person study of one university course in which
+      students from fields outside computing do data mining through an AI assistant, without
+      programming experience. The method is collaborative autoethnography: the course's
+      instructor, its teaching assistant, students who choose to join and he each record their
+      own experience, then compare what they saw. The University of Florida determined the study
+      exempt. The page describes the design only; it holds no data and no results, and it does
+      not say who takes part.
+    sources: [/research/data-analysis-through-ai/]
+    audience: [general, faculty, industry]
+    status: needs-jimmy
   - id: revision-checklist
     q: "Has he published anything on academic writing?"
     a: >-

@@ -7,6 +7,7 @@ import CvTimeline from '../components/figures/CvTimeline.astro';
 import Figure from '../components/figures/Figure.astro';
 import TalkList from '../components/TalkList.astro';
 import { PERSON } from '../data/site.ts';
+import { ONGOING_LABEL } from '../content/schemas.ts';
 import {
   EARLIER_TEACHING,
   EDUCATION,
@@ -86,6 +87,7 @@ const cvPdf = hasCvPdf();
       {themes.map((theme) => (
         <li>
           <a href={`/research/${theme.id}/`}>{theme.data.title}</a>
+          {theme.data.status === 'ongoing' && <> ({ONGOING_LABEL.toLowerCase()})</>}
         </li>
       ))}
     </ul>

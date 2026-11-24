@@ -131,6 +131,11 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
     body, and links the Zhihu original. Publish with `/post-zhihu` (`.claude/skills/post-zhihu/`).
 11. Elsewhere links (facts.md §13): Google Scholar, GitHub (JimmyRaoUF), YouTube, Zhihu. Show them
     in the intro strip's link row, on /about, and in the footer.
+12. The ongoing class study (facts.md §5.9, D69): its page describes the design only. Never name
+    its instructor, teaching assistant or students, its course number or course title, or say
+    who or how many take part: not in a page, a test, a file name, a commit message or a pull
+    request. Its study materials (emails, forms, the exempt determination) stay out of the
+    repository. The page's words are Jimmy's; change them only with a new text from him.
 
 ## Design rules
 

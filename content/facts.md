@@ -93,6 +93,7 @@ Research overview grouping (D27, D45):
 - Three contexts (decided): **Personal** (§5.1 interest identification, §5.2 grounding, §5.5
   teacher support, §5.6 explanation and recommendation) · **Embodied** (§5.4 hand enactment,
   puppets, AR glasses; the XPRIZE robot in §7) · **Civic** (§5.3 civic digital twins).
+- A study that is still running is listed after them under **Ongoing** (D69): §5.9.
 - Umbrella line — DRAFT, Jimmy picks. Default, from his Sept 2026 research statement: an AI system
   that adapts to a person must first know something about them, by asking or by reading records
   the person already produced; his research asks which to rely on, how accurate and well grounded
@@ -276,6 +277,133 @@ says so.
   cell; when two agree, a one-tap verification quest; when three agree, confirmed; 10.8 hours
   into a 30-hour replay; four confirmed cells and three open quests at the peak. Design: the
   visitor can switch channels off, and with one channel left the scene says neither rule applies.
+
+### 5.9 Ongoing: analyzing data through an AI assistant without a programming background (a first-person study of one course; D69)
+Source: Jimmy's page text of Nov 24, 2026 (not in this repository). The page
+`/research/data-analysis-through-ai/` uses his words; this section is the record that the
+checks read. Change the page's wording only with a new text from him. The page is listed under
+"Ongoing", outside the three contexts above.
+
+Rules for this study, everywhere in this repository (pages, this file, tests, file names, commit
+messages and pull requests):
+- It names no participants: no instructor, teaching assistant or student names, and no course
+  number or course title. The course is "one university course" at the University of Florida,
+  "for students from fields outside computing".
+- Only the page goes on the site. Study materials (emails, forms, survey questions, the exempt
+  determination and its protocol number) stay off the site and out of this repository.
+- No data and no results, and nothing about who takes part or how many, until Jimmy says so.
+- His text closes with a Contact section that points to the contact details on this site. The
+  site shows no address yet (§1), so the page leaves the section out. `TODO(jimmy)`: pick the
+  public address; the section then returns.
+
+Facts, in the page's order:
+- Status: ongoing since November 2026. The page describes the design of the study; it holds no
+  data and no results, and it does not say who takes part. Last updated: 24 November 2026.
+- In short: students from non-technical fields do data mining within one semester. They start
+  without programming experience and work through an AI assistant: they ask it for code, run the
+  code, change it, and have to decide whether what comes back is right. The project studies that
+  practice in one university course, from the inside. The instructor who designed the course, the
+  teaching assistant, students who choose to join and Jimmy each record and reflect on their own
+  experience, then compare what they saw.
+- Why he started it: he took the course in Fall 2024, as a PhD student in human-centered
+  computing; the instructor acknowledged that students use large language models, encouraged it
+  and taught them how to use them. In November 2026 he happened to meet the course's teaching
+  assistant and thought the course deserves a paper. Much of the published work he has read
+  looks at programmers and computing students; these students are new to code.
+- The course: one semester at the University of Florida, for students from fields outside
+  computing. Each lab comes with printed instructions that give the prompt to send to the AI
+  assistant, show the code that came back and explain it, including cases in which the code runs
+  and the result is still wrong. Some steps ask the student to change code by hand or to use
+  earlier code again, and there are tasks to do alone. The course ends with a group project on a
+  problem that the students choose, with no printed prompts.
+- The question: what are the challenges and strategies of analyzing data through an AI
+  assistant, in guided labs and in one open project, for students who do not program? Four
+  parts: time and attention; knowing that a result is right; the printed prompt script; the view
+  from each position. The study belongs to human-computer interaction more than to classroom
+  research; it uses no grades and makes no claim about how much anyone learned.
+- Method: collaborative autoethnography. Four positions (student now; former student, now
+  analyst, which is Jimmy; teaching assistant; designer and instructor), each with what it sees,
+  does not see and writes. The same anchors for everyone: three labs and the final project, with
+  the same five questions for each anchor.
+- Sources: a project diary by each student co-author, with four questions after each session;
+  notes on three labs from the student's own saved chats and notebooks, which stay with the
+  student; a written account by each author; a coding of the printed lab instructions, move by
+  move; meetings of all authors; a class survey that asks for no names. The class is small, so
+  the study aims at close accounts, not statistics.
+- Analysis: each author first codes their own material; the material is laid out by anchor and
+  by position; themes come from the meetings; each author checks how their words are read and
+  can change or withdraw them until the paper is submitted; every episode in the paper points to
+  a dated record, and a quotation needs its author's approval. The coding of the lab
+  instructions follows the method of the dissertation (§5.1): open coding, a codebook,
+  check-coding of a sample by a second coder with the agreement reported, written rules for
+  disagreements.
+- Protection: the University of Florida determined the study exempt in November 2026. The class
+  survey asks for no names; the instructor and the teaching assistant cannot see who answered,
+  and see no answers before course grades are posted. They do not learn whether a student joined
+  as a co-author, or who, until course grades are posted; taking part has no effect on a grade.
+  A student's diary and notes stay with Jimmy, who is not part of the teaching team; the
+  instructor and the teaching assistant read only the passages that the student releases. Until
+  the paper is submitted a student can change or remove anything they wrote, and can leave. No
+  course records and no grades are used. A student's text goes into an AI tool only if that
+  student agrees.
+- Limits: one course in one semester, with a small number of people; the diary covers the weeks
+  of the final project; a diary question can change what it asks about; students write knowing
+  that their instructor is a co-author; Jimmy can program, so his records of 2024 are those of
+  another position; no grades, so no claim about learning more or less.
+- What may be new (from what he has read so far, not a systematic review): the people; records
+  explained by those who made them (Ammari and colleagues, 2025, note that logs alone do not
+  show intentions or feelings); time and attention; the printed prompt script as a designed
+  object; several positions on the same moments (in Kang and colleagues, 2025, co-authors
+  examine one person's long record).
+- Timeline: November 2026, the study is designed and determined exempt, the class survey opens,
+  students can sign up as co-authors and keep the diary during the weeks of the final project.
+  December 2026, the project ends, each author writes an account, and after course grades are
+  posted the authors meet. January to March 2027, meetings, analysis and writing. 2027, writing
+  for publication.
+- Connection to his other work: the dissertation is on interest-based learning (§5.1); the final
+  project of this course starts from a problem that the students choose from their own
+  interests. The method here is first-person: the researcher is one of the participants.
+- AI in this research: an AI assistant helps him organize notes and draft documents; it made the
+  first pass of the coding of the lab instructions, under his direction, and he check-codes a
+  sample by hand; no student text goes into an AI tool without that student's agreement; the
+  paper will state what AI did.
+- Team: Jimmy designed the study and leads it. Co-authors: the course's instructor, the course's
+  teaching assistant, and students of the course who choose to join.
+- Work he builds on (selected), as the page lists it. Not checked against the sources from a
+  Claude Code session (those sites are blocked there); `TODO(jimmy)`: confirm each link opens
+  the paper named.
+  - Kang, Li, Leshed, Rzeszotarski and Lu (2025). Towards Hormone Health: An Autoethnography of
+    Long-Term Holistic Tracking to Manage PCOS. CHI 2025. https://doi.org/10.1145/3706598.3713619
+  - Chang, Ngunjiri and Hernandez (2016). Collaborative Autoethnography. Routledge.
+    https://doi.org/10.4324/9781315432137
+  - Gandhi and Muldner (2025). "That's Not the Way I Would Explain It": A Teacher-Researcher's
+    Autoethnography of Learning to Program With ChatGPT. ICER 2025.
+    https://doi.org/10.1145/3702652.3744228
+  - Glazko, Cha, Lewis, Kosa, Wimer, Zheng, Zheng and Mankoff (2025). Autoethnographic Insights
+    from Neurodivergent GAI "Power Users". CHI 2025. https://doi.org/10.1145/3706598.3713670
+  - Ren, McDowell and Zhou (2026). Beyond Perspectives: A Trio-Ethnography of Interpretation
+    Evolution in LLM-Supported Programming Education. https://arxiv.org/abs/2607.22463
+  - Ammari, Chen, Zaman and Garimella (2025). How Students (Really) Use ChatGPT: Uncovering
+    Experiences Among Undergraduate Students. https://arxiv.org/abs/2505.24126
+  - Tan, Messerschmidt, Yin and Nov (2026). The Impact of Response Latency and Task Type on
+    Human-LLM Interaction and Perception. https://arxiv.org/abs/2604.06183
+  - Pu, Truong, Terry, Cai, Liu and Petridis (2026). Too Long to Watch, Too Short to Leave:
+    Designing for Agent Micro-Waits. https://arxiv.org/abs/2610.27170
+  - Su, Brasser, Reich, Jäger and Wang (2026). From Tokens to Structure: Investigating Visual
+    Attention in Progressive Code Rendering. https://arxiv.org/abs/2609.24616
+  - Mozannar, Bansal, Fourney and Horvitz (2024). Reading Between the Lines: Modeling User
+    Behavior and Costs in AI-Assisted Programming. CHI 2024.
+    https://doi.org/10.1145/3613904.3641936
+  - Virk and Liu (2025). Non-programmers Assessing AI-Generated Code: A Case Study of Business
+    Users Analyzing Data. https://arxiv.org/abs/2508.06484
+  - Gu, Shang, Althoff, Wang and Drucker (2024). How Do Analysts Understand and Verify
+    AI-Assisted Data Analyses? CHI 2024. https://doi.org/10.1145/3613904.3642497
+  - Tankelevitch, Kewenig, Simkute, Scott, Sarkar, Sellen and Rintel (2024). The Metacognitive
+    Demands and Opportunities of Generative AI. CHI 2024.
+    https://doi.org/10.1145/3613904.3642902
+  - Liu, Sarkar, Negreanu, Zorn, Williams, Toronto and Gordon (2023). "What It Wants Me To Say":
+    Bridging the Abstraction Gap Between End-User Programmers and Code-Generating Large Language
+    Models. CHI 2023. https://doi.org/10.1145/3544548.3580817
 
 ## 6. Publications (12 peer-reviewed; * = first author)
 

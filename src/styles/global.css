@@ -115,6 +115,12 @@ hr {
   margin-top: 0;
 }
 
+/* A link shown as its own address (a DOI, an arXiv page) breaks where it must, so a long one
+   never makes a phone page scroll sideways. */
+.prose a {
+  overflow-wrap: anywhere;
+}
+
 /* Pages with figures: text keeps its reading measure, figures and tables may run wider. */
 .prose--wide {
   max-width: 56rem;
@@ -331,6 +337,27 @@ hr {
   font-weight: 600;
 }
 
+/* A table with long cells: on a narrow screen it keeps readable columns and scrolls sideways
+   inside its own frame, which can take keyboard focus. The page itself never scrolls sideways. */
+.table-wrap--wide table {
+  min-width: 44rem;
+}
+
+/* Where the frame scrolls, a soft shadow marks each edge that hides more of the table. The two
+   page-colored layers move with the table and cover the shadow once that edge is reached. */
+@media screen and (max-width: 48rem) {
+  .table-wrap--wide {
+    --table-shade: color-mix(in srgb, var(--color-text) 18%, transparent);
+    background:
+      linear-gradient(to right, var(--color-bg) 40%, transparent) left / 2.5rem 100% no-repeat local,
+      linear-gradient(to left, var(--color-bg) 40%, transparent) right / 2.5rem 100% no-repeat local,
+      linear-gradient(to right, var(--table-shade), transparent) left / 0.75rem 100% no-repeat
+        scroll,
+      linear-gradient(to left, var(--table-shade), transparent) right / 0.75rem 100% no-repeat
+        scroll;
+  }
+}
+
 .prose blockquote {
   margin: var(--space-5) 0;
   padding: var(--space-1) 0 var(--space-1) var(--space-4);
@@ -405,5 +432,14 @@ hr {
     background: none;
     color: #000;
     border-color: #000;
+  }
+
+  /* Paper cannot scroll: a wide table gives up its minimum width and prints whole. */
+  .table-wrap {
+    overflow: visible;
+  }
+
+  .table-wrap--wide table {
+    min-width: 0;
   }
 }
