@@ -8,6 +8,10 @@
  *   dark:  a 8.7 / 7.9, b 8.9 / 8.1, c 9.3 / 8.5
  * Series a and b have similar lightness, so figures never tell them apart by color alone:
  * every bar carries a text label, and series b is hatched.
+ * Sketch scenes (D68), on --color-paper:
+ *   light: text 14.6, muted 6.5, ink 10.1, border 3.1, yes 5.3, no 5.0, flow 3.5 (lines only)
+ *   dark:  text 13.2, muted 7.3, ink 12.4, border 3.6, yes 7.5, no 6.4, flow 8.5
+ * The three pale sketch fills sit under ink lines and carry no meaning.
  */
 :root {
   color-scheme: light;
@@ -27,6 +31,16 @@
   --color-series-b: #8b3d74;
   --color-series-c: #7a5410;
   --color-track: #e4e0d6;
+  /* Sketch scenes: warm paper, soft ink, and three accents (confirmed, rejected or filtered,
+     data on its way). */
+  --color-paper: #f5ebd7;
+  --color-ink: #3a3631;
+  --color-sketch-yes: #2f5fa8;
+  --color-sketch-no: #b23b29;
+  --color-sketch-flow: #b8680f;
+  --color-sketch-screen: #d9e4f3;
+  --color-sketch-warm: #f0c58e;
+  --color-sketch-rose: #e7b1a6;
 
   --font-serif: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-sans:
@@ -85,6 +99,14 @@
     --color-series-b: #e3a0cf;
     --color-series-c: #dcb36a;
     --color-track: #2c2a26;
+    --color-paper: #24231f;
+    --color-ink: #ece4d2;
+    --color-sketch-yes: #8fb5ea;
+    --color-sketch-no: #f08a76;
+    --color-sketch-flow: #f0b26b;
+    --color-sketch-screen: #2c3a50;
+    --color-sketch-warm: #6b4a22;
+    --color-sketch-rose: #6e3b33;
   }
 }
 
@@ -105,4 +127,12 @@
   --color-series-b: #e3a0cf;
   --color-series-c: #dcb36a;
   --color-track: #2c2a26;
+  --color-paper: #24231f;
+  --color-ink: #ece4d2;
+  --color-sketch-yes: #8fb5ea;
+  --color-sketch-no: #f08a76;
+  --color-sketch-flow: #f0b26b;
+  --color-sketch-screen: #2c3a50;
+  --color-sketch-warm: #6b4a22;
+  --color-sketch-rose: #6e3b33;
 }

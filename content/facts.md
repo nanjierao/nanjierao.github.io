@@ -211,11 +211,12 @@ they supersede the CVs and the research statement wherever they differ.
 - Explanation types and user motivations in recommender systems (AAAI HCOMP 2020, co-author).
 - Everyday-inspired movie recommendation from personal social media (IFIP INTERACT 2023, co-author).
 
-### 5.7 Learner and teacher modeling (the home page's "Modeling Learners and Teachers" section, D66)
+### 5.7 Learner and teacher modeling (the home page's "How AI learns about people and places" section, below its sketch scenes; D66)
 Source: Jimmy's outline (Nov 24, 2026), first for a page of its own, then moved to the home
-page the same day. The items marked "check" are not in the sections above: they are wording
-from the outline, or choices made while writing it. He checks them when he reviews the section;
-until then they appear in this section only.
+page the same day. The section was titled "Modeling Learners and Teachers" until the sketch
+scenes arrived (§5.8, D68). The items marked "check" are not in the sections above: they are
+wording from the outline, or choices made while writing it. They went live on Nov 24, 2026 under
+the merge rule (D67) and are still Jimmy's to confirm; a correction here goes to the page.
 
 - Framing: one line of work, building systems that observe how people learn and checking what
   those observations are worth. The term is "learner model", never "world model".
@@ -239,6 +240,35 @@ until then they appear in this section only.
 - IEEE VR 2020: this section says only that the speech-triggered display led to better learning
   scores. §5.4 also says "task scores" (check against the paper; if task scores did not differ,
   §5.4, the TL;DR draft for [12], the embodied-learning page and the Q&A answer need the same fix).
+
+### 5.8 Sketch scenes on the home page (D68)
+Source: Jimmy's design notes and sketch prototype of Nov 24, 2026 (not in this repository). The
+scenes use the facts of the sections named below. What comes only from the design is marked
+"design". Interests, records, reports and posts shown in the scenes are made up, and each scene
+says so.
+
+- Title: "How AI learns about people and places". Subtitle: "Each scene shows where the data
+  comes from, what the system builds from it, and who checks it." Five scenes; no teacher scene,
+  because §5.5 has only titles for that work.
+- Scene 0, Tracker Toolbox (§7; labeled a prototype; no numbers): it logs clicks, scrolls and
+  searches, follows gaze with WebGazer.js, maps records to page content, and asks the learner
+  once a minute. Design: the pop-up in the scene asks "Did you learn something in the last
+  minute?", and the answer labels that minute of the record. The scene shows one of the two
+  self-report questions; the wording of the real questions is not recorded here.
+- Scenes 1 and 2, browsing history and social-media posts (§5.1, Study 2): self-curation,
+  sensitive-content filtering, non-retention; an LLM extracts interests with explanations;
+  students confirm or reject each; 69.8% and 56.3% confirmed; 2.14 vs. 1.58 grounded units per
+  confirmed interest; 38.2% added by the two sources together; 32 participants after screening.
+  The sample student and the eight interests are made up.
+- Scene 3, puppet (§5.4, §7): position from a YOLO detector, rotation from an IMU over
+  Bluetooth, animated in Unity in real time; perception study with 23 MTurk workers. Design: the
+  drawing shows a storyteller at a classroom table with a camera, and the scene says the IMU is
+  on the puppet.
+- Scene 4, flooded street (§5.3; labeled simulated; "coauthored", with no names until the author
+  list is verified): official sensor anomaly, citizen report and social post in the same map
+  cell; when two agree, a one-tap verification quest; when three agree, confirmed; 10.8 hours
+  into a 30-hour replay; four confirmed cells and three open quests at the peak. Design: the
+  visitor can switch channels off, and with one channel left the scene says neither rule applies.
 
 ## 6. Publications (12 peer-reviewed; * = first author)
 

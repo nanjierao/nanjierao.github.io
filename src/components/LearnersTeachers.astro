@@ -1,12 +1,14 @@
 ---
-// The home page's section on the learner and teacher work (D66): observing learners, the
-// teacher's side, and the checks. The sentences and numbers live in
+// The home page's section "How AI learns about people and places" (D66, D68): the sketch
+// scenes first, then the learner and teacher work they come from (observing learners, the
+// teacher's side, and the checks). The sentences and numbers live in
 // src/data/learners-teachers.ts so a test can read them; headings and fixed labels are here.
 // The citations come from the publication list the rest of the site uses.
 import Figure from './figures/Figure.astro';
 import Flow from './figures/Flow.astro';
 import PairedBars from './figures/PairedBars.astro';
 import PublicationList from './PublicationList.astro';
+import SketchScenes from './SketchScenes.astro';
 import { STUDY2_SOURCES } from '../data/figures.ts';
 import {
   BREADTH_INTRO,
@@ -32,6 +34,9 @@ const breadthPapers = await getPublicationsByIds(BREADTH_PUBLICATIONS);
 <section class="lt" id="learners-and-teachers" aria-labelledby="lt-heading">
   <h2 id="lt-heading">{TITLE}</h2>
   <p class="lede">{LEDE}</p>
+
+  <SketchScenes />
+
   <div class="prose">
     {INTRO.map((paragraph) => (
       <p>{paragraph}</p>

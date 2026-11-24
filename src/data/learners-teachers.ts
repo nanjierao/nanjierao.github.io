@@ -1,9 +1,12 @@
-// Copy for the home page's "Modeling Learners and Teachers" section (D66). Every statement comes from content/facts.md (§5.1, §5.2,
-// §5.4, §5.5, §5.7, §6); tests/unit/learners-teachers.test.ts checks its numbers against that file.
-// Plain data only, so the test can read every sentence and number the page shows. Section
-// headings and the fixed labels are in the template.
+// Copy for the home page's "How AI learns about people and places" section (D66, D68), below
+// its sketch scenes (whose words are in sketch-scenes.ts). Every statement comes from
+// content/facts.md (§5.1, §5.2, §5.4, §5.5, §5.7, §6); tests/unit/learners-teachers.test.ts
+// checks its numbers against that file. Plain data only, so the test can read every sentence
+// and number the page shows. Part headings and the fixed labels are in the template.
 
-export const TITLE = 'Modeling Learners and Teachers';
+/** The section's heading. It was "Modeling Learners and Teachers" until the scenes arrived:
+ *  they also show a puppet and a city, which that title did not cover (D68). */
+export const TITLE = 'How AI learns about people and places';
 
 export const LEDE =
   'One line of work runs through these papers: I build systems that observe how people learn, and I check what those observations are worth.';

@@ -1,0 +1,1193 @@
+---
+// The sketch scenes of the home page's "How AI learns about people and places" section (D68):
+// five line drawings, each with a caption for every part of the drawing, a panel that shows
+// what the system builds, one hands-on step, and the result that step leads to.
+//
+// The page ships every scene finished: drawing, captions, sample answers and results. That is
+// what a visitor sees without JavaScript, and what a screen reader finds. With JavaScript,
+// src/scripts/sketch-scenes.ts shows one scene at a time, draws it stroke by stroke, and waits
+// for the visitor to do the scene's step. It is a plain script, not a React island: React's
+// client runtime alone is larger than the page's JavaScript budget (D68).
+//
+// Words: src/data/sketch-scenes.ts (checked against facts.md by a unit test).
+// Drawings: src/data/sketch-drawings.ts.
+import { CANVAS, DRAWINGS, type Shape } from '../data/sketch-drawings.ts';
+import { GLYPHS } from '../data/sketch-glyphs.ts';
+import {
+  CARRIED,
+  CONTROLS,
+  SCENES,
+  SCENE_GROUPS,
+  SKETCH_SUBTITLE,
+  SUMMARY_LABELS,
+  type SceneId,
+} from '../data/sketch-scenes.ts';
+
+const sceneById = new Map(SCENES.map((scene) => [scene.id, scene]));
+const firstId = SCENES[0]!.id;
+/** The dorm scene's sample confirmations, which the finished dining-hall scene carries over. */
+const carried = sceneById
+  .get('dorm')!
+  .panel.entries.filter((entry) => entry.sample === 'yes')
+  .map((entry) => entry.name);
+
+/** Parts that turn (the puppet and its character) pivot on their own anchor. */
+function pivot(id: SceneId, shape: Shape): string | undefined {
+  const anchor = shape.part ? DRAWINGS[id].anchors[shape.part] : undefined;
+  return anchor ? `transform-origin: ${anchor[0]}px ${anchor[1]}px` : undefined;
+}
+---
+
+<div class="sk" data-sketch data-speed="1" data-shown={CONTROLS.shown}>
+  <p class="sk__sub">{SKETCH_SUBTITLE}</p>
+
+  <div class="sk__bar" data-js-only>
+    <div class="sk__tabs" role="group" aria-label={CONTROLS.scenes}>
+      {SCENE_GROUPS.map((group) => (
+        <div class="sk__group" role="group" aria-label={group.label}>
+          <span class="sk__group-label" aria-hidden="true">
+            {group.label}
+          </span>
+          {group.scenes.map((id) => (
+            <button
+              type="button"
+              class="sk__tab"
+              data-scene-button={id}
+              aria-pressed={id === firstId ? 'true' : 'false'}
+            >
+              {sceneById.get(id)!.label}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+    <div class="sk__ctl">
+      <button type="button" class="sk__btn" data-replay>
+        {CONTROLS.replay}
+      </button>
+      <button type="button" class="sk__btn" data-show-all>
+        {CONTROLS.showAll}
+      </button>
+    </div>
+  </div>
+
+  {SCENES.map((scene) => {
+    const { task } = scene;
+    const drawing = DRAWINGS[scene.id];
+    return (
+      <div
+        class:list={['sk__scene', { 'is-active': scene.id === firstId }]}
+        data-scene={scene.id}
+        data-kind={task.kind}
+        data-state="done"
+        data-task-done
+        data-sampled
+        data-answer={task.kind === 'answer' ? task.sample : undefined}
+        data-facing={task.kind === 'turn' ? 'right' : undefined}
+        data-count={task.kind === 'toggle' ? task.channels.length : undefined}
+      >
+        <div class="sk__head">
+          <h3 class="sk__heading" id={`sk-${scene.id}`}>
+            {scene.heading}
+          </h3>
+          {scene.badge && <span class="sk__badge">{scene.badge}</span>}
+        </div>
+
+        <div class="sk__stage">
+          <figure class="sk__board">
+            <svg
+              class="sk__svg"
+              viewBox={`0 0 ${CANVAS.width} ${CANVAS.height}`}
+              role="img"
+              aria-label={scene.alt}
+              data-svg
+              data-anchors={JSON.stringify(drawing.anchors)}
+            >
+              <defs>
+                <filter id={`sk-rough-${scene.id}`} x="-2%" y="-2%" width="104%" height="104%">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" />
+                  <feDisplacementMap in="SourceGraphic" scale="2.2" />
+                </filter>
+              </defs>
+              <g filter={`url(#sk-rough-${scene.id})`}>
+                {drawing.regions.map((region, index) => (
+                  <g class="sk__region" data-region={index} data-ms={region.ms}>
+                    {region.shapes
+                      .filter((shape) => shape.fill)
+                      .map((shape) => (
+                        <path
+                          class={`sk__fill sk__fill--${shape.fill}`}
+                          d={shape.d}
+                          data-part={shape.part}
+                          style={pivot(scene.id, shape)}
+                        />
+                      ))}
+                    {region.shapes
+                      .filter((shape) => !shape.fill)
+                      .map((shape) => (
+                        <path
+                          class:list={['sk__ink', { 'sk__ink--thin': shape.stroke === 'thin' }]}
+                          d={shape.d}
+                          data-part={shape.part}
+                          style={pivot(scene.id, shape)}
+                        />
+                      ))}
+                  </g>
+                ))}
+              </g>
+              {task.kind === 'turn' &&
+                ['puppet', 'avatar'].map((part) => {
+                  const [x, y] = drawing.anchors[part] ?? [0, 0];
+                  // A tap on the puppet or its character turns it; the button does the same.
+                  return (
+                    <rect class="sk__hit" data-turn x={x - 36} y={y - 46} width="72" height="92" />
+                  );
+                })}
+              <g class="sk__flow" data-flow />
+              <g class="sk__pen" data-pen>
+                <path d="M0 0 L6 -16 L40 -46 L50 -36 L16 -6 Z" />
+                <path class="sk__pen-tip" d="M0 0 L6 -16 L16 -6 Z" />
+              </g>
+            </svg>
+            <figcaption class="sk__story">
+              <p class="visually-hidden">{CONTROLS.story}</p>
+              <ol class="sk__steps">
+                {scene.steps.map((step, index) => (
+                  <li
+                    data-step={index}
+                    data-draw={step.draw}
+                    data-fly={step.flyFrom}
+                    data-filtered={step.filtered ? '' : undefined}
+                    data-reveal={step.reveal?.join(',')}
+                  >
+                    {step.line}
+                  </li>
+                ))}
+              </ol>
+            </figcaption>
+          </figure>
+
+          <div class="sk__panel" role="group" aria-labelledby={`sk-${scene.id}-panel`}>
+            <h4 class="sk__panel-title" id={`sk-${scene.id}-panel`}>
+              {scene.panel.title}
+            </h4>
+            <p class="sk__prompt" data-js-only>
+              <strong>{CONTROLS.yourTurn}.</strong> {task.prompt}
+            </p>
+
+            {scene.id === 'dining' && (
+              <div class="sk__carried" data-carried>
+                <p class="sk__carried-title">{CARRIED.title}</p>
+                <ul class="sk__carried-list" data-carried-list>
+                  {carried.map((name) => (
+                    <li>{name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div class="sk__list">
+              <p class="sk__empty" data-js-only>
+                {scene.panel.empty}
+              </p>
+              <ol class="sk__entries">
+                {scene.panel.entries.map((entry, index) => (
+                  <li
+                    class="sk__entry"
+                    data-entry={index}
+                    data-name={entry.name}
+                    data-sample={entry.sample}
+                    data-mark={entry.sample}
+                  >
+                    <svg class="sk__glyph" viewBox="0 0 20 20" aria-hidden="true">
+                      <path d={GLYPHS[entry.glyph]} />
+                    </svg>
+                    <div class="sk__entry-text">
+                      <span class="sk__name">{entry.name}</span>
+                      <span class="sk__why">{entry.why}</span>
+                      {scene.id === 'dining' && (
+                        <span class="sk__also" data-also hidden={!carried.includes(entry.name)}>
+                          {CARRIED.also}
+                        </span>
+                      )}
+                      {task.kind === 'toggle' && <span class="sk__off-note">{task.off}</span>}
+                    </div>
+                    {task.kind === 'judge' && (
+                      <fieldset class="sk__marks">
+                        <legend class="visually-hidden">{entry.name}</legend>
+                        <label class="sk__mark sk__mark--yes">
+                          <input
+                            type="radio"
+                            name={`sk-${scene.id}-${index}`}
+                            value="yes"
+                            checked={entry.sample === 'yes'}
+                            disabled
+                          />
+                          <span class="sk__mark-face" aria-hidden="true">
+                            ✓
+                          </span>
+                          <span class="visually-hidden">{task.yes}</span>
+                        </label>
+                        <label class="sk__mark sk__mark--no">
+                          <input
+                            type="radio"
+                            name={`sk-${scene.id}-${index}`}
+                            value="no"
+                            checked={entry.sample === 'no'}
+                            disabled
+                          />
+                          <span class="sk__mark-face" aria-hidden="true">
+                            ✗
+                          </span>
+                          <span class="visually-hidden">{task.no}</span>
+                        </label>
+                      </fieldset>
+                    )}
+                    {task.kind === 'toggle' && (
+                      <label class="sk__switch">
+                        <input
+                          type="checkbox"
+                          role="switch"
+                          aria-label={task.channels[index]!.label}
+                          data-channel={task.channels[index]!.part}
+                          checked
+                          disabled
+                        />
+                        <span class="sk__switch-face" aria-hidden="true">
+                          <span class="sk__switch-on">{CONTROLS.on}</span>
+                          <span class="sk__switch-off">{CONTROLS.off}</span>
+                        </span>
+                      </label>
+                    )}
+                  </li>
+                ))}
+                {task.kind === 'answer' && (
+                  <li class="sk__entry sk__entry--label" data-entry={scene.panel.entries.length}>
+                    <svg class="sk__glyph" viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M3 4 L11 4 L17 10 L11 16 L3 16 Z M6 10 L7 10" />
+                    </svg>
+                    <div class="sk__entry-text">
+                      <span class="sk__name">{task.row.name}</span>
+                      <span class="sk__why sk__when" data-when="none">
+                        {task.row.waiting}
+                      </span>
+                      {task.options.map((option) => (
+                        <span class="sk__why sk__when" data-when={option.value}>
+                          {option.outcome}
+                        </span>
+                      ))}
+                    </div>
+                  </li>
+                )}
+              </ol>
+            </div>
+
+            <div class="sk__task" data-task>
+              {task.kind === 'answer' && (
+                <fieldset class="sk__popup">
+                  <legend>{task.question}</legend>
+                  <div class="sk__choices">
+                    {task.options.map((option) => (
+                      <label class="sk__choice">
+                        <input
+                          type="radio"
+                          name={`sk-${scene.id}-answer`}
+                          value={option.value}
+                          checked={option.value === task.sample}
+                          data-sample={option.value === task.sample ? '' : undefined}
+                          disabled
+                        />
+                        <span class="sk__choice-face">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              {task.kind === 'turn' && (
+                <>
+                  <button type="button" class="sk__action" data-turn data-js-only>
+                    {task.button}
+                  </button>
+                  <p class="sk__status sk__stack">
+                    <span class="sk__when" data-when="right">
+                      {task.facing[0]}
+                    </span>
+                    <span class="sk__when" data-when="left">
+                      {task.facing[1]}
+                    </span>
+                  </p>
+                </>
+              )}
+              {task.kind === 'toggle' && (
+                <div class="sk__status sk__stack">
+                  {task.verdicts.map((verdict, index) => (
+                    <p class="sk__when" data-when={task.channels.length - index}>
+                      <strong>{verdict.label}.</strong> {verdict.text}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {task.kind === 'judge' && (
+                <p class="sk__status sk__stack">
+                  <span class="sk__tally" data-tally data-template={task.tally} />
+                  <span class="sk__sample-note">{task.sampleNote}</span>
+                </p>
+              )}
+              {task.kind === 'answer' && <p class="sk__sample-note">{task.sampleNote}</p>}
+            </div>
+          </div>
+        </div>
+
+        <div class="sk__after sk__stack">
+          <p class="sk__locked" data-js-only>
+            {scene.locked}
+          </p>
+          <div class="sk__results">
+            {scene.results.map((result) => (
+              <p class="sk__result">
+                {result.big && <b class="sk__big">{result.big}</b>} <span>{result.text}</span>
+              </p>
+            ))}
+            {scene.id === 'dining' && (
+              <div class="sk__both sk__stack" data-both data-open="true">
+                <p class="sk__locked" data-js-only>
+                  {CARRIED.bothLocked}
+                </p>
+                <p class="sk__result sk__result--both">
+                  <b class="sk__big">{CARRIED.both.big}</b> <span>{CARRIED.both.text}</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <dl class="sk__summary">
+          <div>
+            <dt>{SUMMARY_LABELS.data}</dt>
+            <dd>{scene.summary.data}</dd>
+          </div>
+          <div>
+            <dt>{SUMMARY_LABELS.builds}</dt>
+            <dd>{scene.summary.builds}</dd>
+          </div>
+          <div>
+            <dt>{SUMMARY_LABELS.checkedBy}</dt>
+            <dd>{scene.summary.checkedBy}</dd>
+          </div>
+        </dl>
+        <p class="sk__source small muted">
+          {scene.source} {scene.note}
+        </p>
+      </div>
+    );
+  })}
+
+  <p class="visually-hidden" data-live aria-live="polite"></p>
+</div>
+
+<script is:inline>
+  // If the scenes' script has not started after a few seconds (blocked, or it failed to load),
+  // show the finished scenes the page already holds, not controls that would do nothing.
+  setTimeout(function () {
+    const sketch = document.querySelector('[data-sketch]');
+    if (sketch && !sketch.hasAttribute('data-enhanced')) sketch.setAttribute('data-failed', '');
+  }, 4000);
+</script>
+
+<script>
+  import '../scripts/sketch-scenes.ts';
+</script>
+
+<style is:global>
+  /* Sketch scenes (D68). Global, because the script adds SVG elements while it draws.
+     Without JavaScript (no .js on <html>), or if the script never starts (data-failed), every
+     scene is shown finished, one after another. */
+  .sk {
+    --sk-line: color-mix(in srgb, var(--color-ink) 30%, transparent);
+    margin: var(--space-5) 0 var(--space-6);
+  }
+
+  .sk [hidden],
+  :root:not(.js) .sk [data-js-only],
+  .sk[data-failed] [data-js-only] {
+    display: none !important;
+  }
+
+  .sk__sub {
+    max-width: var(--measure);
+    margin: 0 0 var(--space-4);
+  }
+
+  /* ------------------------------------------------------------ scene buttons */
+
+  .sk__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+
+  .sk__tabs,
+  .sk__group,
+  .sk__ctl {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .sk__tabs {
+    gap: var(--space-2) var(--space-5);
+  }
+
+  .sk__ctl {
+    margin-left: auto;
+  }
+
+  .sk__group-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .sk__tab,
+  .sk__btn,
+  .sk__action {
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    border: 1.5px solid var(--color-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+
+  .sk__tab:hover,
+  .sk__btn:hover,
+  .sk__action:hover {
+    border-color: var(--color-text);
+  }
+
+  /* The open scene: a heavier outline and weight as well as the paper color. */
+  .sk__tab[aria-pressed='true'] {
+    border-color: var(--color-text);
+    box-shadow: inset 0 0 0 1.5px var(--color-text);
+    background: var(--color-paper);
+    font-weight: 650;
+  }
+
+  .sk__btn {
+    border-style: dashed;
+  }
+
+  .sk__action {
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------------ one scene */
+
+  :root.js .sk:not([data-failed]) .sk__scene:not(.is-active) {
+    display: none;
+  }
+
+  :root:not(.js) .sk__scene + .sk__scene,
+  .sk[data-failed] .sk__scene + .sk__scene {
+    margin-top: var(--space-7);
+  }
+
+  .sk__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin: 0 0 var(--space-3);
+  }
+
+  .sk__heading {
+    margin: 0;
+  }
+
+  .sk__badge {
+    padding: 0.1rem 0.5rem;
+    border: 1.5px dashed var(--color-border);
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+  }
+
+  .sk__stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  /* ------------------------------------------------------------ the drawing */
+
+  .sk__board {
+    min-width: 0;
+    margin: 0;
+    border-radius: var(--radius);
+    background: var(--color-paper);
+    overflow: hidden;
+  }
+
+  .sk__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  .sk__ink,
+  .sk__wire {
+    fill: none;
+    stroke: var(--color-ink);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .sk__ink--thin {
+    stroke-width: 1.8;
+  }
+
+  .sk__wire {
+    stroke: var(--color-sketch-flow);
+    stroke-width: 2.2;
+  }
+
+  .sk__fill--screen {
+    fill: var(--color-sketch-screen);
+  }
+
+  .sk__fill--warm {
+    fill: var(--color-sketch-warm);
+  }
+
+  .sk__fill--rose {
+    fill: var(--color-sketch-rose);
+  }
+
+  .sk__pen {
+    display: none;
+    pointer-events: none;
+  }
+
+  .sk__pen[data-on] {
+    display: inline;
+  }
+
+  .sk__pen path {
+    fill: var(--color-paper);
+    stroke: var(--color-ink);
+    stroke-width: 1.8;
+    stroke-linejoin: round;
+  }
+
+  .sk__pen .sk__pen-tip {
+    fill: var(--color-ink);
+  }
+
+  .sk__card rect {
+    fill: var(--color-paper);
+    stroke: var(--color-sketch-flow);
+    stroke-width: 2;
+  }
+
+  .sk__card path {
+    fill: none;
+    stroke: var(--color-sketch-flow);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+
+  .sk__card .sk__card-x {
+    stroke: var(--color-sketch-no);
+    stroke-width: 2.4;
+  }
+
+  .sk__hit {
+    fill: transparent;
+    cursor: pointer;
+  }
+
+  :root:not(.js) .sk__hit,
+  .sk[data-failed] .sk__hit,
+  .sk__scene[data-state='playing'] .sk__hit {
+    display: none;
+  }
+
+  /* The puppet and its character turn about their own upright axis. */
+  .sk__svg [data-part='puppet'],
+  .sk__svg [data-part='avatar'] {
+    transform-box: view-box;
+    transition: transform 0.45s ease;
+  }
+
+  .sk__scene[data-facing='left'] [data-part='puppet'],
+  .sk__scene[data-facing='left'] [data-part='avatar'] {
+    transform: scaleX(-1);
+  }
+
+  /* A channel that is switched off stays in the picture, faint and dashed. */
+  .sk__svg[data-off~='sensor'] [data-part='sensor'],
+  .sk__svg[data-off~='citizen'] [data-part='citizen'],
+  .sk__svg[data-off~='social'] [data-part='social'] {
+    stroke-opacity: 0.22;
+    fill-opacity: 0.22;
+    stroke-dasharray: 3 8;
+  }
+
+  /* The map cell: filled when three channels agree, hatched when two do, empty otherwise. */
+  .sk__svg [data-part='cell-hatch'] {
+    visibility: hidden;
+  }
+
+  .sk__svg[data-count='2'] [data-part='cell-hatch'] {
+    visibility: visible;
+  }
+
+  .sk__svg[data-count='2'] [data-part='cell'],
+  .sk__svg[data-count='1'] [data-part='cell'],
+  .sk__svg[data-count='0'] [data-part='cell'] {
+    visibility: hidden;
+  }
+
+  /* ------------------------------------------------------------ captions */
+
+  .sk__story {
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    border-top: 1.5px dashed var(--color-border);
+  }
+
+  .sk__steps {
+    margin: 0;
+    padding-left: 1.5em;
+    font-size: var(--text-sm);
+  }
+
+  .sk__steps li {
+    margin: 0;
+    padding-block: 0.15rem;
+  }
+
+  .sk__steps li.is-current {
+    font-weight: 650;
+  }
+
+  /* While a scene draws, what has not happened yet keeps its place but stays out of sight.
+     Captions only fade out, so a screen reader can read the whole story at any moment; rows with
+     controls are hidden for real, so the keyboard never lands on something invisible. */
+  :root.js .sk:not([data-failed]) .sk__scene[data-state='playing'] .sk__steps li:not([data-on]) {
+    opacity: 0;
+  }
+
+  :root.js .sk:not([data-failed]) .sk__scene[data-state='playing'] .sk__entry:not([data-on]),
+  :root.js .sk:not([data-failed]) .sk__scene[data-state='playing'] .sk__prompt,
+  :root.js .sk:not([data-failed]) .sk__scene[data-state='playing'] .sk__task,
+  :root.js .sk:not([data-failed]) .sk__scene[data-state='playing'] .sk__locked {
+    visibility: hidden;
+  }
+
+  /* ------------------------------------------------------------ the panel */
+
+  .sk__panel {
+    min-width: 0;
+    padding: var(--space-4);
+    border-left: 3px double color-mix(in srgb, var(--color-sketch-no) 55%, transparent);
+    border-radius: var(--radius);
+    background: var(--color-paper);
+  }
+
+  .sk__panel-title {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .sk__prompt {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  .sk__carried {
+    margin: 0 0 var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  .sk__carried-title {
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .sk__carried-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-serif);
+    font-weight: 600;
+  }
+
+  .sk__carried-list li {
+    margin: 0;
+  }
+
+  .sk__carried-list li::before {
+    content: '✓ ';
+    color: var(--color-sketch-yes);
+  }
+
+  .sk__list {
+    position: relative;
+  }
+
+  .sk__empty {
+    position: absolute;
+    inset: var(--space-2) 0 auto 0;
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    visibility: hidden;
+  }
+
+  .sk__scene[data-empty] .sk__empty {
+    visibility: visible;
+  }
+
+  .sk__entries {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sk__entry {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    column-gap: var(--space-3);
+    align-items: start;
+    margin: 0;
+    padding: var(--space-2) 0;
+    border-top: 1px dashed var(--sk-line);
+  }
+
+  .sk__entry:first-child {
+    border-top: 0;
+  }
+
+  .sk__scene[data-state='playing'] .sk__entry[data-on] {
+    animation: sk-pop 0.4s ease-out;
+  }
+
+  @keyframes sk-pop {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .sk__glyph {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.2rem;
+    fill: none;
+    stroke: var(--color-ink);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .sk__entry-text {
+    min-width: 0;
+  }
+
+  .sk__name {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .sk__why,
+  .sk__also,
+  .sk__off-note {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* Rejected, or switched off: struck through, as well as the mark beside it. */
+  .sk__entry[data-mark='no'] .sk__name,
+  .sk__entry[data-off] .sk__name {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: var(--color-sketch-no);
+  }
+
+  .sk__off-note {
+    display: none;
+  }
+
+  .sk__entry[data-off] .sk__off-note {
+    display: block;
+  }
+
+  /* One of several lines, picked by the scene's state. In a stack they share one cell, so the
+     panel keeps its height when the line changes. */
+  .sk__when {
+    display: none;
+  }
+
+  .sk__stack {
+    display: grid;
+  }
+
+  .sk__stack > * {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
+
+  .sk__stack > .sk__when {
+    display: block;
+    visibility: hidden;
+  }
+
+  .sk__scene[data-answer='none'] [data-when='none'],
+  .sk__scene[data-answer='yes'] [data-when='yes'],
+  .sk__scene[data-answer='no'] [data-when='no'] {
+    display: block;
+  }
+
+  .sk__scene[data-facing='right'] [data-when='right'],
+  .sk__scene[data-facing='left'] [data-when='left'],
+  .sk__scene[data-count='3'] [data-when='3'],
+  .sk__scene[data-count='2'] [data-when='2'],
+  .sk__scene[data-count='1'] [data-when='1'],
+  .sk__scene[data-count='0'] [data-when='0'] {
+    visibility: visible;
+  }
+
+  /* ------------------------------------------------------------ hands-on controls */
+
+  .sk__marks {
+    display: flex;
+    gap: var(--space-1);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .sk__mark,
+  .sk__choice,
+  .sk__switch {
+    position: relative;
+    display: inline-block;
+  }
+
+  /* The real input lies over its drawn face, so the keyboard and the pointer use it as it is. */
+  .sk__mark input,
+  .sk__choice input,
+  .sk__switch input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .sk__mark input:disabled,
+  .sk__choice input:disabled,
+  .sk__switch input:disabled {
+    cursor: default;
+  }
+
+  .sk__mark-face,
+  .sk__choice-face,
+  .sk__switch-face {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    height: 40px;
+    padding: 0 var(--space-2);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .sk__mark-face {
+    font-size: 1.15rem;
+  }
+
+  .sk__choice-face {
+    min-width: 64px;
+    color: var(--color-text);
+  }
+
+  .sk__switch-face {
+    min-width: 52px;
+    border-radius: 999px;
+  }
+
+  .sk__mark input:focus-visible + .sk__mark-face,
+  .sk__choice input:focus-visible + .sk__choice-face,
+  .sk__switch input:focus-visible + .sk__switch-face {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Chosen: filled, so the state shows in light and dark, with ✓ and ✗ telling the two apart. */
+  .sk__mark input:checked + .sk__mark-face,
+  .sk__switch input:checked + .sk__switch-face {
+    color: var(--color-bg);
+    font-weight: 700;
+  }
+
+  .sk__mark--yes input:checked + .sk__mark-face,
+  .sk__switch input:checked + .sk__switch-face {
+    border-color: var(--color-sketch-yes);
+    background: var(--color-sketch-yes);
+  }
+
+  .sk__mark--no input:checked + .sk__mark-face {
+    border-color: var(--color-sketch-no);
+    background: var(--color-sketch-no);
+  }
+
+  .sk__choice input:checked + .sk__choice-face {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .sk__mark input:disabled:not(:checked) + .sk__mark-face,
+  .sk__choice input:disabled:not(:checked) + .sk__choice-face {
+    opacity: 0.45;
+  }
+
+  .sk__switch-off,
+  .sk__switch input:not(:checked) + .sk__switch-face .sk__switch-on {
+    display: none;
+  }
+
+  .sk__switch input:not(:checked) + .sk__switch-face .sk__switch-off {
+    display: inline;
+  }
+
+  .sk__task {
+    margin-top: var(--space-3);
+  }
+
+  /* The tracker's pop-up, drawn as a small window. */
+  .sk__popup {
+    min-width: 0;
+    margin: 0;
+    padding: var(--space-3);
+    border: 2px solid var(--color-ink);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    box-shadow: 3px 3px 0 var(--color-ink);
+  }
+
+  .sk__popup legend {
+    float: left;
+    width: 100%;
+    margin: 0 0 var(--space-2);
+    padding: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .sk__choices {
+    display: flex;
+    gap: var(--space-2);
+    clear: both;
+  }
+
+  .sk__status {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
+  }
+
+  .sk__action + .sk__status {
+    margin-top: var(--space-2);
+  }
+
+  .sk__sample-note {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* The sample note shows only where sample answers are on screen: always without JavaScript,
+     and after "Show all" with it. The visitor's own tally takes its place otherwise. */
+  :root.js .sk:not([data-failed]) .sk__scene:not([data-sampled]) .sk__sample-note,
+  :root.js .sk:not([data-failed]) .sk__scene[data-sampled] .sk__tally,
+  :root:not(.js) .sk__tally,
+  .sk[data-failed] .sk__tally {
+    visibility: hidden;
+  }
+
+  /* ------------------------------------------------------------ results */
+
+  .sk__after {
+    margin-top: var(--space-4);
+  }
+
+  .sk__locked {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .sk__results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--space-3) var(--space-5);
+    align-items: start;
+  }
+
+  .sk__result {
+    margin: 0;
+    padding-left: var(--space-3);
+    border-left: 3px solid var(--color-sketch-yes);
+    font-size: var(--text-sm);
+  }
+
+  .sk__result--both {
+    border-left: 3px double var(--color-sketch-flow);
+  }
+
+  .sk__big {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Results wait for the visitor's step; the line that says so holds their place. */
+  :root.js .sk:not([data-failed]) .sk__scene:not([data-state='done']) .sk__after > .sk__results,
+  :root.js .sk:not([data-failed]) .sk__scene[data-state='done'] .sk__after > .sk__locked,
+  :root.js .sk:not([data-failed]) .sk__both:not([data-open='true']) > .sk__result,
+  :root.js .sk:not([data-failed]) .sk__both[data-open='true'] > .sk__locked {
+    visibility: hidden;
+  }
+
+  /* Results arrive below the stage, away from the control that released them: a short rise
+     draws the eye there. */
+  :root.js .sk:not([data-failed]) .sk__scene[data-state='done'] .sk__after > .sk__results,
+  :root.js .sk:not([data-failed]) .sk__both[data-open='true'] > .sk__result {
+    animation: sk-pop 0.4s ease-out;
+  }
+
+  /* ------------------------------------------------------------ under the stage */
+
+  .sk__summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3) var(--space-5);
+    margin: var(--space-4) 0 var(--space-3);
+  }
+
+  .sk__summary dt {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .sk__summary dd {
+    margin: 0;
+  }
+
+  .sk__source {
+    max-width: var(--measure);
+    margin: 0;
+  }
+
+  @media (max-width: 56rem) {
+    .sk__stage {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sk__ctl {
+      margin-left: 0;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .sk__summary {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Closer together on a phone, so the five scene buttons take fewer rows. */
+    .sk__tabs {
+      gap: var(--space-2) var(--space-3);
+    }
+
+    .sk__tab,
+    .sk__btn {
+      padding: 0 var(--space-3);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk *,
+    .sk *::before {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* High-contrast mode: the system's colors, and no pale fills behind the lines. */
+  @media (forced-colors: active) {
+    .sk__ink,
+    .sk__wire,
+    .sk__glyph {
+      stroke: CanvasText;
+    }
+
+    .sk__fill {
+      fill: none;
+    }
+
+    .sk__mark input:checked + .sk__mark-face,
+    .sk__choice input:checked + .sk__choice-face,
+    .sk__switch input:checked + .sk__switch-face {
+      border-width: 4px;
+    }
+  }
+</style>

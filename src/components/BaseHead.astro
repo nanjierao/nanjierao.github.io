@@ -56,8 +56,10 @@ const canonical = canonicalUrl(Astro.url.pathname);
 
 {jsonLd && <script type="application/ld+json" set:html={jsonLdString(jsonLd)} />}
 
-<!-- Apply a saved theme before first paint so the page doesn't flash. -->
+<!-- Before first paint: mark that scripts run (pieces that need them show their controls, and
+     show their no-script form otherwise), and apply a saved theme so the page doesn't flash. -->
 <script is:inline>
+  document.documentElement.classList.add('js');
   try {
     const saved = localStorage.getItem('theme');
     if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;

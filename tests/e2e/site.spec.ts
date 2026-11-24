@@ -491,8 +491,8 @@ test.describe('learners and teachers on the home page (D66)', () => {
     await isolate(page);
     await page.goto('/');
     const section = page.locator(SECTION);
-    await expect(section.locator('h2')).toHaveText('Modeling Learners and Teachers');
-    await expect(section.locator('h3')).toHaveText([
+    await expect(section.locator('h2')).toHaveText('How AI learns about people and places');
+    await expect(section.locator('.lt__part > h3')).toHaveText([
       'Observing learners',
       'Modeling teachers',
       'Supporting breadth',
@@ -500,10 +500,19 @@ test.describe('learners and teachers on the home page (D66)', () => {
     // Home page order: intro strip, word cloud, this section, then Research and Recent.
     await expect(page.locator('main h2')).toHaveText([
       'Topics',
-      'Modeling Learners and Teachers',
+      'How AI learns about people and places',
       'Research',
       'Recent',
     ]);
+    // Inside the section: the lede, the sketch scenes, then the diagram and the three parts.
+    const order = await section.evaluate((el) =>
+      ['.lede', '.sk', '.fig', '.lt__part'].map((selector) => {
+        const first = el.querySelector(selector)!;
+        return [...el.children].findIndex((child) => child === first || child.contains(first));
+      }),
+    );
+    expect(order).toEqual([...order].sort((x, y) => x - y));
+    expect(new Set(order).size).toBe(4);
     await expect(section.locator('.study')).toHaveCount(4);
     // Each card: a short label as its heading, then the work's own title as a citation.
     await expect(section.locator('.study h4').first()).toHaveText(
@@ -588,6 +597,402 @@ test.describe('learners and teachers on the home page (D66)', () => {
         `${width}px`,
       ).toBeLessThanOrEqual(width);
     }
+  });
+});
+
+test.describe('sketch scenes on the home page (D68)', () => {
+  const SK = '#learners-and-teachers .sk';
+  const SCENES = ['tracker', 'dorm', 'dining', 'puppet', 'city'];
+  const scene = (page: Page, id: string) => page.locator(`${SK} [data-scene="${id}"]`);
+  const tab = (page: Page, id: string) => page.locator(`${SK} [data-scene-button="${id}"]`);
+
+  /** The home page with motion reduced: scenes open finished, and the steps are the visitor's. */
+  async function openStill(page: Page) {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await isolate(page);
+    await page.goto('/');
+    await page.locator(SK).scrollIntoViewIfNeeded();
+  }
+
+  test('shows one scene at a time, in Jimmy’s order, with Replay and Show all', async ({
+    page,
+  }) => {
+    await openStill(page);
+    await expect(page.locator(`${SK} .sk__sub`)).toHaveText(
+      'Each scene shows where the data comes from, what the system builds from it, and who checks it.',
+    );
+    await expect(page.locator(`${SK} [data-scene-button]`)).toHaveText([
+      'Desk, browser',
+      'Dorm, laptop',
+      'Dining hall, phone',
+      'Classroom, puppet',
+      'Street, flood',
+    ]);
+    await expect(page.getByRole('button', { name: 'Replay' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Show all' })).toBeVisible();
+    for (const id of SCENES) {
+      await tab(page, id).click();
+      await expect(tab(page, id)).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator(`${SK} [data-scene-button][aria-pressed="true"]`)).toHaveCount(1);
+      await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(1);
+      await expect(scene(page, id)).toBeVisible();
+      await expect(scene(page, id).locator('svg[role="img"]')).toHaveAttribute(
+        'aria-label',
+        /^Line drawing: /,
+      );
+      // Every scene answers the subtitle's three questions.
+      await expect(scene(page, id).locator('.sk__summary dt')).toHaveText([
+        'Data from',
+        'It builds',
+        'Checked by',
+      ]);
+    }
+    await expect(scene(page, 'tracker').locator('.sk__badge')).toHaveText('Prototype');
+    await expect(scene(page, 'city').locator('.sk__badge')).toHaveText('Simulated');
+    await expect(scene(page, 'dorm').locator('.sk__badge')).toHaveText('Synthetic sample');
+  });
+
+  test('the tracker scene: the answer to the pop-up labels the record, and shows no numbers', async ({
+    page,
+  }) => {
+    await openStill(page);
+    const tracker = scene(page, 'tracker');
+    await expect(tracker).toHaveAttribute('data-state', 'ready');
+    await expect(tracker.locator('.sk__entry--label')).toContainText('no answer yet');
+    await expect(tracker.locator('.sk__results')).toBeHidden();
+    const no = tracker.getByRole('radio', { name: 'No' });
+    await expect(
+      tracker.getByRole('group', { name: 'Did you learn something in the last minute?' }),
+    ).toBeVisible();
+    // With the keyboard: focus the choice and press Space.
+    await no.focus();
+    await page.keyboard.press('Space');
+    await expect(tracker).toHaveAttribute('data-state', 'done');
+    await expect(tracker.locator('.sk__entry--label')).toContainText(
+      'No, I did not learn something.',
+    );
+    await expect(tracker.locator('.sk__results')).toBeVisible();
+    await expect(page.locator(`${SK} [data-live]`)).toHaveText('No, I did not learn something.');
+    expect(await tracker.innerText()).not.toMatch(/\d/);
+  });
+
+  test('the dorm and dining-hall scenes: marking the interests shows the study’s numbers', async ({
+    page,
+  }) => {
+    await openStill(page);
+    await tab(page, 'dorm').click();
+    const dorm = scene(page, 'dorm');
+    await expect(dorm.locator('.sk__results')).toBeHidden();
+    await expect(dorm.locator('.sk__locked')).toBeVisible();
+    // Keyboard only: each interest is a pair of radio buttons named by the interest.
+    const groups = ['bouldering', 'film photography', 'home espresso', 'car insurance'];
+    for (const [index, name] of groups.entries()) {
+      const choice = dorm
+        .getByRole('group', { name, exact: true })
+        .getByRole('radio', { name: index < 2 ? 'Confirm' : 'Reject' });
+      await choice.focus();
+      await page.keyboard.press('Space');
+      await expect(choice).toBeChecked();
+    }
+    await expect(dorm).toHaveAttribute('data-state', 'done');
+    await expect(dorm.locator('[data-tally]')).toHaveText('You confirmed 2 of 4.');
+    await expect(dorm.locator('.sk__result')).toContainText(
+      '69.8% of the interests extracted from browsing history were confirmed',
+    );
+    await expect(dorm.locator('.sk__locked')).toBeHidden();
+
+    // The dining-hall scene keeps what the visitor confirmed, and notes the shared interest.
+    await tab(page, 'dining').click();
+    const dining = scene(page, 'dining');
+    await expect(dining.locator('[data-carried-list] li')).toHaveText([
+      'bouldering',
+      'film photography',
+    ]);
+    await expect(dining.locator('[data-entry][data-name="bouldering"] [data-also]')).toBeVisible();
+    await expect(dining.locator('.sk__after > .sk__results')).toBeHidden();
+    for (const row of await dining.locator('.sk__marks').all())
+      await row.getByRole('radio', { name: 'Confirm' }).check();
+    await expect(dining.locator('[data-tally]')).toHaveText('You confirmed 4 of 4.');
+    const results = dining.locator('.sk__results');
+    await expect(results).toContainText('56.3% of the interests extracted from posts');
+    await expect(results).toContainText('2.14 grounded units of information per confirmed');
+    await expect(results).toContainText('compared with 1.58 for browsing history');
+    // Both learner scenes done: what the two sources add together.
+    await expect(dining.locator('.sk__result--both')).toBeVisible();
+    await expect(dining.locator('.sk__result--both')).toContainText('38.2%');
+  });
+
+  test('the puppet scene: one tap turns the puppet and the character on the screen', async ({
+    page,
+  }) => {
+    await openStill(page);
+    await tab(page, 'puppet').click();
+    const puppet = scene(page, 'puppet');
+    await expect(puppet).toHaveAttribute('data-facing', 'right');
+    const transformOf = (part: string) =>
+      puppet
+        .locator(`[data-part="${part}"]`)
+        .first()
+        .evaluate((el) => getComputedStyle(el).transform);
+    expect(await transformOf('puppet')).toBe('none');
+    const turn = puppet.getByRole('button', { name: 'Turn the puppet' });
+    await turn.focus();
+    await page.keyboard.press('Enter');
+    await expect(puppet).toHaveAttribute('data-facing', 'left');
+    // Mirrored about its own upright axis, the puppet and its character alike.
+    for (const part of ['puppet', 'avatar'])
+      expect(await transformOf(part), part).toMatch(/^matrix\(-1, 0, 0, 1, /);
+    await expect(puppet.locator('.sk__status')).toContainText(
+      'The puppet faces left. The character on screen faces left too.',
+    );
+    await expect(puppet.locator('.sk__results')).toContainText('through the IMU');
+    await turn.click();
+    await expect(puppet).toHaveAttribute('data-facing', 'right');
+  });
+
+  test('the flood scene: switching channels off changes what the map cell shows', async ({
+    page,
+  }) => {
+    await openStill(page);
+    await tab(page, 'city').click();
+    const city = scene(page, 'city');
+    const status = city.locator('.sk__status');
+    const sensor = city.getByRole('switch', { name: 'Official sensor' });
+    const report = city.getByRole('switch', { name: 'Citizen report' });
+    const post = city.getByRole('switch', { name: 'Social post' });
+    await expect(sensor).toBeChecked();
+    await expect(status.locator('.sk__when:visible')).toHaveText(/^Confirmed\. All three channels/);
+    await expect(city.locator('[data-part="cell"]').first()).toBeVisible();
+
+    await sensor.focus();
+    await page.keyboard.press('Space');
+    await expect(sensor).not.toBeChecked();
+    await expect(status.locator('.sk__when:visible')).toHaveText(
+      /^Verification quest\. Two channels agree\. Nearby residents get a one-tap verification quest/,
+    );
+    await expect(city.locator('svg[data-svg]')).toHaveAttribute('data-off', 'sensor');
+    await expect(city.locator('[data-part="cell"]').first()).toBeHidden();
+    await expect(city.locator('[data-part="cell-hatch"]').first()).toBeVisible();
+    await expect(city.locator('[data-entry][data-off] .sk__off-note')).toHaveText('switched off');
+    // The step is done: the replay's numbers, all from facts.md §5.3.
+    await expect(city.locator('.sk__results')).toContainText('10.8 hours into a 30-hour');
+    await expect(city.locator('.sk__results')).toContainText(
+      'four confirmed cells and three open quests',
+    );
+
+    await report.uncheck();
+    await expect(status.locator('.sk__when:visible')).toHaveText(
+      /^Not confirmed\. One channel alone/,
+    );
+    await expect(city.locator('[data-part="cell-hatch"]').first()).toBeHidden();
+    await post.uncheck();
+    await expect(status.locator('.sk__when:visible')).toHaveText(/^No data\./);
+    await sensor.check();
+    await report.check();
+    await post.check();
+    await expect(status.locator('.sk__when:visible')).toHaveText(/^Confirmed\./);
+  });
+
+  test('"Show all" shows results with sample answers, and Replay clears the step', async ({
+    page,
+  }) => {
+    await openStill(page);
+    await tab(page, 'dorm').click();
+    const dorm = scene(page, 'dorm');
+    await dorm.getByRole('group', { name: 'bouldering', exact: true }).getByLabel('Reject').check();
+    await page.getByRole('button', { name: 'Show all' }).click();
+    await expect(dorm).toHaveAttribute('data-state', 'done');
+    // The visitor's own mark stays; the sample fills in the rest and says so.
+    await expect(
+      dorm.getByRole('group', { name: 'bouldering', exact: true }).getByLabel('Reject'),
+    ).toBeChecked();
+    await expect(
+      dorm.getByRole('group', { name: 'car insurance', exact: true }).getByLabel('Reject'),
+    ).toBeChecked();
+    await expect(dorm.locator('.sk__sample-note')).toBeVisible();
+    await expect(dorm.locator('.sk__results')).toContainText('69.8%');
+    await page.getByRole('button', { name: 'Replay' }).click();
+    await expect(dorm).toHaveAttribute('data-state', 'ready');
+    await expect(dorm.locator('input:checked')).toHaveCount(0);
+    await expect(dorm.locator('.sk__results')).toBeHidden();
+  });
+
+  test('draws a scene stroke by stroke and stops at "Show all"', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/');
+    // Fast forward: the script reads its speed from the page.
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '25'));
+    await page.locator(SK).scrollIntoViewIfNeeded();
+    await tab(page, 'city').click();
+    const city = scene(page, 'city');
+    await expect(city).toHaveAttribute('data-state', 'playing');
+    // While it draws, the step and its results are out of reach.
+    await expect(city.getByRole('switch', { name: 'Official sensor' })).toBeHidden();
+    await expect(city).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await expect(city.locator('.sk__steps li:visible')).toHaveCount(7);
+    await expect(city.getByRole('switch', { name: 'Official sensor' })).toBeVisible();
+    // No stroke is left hidden, and the pencil and the data cards are gone.
+    expect(
+      await city
+        .locator('.sk__ink')
+        .evaluateAll((paths) => paths.filter((p) => (p as SVGElement).style.strokeDashoffset)),
+    ).toHaveLength(0);
+    await expect(city.locator('.sk__pen')).toBeHidden();
+    await expect(city.locator('.sk__card')).toHaveCount(0);
+
+    // Replay at normal speed, then stop it.
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '1'));
+    await page.getByRole('button', { name: 'Replay' }).click();
+    await expect(city).toHaveAttribute('data-state', 'playing');
+    await page.getByRole('button', { name: 'Show all' }).click();
+    await expect(city).toHaveAttribute('data-state', 'done');
+    await expect(city.locator('.sk__results')).toContainText('10.8 hours');
+  });
+
+  test('keeps the page still while a scene draws and when its results appear', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/');
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '25'));
+    await page.locator(SK).scrollIntoViewIfNeeded();
+    await tab(page, 'dining').click();
+    const dining = scene(page, 'dining');
+    const height = () => dining.evaluate((el) => el.getBoundingClientRect().height);
+    const before = await height();
+    await expect(dining).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    expect(await height()).toBe(before);
+    for (const row of await dining.locator('.sk__marks').all())
+      await row.getByRole('radio', { name: 'Reject' }).check();
+    await expect(dining).toHaveAttribute('data-state', 'done');
+    expect(await height()).toBe(before);
+  });
+
+  test('without JavaScript, all five scenes are there, finished, with sample answers', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto('/');
+    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(5);
+    await expect(page.locator(`${SK} .sk__heading`)).toHaveText([
+      'Clicks, scrolls, searches and gaze in a browser',
+      'Browsing history on a dorm laptop',
+      'Social-media posts on a phone',
+      'A puppet tracked by a camera and a motion sensor',
+      'A flooded street, seen through three channels',
+    ]);
+    await expect(page.locator(`${SK} .sk__bar`)).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Turn the puppet' })).toBeHidden();
+    await expect(page.locator(`${SK} .sk__locked:visible`)).toHaveCount(0);
+    // Finished drawings: every line is in the page, none waiting to be drawn.
+    for (const id of SCENES) {
+      const drawing = scene(page, id).locator('svg[data-svg]');
+      expect(await drawing.locator('.sk__ink').count(), id).toBeGreaterThan(10);
+      expect(
+        await drawing
+          .locator('.sk__ink')
+          .evaluateAll((paths) => paths.filter((p) => (p as SVGElement).style.strokeDashoffset)),
+      ).toHaveLength(0);
+      await expect(scene(page, id).locator('.sk__steps li:visible')).not.toHaveCount(0);
+    }
+    // Results and sample answers are plain content; the controls that show them can't be used.
+    await expect(scene(page, 'dorm').locator('.sk__results')).toContainText('69.8%');
+    await expect(scene(page, 'dining').locator('.sk__results')).toContainText('56.3%');
+    await expect(scene(page, 'dining').locator('.sk__result--both')).toContainText('38.2%');
+    await expect(scene(page, 'city').locator('.sk__results')).toContainText('10.8 hours');
+    await expect(scene(page, 'dorm').locator('.sk__sample-note')).toBeVisible();
+    await expect(scene(page, 'dorm').locator('input:checked')).toHaveCount(4);
+    await expect(scene(page, 'dorm').locator('input:enabled')).toHaveCount(0);
+    await expect(scene(page, 'tracker').locator('.sk__entry--label')).toContainText(
+      'Yes, I learned something.',
+    );
+    await expect(scene(page, 'city').locator('.sk__status .sk__when:visible')).toHaveText(
+      /^Confirmed\./,
+    );
+    await context.close();
+  });
+
+  test('has no accessibility violations in any scene, light or dark, mid-step or finished', async ({
+    page,
+  }) => {
+    test.slow();
+    await openStill(page);
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      for (const id of SCENES) {
+        await tab(page, id).click();
+        for (const finished of [false, true]) {
+          if (finished) await page.getByRole('button', { name: 'Show all' }).click();
+          const results = await new AxeBuilder({ page })
+            .include('#learners-and-teachers .sk')
+            .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+            .analyze();
+          expect(
+            results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(' | ')}`),
+            `${id}, ${colorScheme}, ${finished ? 'finished' : 'ready'}`,
+          ).toEqual([]);
+        }
+      }
+      await page.getByRole('button', { name: 'Replay' }).click();
+    }
+  });
+
+  test('every control is a target of at least 24 px and shows where the focus is', async ({
+    page,
+  }) => {
+    await openStill(page);
+    for (const id of SCENES) {
+      await tab(page, id).click();
+      const controls = page.locator(
+        `${SK} .sk__bar button, ${SK} [data-scene="${id}"] :is(button, input)`,
+      );
+      for (const control of await controls.all()) {
+        const box = (await control.boundingBox())!;
+        expect(
+          Math.min(box.width, box.height),
+          `${id}: ${await control.evaluate((el) => el.outerHTML.slice(0, 80))}`,
+        ).toBeGreaterThanOrEqual(24);
+      }
+    }
+    // A drawn face shows the focus ring of the input that lies over it.
+    // Tab order: the scene buttons, Replay, Show all, then the open scene's first control.
+    await tab(page, 'dorm').click();
+    await page.getByRole('button', { name: 'Show all' }).focus();
+    await page.keyboard.press('Tab');
+    const focused = page.locator(`${SK} [data-scene="dorm"] input:focus`);
+    await expect(focused).toHaveCount(1);
+    expect(
+      await focused.evaluate((el) => getComputedStyle(el.nextElementSibling!).outlineStyle),
+    ).toBe('solid');
+  });
+
+  test('fits a 375 px phone and wider screens in every scene, with and without JavaScript', async ({
+    page,
+    browser,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await isolate(page);
+    for (const width of [320, 375, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/');
+      for (const id of SCENES) {
+        await tab(page, id).click();
+        await page.getByRole('button', { name: 'Show all' }).click();
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+          `${id} at ${width}px`,
+        ).toBeLessThanOrEqual(width);
+      }
+    }
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      viewport: { width: 375, height: 800 },
+    });
+    const plain = await context.newPage();
+    await plain.goto('/');
+    expect(await plain.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      375,
+    );
+    await context.close();
   });
 });
 

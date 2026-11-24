@@ -1,6 +1,7 @@
-// The home page's "Modeling Learners and Teachers" section (D66): every sentence and number it
-// shows comes from one data module, so the checks here cover them (section headings and fixed
-// labels are in the component; the end-to-end test reads the rendered section). Numbers must be in content/facts.md and stay
+// The home page's "How AI learns about people and places" section (D66, D68): every sentence and
+// number it shows comes from two data modules, the sketch scenes' and the text below them, so
+// the checks here cover both (part headings and fixed labels are in the components; the
+// end-to-end test reads the rendered section). Numbers must be in content/facts.md and stay
 // with the study facts.md gives them to, the term is "learner model", and the copy has no em
 // dashes.
 import { existsSync, readFileSync } from 'node:fs';
@@ -8,6 +9,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 import * as page from '../../src/data/learners-teachers.ts';
+import * as sketch from '../../src/data/sketch-scenes.ts';
+import { DRAWINGS } from '../../src/data/sketch-drawings.ts';
+import { GLYPHS } from '../../src/data/sketch-glyphs.ts';
 import { NAV } from '../../src/data/site.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -25,18 +29,25 @@ function strings(value: unknown): string[] {
   return [];
 }
 
-const COPY = strings(page).filter((text) => !text.startsWith('/') && !/^[a-z0-9-]+$/.test(text));
+/** Sentences and labels, without paths and one-word keys. */
+const copyOf = (module: unknown) =>
+  strings(module).filter((text) => !text.startsWith('/') && !/^[a-z0-9-]+$/.test(text));
+const COPY = [...copyOf(page), ...copyOf(sketch)];
 const LINKS = strings(page).filter((text) => text.startsWith('/'));
 
-describe('copy of the learners-and-teachers section', () => {
+/** The numbers a sentence shows, as written (single digits are counts of things on screen). */
+const numbersIn = (text: string) =>
+  (text.match(/(?<![\w.])(?:\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?|\.\d+)/g) ?? []).filter(
+    (n) => !/^\d$/.test(n),
+  );
+const inText = (number: string, text: string) =>
+  new RegExp(`(?<![\\d.,])${number.replace(/[.]/g, '\\.')}(?![\\d])`).test(text);
+
+describe('copy of the home page section and its sketch scenes', () => {
   it('shows only numbers that are in facts.md', () => {
     for (const text of COPY) {
-      const numbers = (
-        text.match(/(?<![\w.])(?:\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?|\.\d+)/g) ?? []
-      ).filter((n) => !/^\d$/.test(n));
-      for (const number of numbers) {
-        const pattern = new RegExp(`(?<![\\d.,])${number.replace(/[.]/g, '\\.')}(?![\\d])`);
-        expect(pattern.test(FACTS), `"${number}" in "${text}" is not in facts.md`).toBe(true);
+      for (const number of numbersIn(text)) {
+        expect(inText(number, FACTS), `"${number}" in "${text}" is not in facts.md`).toBe(true);
       }
     }
   });
@@ -138,6 +149,194 @@ describe('copy of the learners-and-teachers section', () => {
   });
 });
 
+describe('sketch scenes (D68)', () => {
+  const scene = (id: sketch.SceneId) => sketch.SCENES.find((item) => item.id === id)!;
+  const words = (id: sketch.SceneId) => strings(scene(id)).join(' ');
+  /** One numbered section of facts.md, from its heading to the next one. */
+  const section = (number: string) => {
+    const start = FACTS.indexOf(`### ${number} `);
+    const end = FACTS.indexOf('\n##', start + 1);
+    return FACTS.slice(start, end);
+  };
+
+  it('has the title, the subtitle and the five scenes Jimmy set, in order, and no teacher scene', () => {
+    expect(page.TITLE).toBe('How AI learns about people and places');
+    expect(sketch.SKETCH_SUBTITLE).toBe(
+      'Each scene shows where the data comes from, what the system builds from it, and who checks it.',
+    );
+    expect(sketch.SCENES.map((item) => item.id)).toEqual([
+      'tracker',
+      'dorm',
+      'dining',
+      'puppet',
+      'city',
+    ]);
+    expect(sketch.SCENE_GROUPS.flatMap((group) => group.scenes)).toEqual(
+      sketch.SCENES.map((item) => item.id),
+    );
+    expect(strings(sketch).join(' ')).not.toMatch(/teacher/i);
+  });
+
+  it('marks the prototype, the made-up student and the simulation on screen', () => {
+    expect(scene('tracker').badge).toBe('Prototype');
+    expect(scene('dorm').badge).toBe('Synthetic sample');
+    expect(scene('dining').badge).toBe('Synthetic sample');
+    expect(scene('city').badge).toBe('Simulated');
+    expect(scene('tracker').source).toContain('Unpublished prototype');
+    for (const id of ['tracker', 'dorm', 'dining'] as const)
+      expect(scene(id).note, id).toContain('made up');
+    expect(scene('city').note).toMatch(/^Everything in this scene is simulated/);
+    expect(scene('puppet').note).toContain('illustration');
+  });
+
+  it('shows no numbers in the prototype scene', () => {
+    expect(words('tracker')).not.toMatch(/\d/);
+  });
+
+  it('keeps each number with the meaning facts.md gives it', () => {
+    const results = (id: sketch.SceneId) =>
+      scene(id)
+        .results.map((result) => `${result.big ?? ''} ${result.text}`)
+        .join(' ');
+    const both = `${sketch.CARRIED.both.big} ${sketch.CARRIED.both.text}`;
+    const pinned: Array<[inFacts: RegExp, copy: string, inCopy: RegExp]> = [
+      [
+        /Browsing history had higher precision: 69\.8% confirmed vs\. 56\.3% for posts/,
+        results('dorm'),
+        /^69\.8% of the interests extracted from browsing history were confirmed/,
+      ],
+      [
+        /69\.8% confirmed vs\. 56\.3% for posts/,
+        results('dining'),
+        /^56\.3% of the interests extracted from posts were confirmed, fewer than from browsing history/,
+      ],
+      [
+        /Posts' explanations carried more grounded information per confirmed interest \(2\.14 vs\. 1\.58 grounded units/,
+        results('dining'),
+        /2\.14 grounded units of information per confirmed interest in the posts’ explanations, compared with 1\.58 for browsing history/,
+      ],
+      [
+        /Together they added confirmed interests missing from the self-report form: 38\.2% of each participant's validated interests on average/,
+        both,
+        /^38\.2% of each student’s validated interests, on average: confirmed interests the two sources added that were missing from the self-report form/,
+      ],
+      [/32 retained after data-quality screening/, scene('dorm').source, /32 participants after/],
+      [
+        /first three-channel confirmation 10\.8 hours into a 30-hour replay/,
+        results('city'),
+        /^10\.8 hours into a 30-hour simulated replay modeled on Hurricane Irma, three channels first agreed in one cell/,
+      ],
+      [
+        /at the storm's peak, four confirmed cells and three open quests/,
+        results('city'),
+        /At the storm’s peak the replay had four confirmed cells and three open quests/,
+      ],
+      [
+        /perception study with 23 MTurk workers/,
+        scene('puppet').summary.checkedBy,
+        /^A perception study with 23 MTurk workers$/,
+      ],
+    ];
+    for (const [inFacts, copy, inCopy] of pinned) {
+      expect(FACTS_LINE, String(inFacts)).toMatch(inFacts);
+      expect(copy).toMatch(inCopy);
+    }
+    // facts.md §5.1 retires "self-report missed 38%".
+    expect(strings(sketch).join(' ')).not.toMatch(/self-report (form )?missed/i);
+  });
+
+  it('takes the flood scene’s numbers from facts.md §5.3 only, and names no coauthor', () => {
+    const civic = section('5.3');
+    expect(civic).toContain('Simulated replay modeled on Hurricane Irma');
+    for (const text of strings(scene('city')))
+      for (const number of numbersIn(text))
+        expect(inText(number, civic), `"${number}" in "${text}" is not in §5.3`).toBe(true);
+    // The author list waits on Jimmy's check of the extended abstract (facts.md §5.3, VERIFY).
+    expect(words('city')).toContain('coauthored');
+    expect(words('city')).not.toMatch(/Verma/);
+  });
+
+  it('describes the puppet system and the tracker as facts.md §7 does', () => {
+    expect(FACTS_LINE).toMatch(
+      /position from a YOLO detector.*rotation from BBC micro:bit and Aimxy IMUs over Bluetooth/,
+    );
+    expect(words('puppet')).toMatch(/position, from a YOLO detector/);
+    expect(words('puppet')).toMatch(/rotation, from an IMU on the puppet, over Bluetooth/);
+    expect(FACTS_LINE).toMatch(
+      /logs clicks, scrolls, searches and WebGazer\.js gaze, maps them to page content, and asks learners two self-report questions every 60 seconds/,
+    );
+    expect(words('tracker')).toMatch(/logs clicks, scrolls and searches, and follows gaze/);
+    expect(words('tracker')).toContain('Did you learn something in the last minute?');
+    expect(words('tracker')).not.toMatch(/competition|placed|finalist|award/i);
+  });
+
+  it('gives every scene one hands-on step, with sample answers for the finished view', () => {
+    expect(sketch.SCENES.map((item) => item.task.kind)).toEqual([
+      'answer',
+      'judge',
+      'judge',
+      'turn',
+      'toggle',
+    ]);
+    for (const id of ['dorm', 'dining'] as const)
+      for (const entry of scene(id).panel.entries)
+        expect(entry.sample, `${id}: ${entry.name}`).toMatch(/^(yes|no)$/);
+    const city = scene('city');
+    if (city.task.kind !== 'toggle') throw new Error('the city scene toggles channels');
+    expect(city.task.channels).toHaveLength(city.panel.entries.length);
+    expect(city.task.verdicts).toHaveLength(city.panel.entries.length + 1);
+    // One interest appears in both learner scenes: the notebook keeps it across them.
+    const names = (id: sketch.SceneId) => scene(id).panel.entries.map((entry) => entry.name);
+    expect(names('dining').filter((name) => names('dorm').includes(name))).toEqual(['bouldering']);
+  });
+
+  it('matches its captions to the drawings: every region and every panel row appears once', () => {
+    for (const item of sketch.SCENES) {
+      const drawing = DRAWINGS[item.id];
+      const drawn = item.steps.flatMap((step) => (step.draw === undefined ? [] : [step.draw]));
+      expect(drawn, `${item.id}: regions`).toEqual(drawing.regions.map((_, index) => index));
+      const rows = item.panel.entries.length + (item.task.kind === 'answer' ? 1 : 0);
+      const revealed = item.steps.flatMap((step) => step.reveal ?? []).sort((a, b) => a - b);
+      expect(revealed, `${item.id}: rows`).toEqual(Array.from({ length: rows }, (_, i) => i));
+      for (const step of item.steps)
+        if (step.flyFrom) expect(drawing.anchors[step.flyFrom], step.flyFrom).toBeDefined();
+      for (const entry of item.panel.entries) expect(GLYPHS[entry.glyph]).toBeDefined();
+      // The last caption introduces the visitor's step, so nothing draws under it.
+      expect(item.steps.at(-1)!.draw, item.id).toBeUndefined();
+    }
+  });
+
+  it('has the parts that the hands-on steps move, and drawings made of path data only', () => {
+    const parts = (id: sketch.SceneId) =>
+      new Set(
+        DRAWINGS[id].regions.flatMap((region) =>
+          region.shapes.flatMap((shape) => (shape.part ? [shape.part] : [])),
+        ),
+      );
+    for (const part of ['puppet', 'avatar']) {
+      expect(parts('puppet').has(part), part).toBe(true);
+      expect(DRAWINGS.puppet.anchors[part], part).toBeDefined();
+    }
+    const city = scene('city');
+    if (city.task.kind !== 'toggle') throw new Error('the city scene toggles channels');
+    for (const channel of city.task.channels)
+      expect(parts('city').has(channel.part), channel.part).toBe(true);
+    for (const part of ['cell', 'cell-hatch']) expect(parts('city').has(part), part).toBe(true);
+    expect(parts('tracker').has('popup')).toBe(true);
+    for (const [id, drawing] of Object.entries(DRAWINGS)) {
+      for (const region of drawing.regions) {
+        expect(region.ms, id).toBeGreaterThan(0);
+        for (const shape of region.shapes) {
+          expect(shape.d, id).toMatch(/^M[MLCZ\d ,.-]+$/);
+          expect(Boolean(shape.fill) !== Boolean(shape.stroke), `${id}: ${shape.d}`).toBe(true);
+          for (const value of shape.d.match(/-?\d+(?:\.\d+)?/g) ?? [])
+            expect(Number(value), `${id}: ${shape.d}`).toBeLessThanOrEqual(800);
+        }
+      }
+    }
+  });
+});
+
 describe('publications and links in the learners-and-teachers section', () => {
   const publications = parseYaml(
     readFileSync(join(ROOT, 'src', 'content', 'publications.yaml'), 'utf8'),
@@ -200,5 +399,37 @@ describe('publications and links in the learners-and-teachers section', () => {
     expect(home.indexOf('<LearnersTeachers />')).toBeLessThan(
       home.indexOf('id="research-heading"'),
     );
+    // The scenes sit after the lede and before the "Observe, model, check" figure (D68).
+    const part = readFileSync(join(ROOT, 'src', 'components', 'LearnersTeachers.astro'), 'utf8');
+    expect(part.indexOf('{LEDE}')).toBeLessThan(part.indexOf('<SketchScenes />'));
+    expect(part.indexOf('<SketchScenes />')).toBeLessThan(
+      part.indexOf('<Figure title="Observe, model, check"'),
+    );
+    expect(part).toContain('id="learners-and-teachers"');
+  });
+
+  it('ships the scenes without React, and with no new dependency', () => {
+    // React's client runtime alone is larger than the page's JavaScript budget (D68).
+    const scenes = readFileSync(join(ROOT, 'src', 'components', 'SketchScenes.astro'), 'utf8');
+    // Only the markup counts: the component's comments explain why there is no island.
+    const markup = scenes.slice(scenes.indexOf('---', 3));
+    expect(markup).not.toMatch(/client:(load|idle|visible|only|media)/);
+    const manifest = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
+      dependencies: Record<string, string>;
+    };
+    expect(Object.keys(manifest.dependencies).sort()).toEqual([
+      '@astrojs/mdx',
+      '@astrojs/react',
+      '@astrojs/rss',
+      '@astrojs/sitemap',
+      '@fontsource-variable/inter',
+      '@fontsource-variable/source-serif-4',
+      '@fontsource/ibm-plex-mono',
+      'astro',
+      'd3-cloud',
+      'fast-xml-parser',
+      'react',
+      'react-dom',
+    ]);
   });
 });

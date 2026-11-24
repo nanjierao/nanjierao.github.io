@@ -9,8 +9,9 @@ judgment, accessibility, and working interactive systems, not only text.
 
 How it runs:
 - Jimmy works with **Claude Code cloud sessions** (claude.ai/code) on this repository: one session
-  per task, one pull request per session; he merges on GitHub, and merging publishes. He uses two
-  Macs, so GitHub is the only copy that matters.
+  per task, one pull request per session. The session merges its own pull request once the checks
+  pass (his rule since Nov 24, 2026; D67), and merging publishes. He uses two Macs, so GitHub is
+  the only copy that matters.
 - Files from Jimmy: text he pastes into the session is source material, not something to commit
   as is. Files meant for the site (blog drafts and their images, the CV PDF, photos) arrive in
   `inbox/`, uploaded through GitHub's web or mobile app; move them where they belong and leave
@@ -53,6 +54,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Interactive pieces are React + TypeScript islands, hydrated with `client:visible` or
   `client:idle`. Pages that don't need JavaScript ship none. Heavy libraries (three.js, MediaPipe,
   WebGL particles) load only inside their portal (/hands, /life), never on the homepage.
+  The home page itself has no island: React's client runtime is about 68 KB gzipped, more than
+  the page's JavaScript budget, so its interactive pieces (the word cloud, D60; the sketch scenes,
+  D68) are small plain scripts over HTML that is complete without them.
 - Styling: plain CSS with design tokens as custom properties (`src/styles/tokens.css`).
   No Tailwind, no CSS-in-JS, no UI kit.
 - Fonts self-hosted through `@fontsource` packages for Latin text; Chinese text uses the system
@@ -132,8 +136,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 
 - Follow `docs/DESIGN.md`. Until it exists, use the neutral baseline in SITE_PLAN §8.
 - Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
-  one line, CV / Publications / Email) first, then the word cloud and portals, then the
-  "Modeling Learners and Teachers" section (D66). The footer carries the annotation legend (D30).
+  one line, CV / Publications / Email) first, then the word cloud and portals, then the section
+  "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
+  step, then the learner and teacher work. The footer carries the annotation legend (D30).
 - Accessibility: WCAG 2.2 AA. Keyboard reachable, visible focus, semantic landmarks, skip link,
   alt text for every meaningful image, `prefers-reduced-motion` respected, color never the only
   carrier of meaning. The grounded/inferred convention always uses line style + label + color.
@@ -227,8 +232,11 @@ Device-orientation access only after a tap, and only on the easter-egg panel.
 
 ## Git workflow (cloud sessions)
 
-- One task = one branch = one pull request. Never push to `main`; Jimmy merges, and merging
-  publishes the site within a minute or two.
+- One task = one branch = one pull request. Never push to `main`. Once the checks pass (build,
+  check, lint, tests, `check:privacy`, and CI on the pull request), the session merges its own
+  pull request without waiting: Jimmy's standing rule since Nov 24, 2026 (D67). Merging publishes
+  the site within a minute or two, so say in the summary what went live and what he still has to
+  check. If a check fails, the pull request stays open.
 - Conventional commits (`feat:`, `fix:`, `content:`, `style:`, `chore:`, `docs:`).
 - Before opening the PR: run build, check, lint, test, and `check:privacy`. GitHub Pages has no
   per-PR preview, so attach screenshots of every changed page (phone 390 px and desktop, light and
