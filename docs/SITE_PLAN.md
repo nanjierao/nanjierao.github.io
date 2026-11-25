@@ -95,7 +95,7 @@ Top to bottom (D21):
   when it comes from a paper, the paper's reference with, where facts.md §6 has one, its DOI link
   (D73). The scene buttons sit
   under a "Pick a scene" cue, in four groups: learners, hands, city and teachers. Jimmy accepted
-  that the home page loads slower with all nine (D76: LCP 2.26 s, over the 2.0 s budget; its
+  that the home page loads slower with all nine (D76: LCP 2.11–2.26 s, over the 2.0 s budget; its
   JavaScript is unchanged).
   Words in `src/data/sketch-scenes.ts`, drawings in `src/data/sketch-drawings.ts`, behavior in
   `src/scripts/sketch-scenes.ts` (under 4 KB gzipped, no library). Without JavaScript all nine
