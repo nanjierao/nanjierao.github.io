@@ -6,6 +6,7 @@ import ElsewhereLinks from '../components/ElsewhereLinks.astro';
 import TalkList from '../components/TalkList.astro';
 import { HEADSHOT_ALT, PERSON, UMBRELLA } from '../data/site.ts';
 import { STATUS } from '../data/cv.ts';
+import { MENTORING_REVIEWING } from '../data/experiments.ts';
 import { personJsonLd } from '../lib/seo.ts';
 import headshot from '../assets/images/nanjie-rao-headshot.jpg';
 // TODO(jimmy): approve a short and a long bio (facts.md §3 drafts) for copy buttons here (S3).
@@ -46,6 +47,15 @@ import headshot from '../assets/images/nanjie-rao-headshot.jpg';
       <p>Pronouns: he/him.</p>
     </div>
   </div>
+
+  <section aria-labelledby="about-mentoring">
+    <h2 id="about-mentoring">Mentoring and reviewing</h2>
+    <div class="prose">
+      {MENTORING_REVIEWING.map((line) => (
+        <p>{line}</p>
+      ))}
+    </div>
+  </section>
 
   {PERSON.email && (
     <section aria-labelledby="about-contact">

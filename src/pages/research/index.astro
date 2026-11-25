@@ -5,6 +5,7 @@ import Flow from '../../components/figures/Flow.astro';
 import { UMBRELLA } from '../../data/site.ts';
 import { CONTEXT_LABELS, ONGOING_LABEL } from '../../content/schemas.ts';
 import { getOngoingThemes, getThemesByContext } from '../../lib/content.ts';
+import * as EXPERIMENTS from '../../data/experiments.ts';
 
 const contexts = await getThemesByContext();
 const ongoing = await getOngoingThemes();
@@ -100,6 +101,14 @@ const ongoing = await getOngoingThemes();
       </ul>
     </section>
   )}
+
+  {/* The methods behind the work, across the contexts (D74). */}
+  <section aria-labelledby="research-experiments">
+    <h2 id="research-experiments">{EXPERIMENTS.TITLE}</h2>
+    <p class="prose">
+      {EXPERIMENTS.SUMMARY_LINE} <a href={EXPERIMENTS.HREF}>{EXPERIMENTS.LINK_LABEL}</a>
+    </p>
+  </section>
 </BaseLayout>
 
 <style>

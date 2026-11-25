@@ -94,12 +94,12 @@ export interface Study {
 export const LEARNER_STUDIES: Study[] = [
   {
     id: 'dissertation',
-    label: 'The dissertation: asking students, and reading their records',
+    label: 'The dissertation: two evaluations of AI in learning',
     title:
       'Toward Scalable Interest-Based Learning: Comparing Data Sources for AI-Based Automated Identification of Students’ Personal Interests',
     where: 'Dissertation, 2026',
     observed:
-      'Two ways to learn a student’s interests. Asking: existing transcripts of students tutored by an interest-based LLM tutor (Dr. Abhishek Kulkarni’s dataset). Reading records: samples of each student’s browsing history and social-media posts.',
+      'Study 1 asks what an LLM tutor finds out by asking students about their interests, in existing transcripts of students tutored by an interest-based LLM tutor (Dr. Abhishek Kulkarni’s dataset). Study 2 asks how accurately an LLM reads those interests from students’ browsing history and social media posts.',
     who: 'College students: 35 in the asking study; 77 initial participants in the records study, 32 after data-quality screening.',
     found:
       'In the dissertation’s words: “Asking gives the interest in the student’s own words, teaching draws out what the student knows about it, and data sources, used with consent, add interests the student did not name.”',

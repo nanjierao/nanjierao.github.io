@@ -17,6 +17,7 @@ const PAGES = [
   '/research/embodied-learning/',
   '/research/teacher-support/',
   '/research/data-analysis-through-ai/',
+  '/research/experiments/',
   '/publications/',
   '/builds/',
   '/builds/cs-udt/',
@@ -800,7 +801,7 @@ test.describe('learners and teachers on the home page (D66)', () => {
     await expect(section.locator('.study')).toHaveCount(4);
     // Each card: a short label as its heading, then the work's own title as a citation.
     await expect(section.locator('.study h4').first()).toHaveText(
-      'The dissertation: asking students, and reading their records',
+      'The dissertation: two evaluations of AI in learning',
     );
     await expect(section.locator('.study cite')).toHaveCount(4);
     await expect(section.locator('#teachers-heading ~ .pub-list .pub')).toHaveCount(3);
@@ -2068,6 +2069,160 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
   });
 });
 
+test.describe('the Experiments page (D74)', () => {
+  const PATH = '/research/experiments/';
+
+  test('opens in the first person, then one captioned table with a row per study, in order', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto(PATH);
+    await expect(page.locator('h1')).toHaveText('Experiments');
+    await expect(page.locator('main .prose p').first()).toHaveText(
+      /^I design and run controlled experiments\./,
+    );
+    const table = page.getByRole('table');
+    await expect(table).toHaveCount(1);
+    await expect(table.locator('caption')).toHaveText(
+      'Controlled experiments: first-author studies, then co-authored ones, newest first in each group.',
+    );
+    await expect(table.locator('thead th[scope="col"]')).toHaveText([
+      'Study',
+      'My role',
+      'Design',
+      'Participants',
+      'Comparison',
+      'Analysis',
+    ]);
+    await expect(table.locator('th[scope="rowgroup"]')).toHaveText([
+      'First-author studies',
+      'Co-authored studies',
+    ]);
+    const studies = table.locator('tbody th[scope="row"]');
+    await expect(studies).toHaveCount(10);
+    // First-author studies first, then co-authored ones; newest first within each group.
+    const years = await studies.evaluateAll((cells) =>
+      cells.map((cell) => Number(/\((\d{4})\)/.exec(cell.textContent ?? '')?.[1])),
+    );
+    expect(years).toEqual([2026, 2026, 2022, 2021, 2021, 2020, 2019, 2023, 2020, 2020]);
+    await expect(studies.nth(1)).toContainText('Dissertation Study 1, a secondary analysis');
+    const roles = await table
+      .locator('tbody tr.exp__row')
+      .evaluateAll((rows) =>
+        rows.map((row) => row.querySelector('td')!.textContent!.replace('My role', '').trim()),
+      );
+    expect(roles).toEqual([
+      'First author',
+      'Secondary analysis',
+      'First author',
+      'First author',
+      'First author',
+      'First author',
+      'First author',
+      'Fourth author',
+      'Third author',
+      'Fourth author',
+    ]);
+    // Each paper links its DOI where facts.md has one; the scene rows link their scenes.
+    for (const doi of [
+      '10.1109/ICALT68022.2026.00023',
+      '10.1007/978-3-031-19682-9_25',
+      '10.1109/ICALT52272.2021.00011',
+      '10.1007/978-3-030-77599-5_46',
+      '10.1007/978-3-031-42286-7_9',
+    ])
+      await expect(table.locator(`a[href="https://doi.org/${doi}"]`)).toHaveCount(1);
+    await expect(table.locator('a[href="/#learners-and-teachers"]')).toHaveCount(2);
+    await expect(table.locator('a[href="/research/teacher-support/#scenes"]')).toHaveCount(2);
+    // The two notes under the table.
+    await expect(page.locator('main h2')).toHaveText([
+      'What I claim from these designs',
+      'Mentoring and reviewing',
+    ]);
+    const text = await page.locator('main').innerText();
+    expect(text).toContain('reports an association, not an effect');
+    expect(text).not.toMatch(
+      /randomi[sz]ed controlled trial|\bRCT\b|difference-in-differences|meta-analys|\bIRT\b/i,
+    );
+  });
+
+  test('on a phone each study is a block of labeled lines, with no sideways scrolling', async ({
+    page,
+  }) => {
+    await isolate(page);
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(PATH);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+        `${width}px`,
+      ).toBeLessThanOrEqual(width);
+    }
+    await page.setViewportSize({ width: 390, height: 800 });
+    // The caption spans the width, like the studies under it.
+    const caption = await page.locator('caption').boundingBox();
+    expect(caption!.width).toBeGreaterThan(300);
+    const row = page.locator('tr.exp__row').first();
+    await expect(row.locator('.exp__label')).toHaveText([
+      'My role',
+      'Design',
+      'Participants',
+      'Comparison',
+      'Analysis',
+    ]);
+    for (const label of await row.locator('.exp__label').all()) await expect(label).toBeVisible();
+    // Still a table for screen readers: the rows keep their header cells.
+    await expect(page.getByRole('row')).toHaveCount(13);
+    await expect(page.getByRole('rowheader').first()).toHaveText('First-author studies');
+    await expect(page.getByRole('columnheader')).toHaveCount(6);
+    // On a wide screen the labels give way to the column headers.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(row.locator('.exp__label').first()).toBeHidden();
+  });
+
+  test('is linked from the home page and the research overview, with the counts', async ({
+    page,
+  }) => {
+    await isolate(page);
+    for (const path of ['/', '/research/']) {
+      await page.goto(path);
+      const link = page.locator(`main a[href="${PATH}"]`);
+      await expect(link, path).toHaveCount(1);
+      await expect(link.locator('xpath=..'), path).toHaveText(
+        'I have run six controlled experiments as first author and three more as co-author. How each one was controlled',
+      );
+    }
+  });
+
+  test('gives the mentoring and reviewing lines on About and the CV', async ({ page }) => {
+    await isolate(page);
+    const lines = [
+      'I mentor undergraduate, master’s, and PhD students and review their research projects from study design to analysis.',
+      'I have reviewed papers for the journal Computers & Education and for the IDC, ICIDS, and TEI conferences.',
+    ];
+    await page.goto('/about/');
+    for (const line of lines)
+      await expect(page.locator('section[aria-labelledby="about-mentoring"]')).toContainText(line);
+    await page.goto('/cv/');
+    for (const line of lines)
+      await expect(page.locator('section[aria-labelledby="cv-mentoring"]')).toContainText(line);
+  });
+
+  test('describes the dissertation as two evaluations of AI in learning', async ({ page }) => {
+    await isolate(page);
+    await page.goto('/research/interest-identification/');
+    await expect(page.locator('main')).toContainText(
+      'My dissertation is two evaluations of AI in learning. Study 1 asks what an LLM tutor finds out by asking students about their interests. Study 2 asks how accurately an LLM reads those interests from students’ browsing history and social media posts.',
+    );
+    await page.goto('/research/');
+    await expect(page.locator('main')).toContainText('Two evaluations of AI in learning:');
+    await page.goto('/');
+    await expect(page.locator('#learners-and-teachers .study h4').first()).toHaveText(
+      'The dissertation: two evaluations of AI in learning',
+    );
+  });
+});
+
 test.describe('the ongoing class study (D69)', () => {
   const PATH = '/research/data-analysis-through-ai/';
   const TITLE =
@@ -2143,7 +2298,13 @@ test.describe('the ongoing class study (D69)', () => {
   }) => {
     await isolate(page);
     await page.goto('/research/');
-    await expect(page.locator('main h2')).toHaveText(['Personal', 'Embodied', 'Civic', 'Ongoing']);
+    await expect(page.locator('main h2')).toHaveText([
+      'Personal',
+      'Embodied',
+      'Civic',
+      'Ongoing',
+      'Experiments',
+    ]);
     const card = page.locator('section[aria-labelledby="context-ongoing"] .card');
     await expect(card).toHaveCount(1);
     await expect(card.locator('a')).toHaveText(TITLE);
@@ -2154,7 +2315,13 @@ test.describe('the ongoing class study (D69)', () => {
 
     await page.goto('/');
     const research = page.locator('section[aria-labelledby="research-heading"]');
-    await expect(research.locator('h3')).toHaveText(['Personal', 'Embodied', 'Civic', 'Ongoing']);
+    await expect(research.locator('h3')).toHaveText([
+      'Personal',
+      'Embodied',
+      'Civic',
+      'Ongoing',
+      'Experiments',
+    ]);
     await expect(research.locator('section[aria-labelledby="context-ongoing"] a')).toHaveAttribute(
       'href',
       PATH,

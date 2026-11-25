@@ -153,11 +153,12 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   one line, CV / Publications / Email) first, then the word cloud and portals, then the section
   "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
   step and, when it comes from a paper, that paper's reference with, where facts.md §6 has one,
-  its DOI link, then the learner and teacher work. Its row of scene buttons links to the three teacher scenes on
-  /research/teacher-support/ (D73), which link back. The footer carries the annotation legend (D30), the
-  public email address (D70) and a link to the Daily notes. In Recent, the cards after the three
-  news items start with Daily notes, which links to /notes/ and shows the newest note, an item
-  with a bold lead by its lead alone (D71).
+  its DOI link, then the learner and teacher work. Its row of scene buttons links to the three
+  teacher scenes on /research/teacher-support/ (D73), which link back. The Research section ends
+  with a line on the controlled experiments, linking /research/experiments/ (D74). The footer
+  carries the annotation legend (D30), the public email address (D70) and a link to the Daily
+  notes. In Recent, the cards after the three news items start with Daily notes, which links to
+  /notes/ and shows the newest note, an item with a bold lead by its lead alone (D71).
 - Accessibility: WCAG 2.2 AA. Keyboard reachable, visible focus, semantic landmarks, skip link,
   alt text for every meaningful image, `prefers-reduced-motion` respected, color never the only
   carrier of meaning. The grounded/inferred convention always uses line style + label + color.

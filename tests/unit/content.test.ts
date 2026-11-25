@@ -217,7 +217,9 @@ describe('research themes (D45, D69)', () => {
 describe('the ongoing class study (facts.md §5.9, D69)', () => {
   const read = (...path: string[]) => readFileSync(join(ROOT, ...path), 'utf8');
   const facts = read('content', 'facts.md');
-  const record = facts.slice(facts.indexOf('### 5.9 '), facts.indexOf('## 6. Publications'));
+  // §5.9 alone: it ends where the next section (§5.10) starts.
+  const start59 = facts.indexOf('### 5.9 ');
+  const record = facts.slice(start59, facts.indexOf('\n### ', start59 + 1));
   const page = themes.find((t) => t.id === 'data-analysis-through-ai')!;
   /** The page as the repository holds it: front matter, comments and markup included. */
   const source = read('src', 'content', 'themes', 'data-analysis-through-ai.mdx');
