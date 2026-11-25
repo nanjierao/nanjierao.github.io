@@ -1,7 +1,8 @@
 # Publications — transcribed from content/facts.md §6 (12 peer-reviewed; firstAuthor = "*").
 # No citation metrics here (facts.md §6, §15): the site links to Google Scholar instead.
 # `url`: a DOI link where facts.md §6 has the DOI. Five were found by web search on Nov 25, 2026
-# (D73). TODO(jimmy): check them, and send the rest from a Google Scholar BibTeX export.
+# (D73), with ICALT 2021's page range. TODO(jimmy): check them, and send the rest from a Google
+# Scholar BibTeX export.
 # TL;DRs (D28) stay hidden while `draft: true`; Jimmy approves each by setting it to false.
 # `verify: true` mirrors a VERIFY mark in facts.md: hidden from the site until Jimmy confirms.
 

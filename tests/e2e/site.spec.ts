@@ -1561,7 +1561,8 @@ test.describe('sketch scenes on the home page (D68)', () => {
       }
     }
     // A drawn face shows the focus ring of the input that lies over it.
-    // Tab order: the scene buttons, Replay, Show all, then the open scene's first control.
+    // Tab order: the scene buttons, the link to the other scenes, Replay, Show all, then the
+    // open scene's first control.
     await tab(page, 'dorm').click();
     await page.getByRole('button', { name: 'Show all' }).focus();
     await page.keyboard.press('Tab');
@@ -1699,6 +1700,13 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
   }) => {
     await openStill(page);
     await expect(page.locator('main h2')).toHaveText(['One scene per paper', 'Publications']);
+    expect(
+      await page.evaluate(() => {
+        const text = document.querySelector('main .prose')!;
+        const scenes = document.querySelector('#scenes')!;
+        return Boolean(text.compareDocumentPosition(scenes) & Node.DOCUMENT_POSITION_FOLLOWING);
+      }),
+    ).toBe(true);
     await expect(page.locator(`${SK} .sk__cue`)).toHaveText(/^Pick a scene/);
     await expect(page.locator(`${SK} [data-scene-button]`)).toHaveText([
       'Classroom, tablet',
@@ -1749,7 +1757,10 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       await expect(reference.getByRole('link')).toHaveAttribute('href', url);
       await expect(scene(page, id).locator('.sk__award')).toHaveCount(0);
     }
-    expect(await page.locator(SK).innerText()).not.toMatch(/best paper|award|nominat/i);
+    // Every scene's text, the closed ones included.
+    expect((await page.locator(`${SK} .sk__scene`).allTextContents()).join(' ')).not.toMatch(
+      /best paper|award|nominat/i,
+    );
     // ICALT 2021's award wording is VERIFY (facts.md §10): on no page that lists the paper.
     for (const path of ['/', PATH, '/publications/', '/cv/']) {
       await page.goto(path);
@@ -1830,15 +1841,21 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '4'));
       if (id === 'views') await page.getByRole('button', { name: 'Replay' }).click();
       await expect(active).toHaveAttribute('data-state', 'playing');
-      // While it draws, the pencil never traces an option: none is picked.
+      // While it draws, the pencil never traces an option, none being picked: no option's line
+      // is ever partly drawn (its dash offset below its length), and none shows.
       const seen = await active.evaluate(
         (el) =>
           new Promise<string[]>((resolve) => {
             const found = new Set<string>();
             const sample = () => {
-              for (const part of el.querySelectorAll('svg [data-part^="pick-"]')) {
+              for (const part of el.querySelectorAll<SVGPathElement>('svg [data-part^="pick-"]')) {
                 const style = getComputedStyle(part);
-                if (style.visibility !== 'hidden' && style.opacity !== '0')
+                const offset = parseFloat(part.style.strokeDashoffset);
+                const traced =
+                  part.classList.contains('sk__ink') &&
+                  !Number.isNaN(offset) &&
+                  offset < part.getTotalLength() - 1;
+                if (traced || (style.visibility !== 'hidden' && style.opacity !== '0'))
                   found.add(part.getAttribute('data-part')!);
               }
               if ((el as HTMLElement).dataset.state === 'playing') requestAnimationFrame(sample);
@@ -2031,6 +2048,7 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     const sources = await page
       .locator('script[src]')
       .evaluateAll((scripts) => scripts.map((script) => script.getAttribute('src')!));
+    expect(sources.length).toBeGreaterThan(0);
     let total = 0;
     for (const src of sources) {
       const file = readFileSync(new URL(`../../dist${src}`, import.meta.url));
@@ -2040,6 +2058,11 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
           readFileSync(new URL(`../../dist/_astro/${name}`, import.meta.url)),
         ).length;
     }
+    // Scripts inside the page count too.
+    for (const body of await page
+      .locator('script:not([src]):not([type="application/ld+json"])')
+      .allTextContents())
+      total += gzipSync(body).length;
     expect(total).toBeLessThan(50_000);
     expect(sources.join(' ')).not.toMatch(/client\.[\w-]+\.js/);
   });

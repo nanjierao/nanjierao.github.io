@@ -272,8 +272,10 @@ sketch scenes, as he asked; say if it should move below them or be rewritten to 
   scores. §5.4 also says "task scores" (check against the paper; if task scores did not differ,
   §5.4, the TL;DR draft for [12], the embodied-learning page and the Q&A answer need the same fix).
 
-### 5.8 Sketch scenes on the home page (D68)
-Source: Jimmy's design notes and sketch prototype of Nov 24, 2026 (not in this repository). The
+### 5.8 Sketch scenes (D68, D73)
+Source: Jimmy's design notes and sketch prototype of Nov 24, 2026 (not in this repository), for
+the home page's five scenes; for the three teacher scenes (D73), his review relayed on Nov 25,
+2026, and the papers' abstracts as web-search listings give them (§5.5). The
 scenes use the facts of the sections named below. What comes only from the design is marked
 "design". Interests, records, reports and posts shown in the scenes are made up, and each scene
 says so.
@@ -454,7 +456,8 @@ Facts, in the page's order:
 Do not hard-code citation counts or h-index on the site (they go stale) — link to Google Scholar.
 DOIs: [2], [4], [5], [6] and [11] carry theirs (found by web search on Nov 25, 2026, from listings
 of the papers; the publisher pages and doi.org are not reachable from the session, so Jimmy
-checks them: `TODO(jimmy)`). The rest: `TODO`, from a Google Scholar BibTeX export.
+checks them: `TODO(jimmy)`), and so was the page range of [5] (pp. 14–16), which Jimmy checks
+too. The rest: `TODO`, from a Google Scholar BibTeX export.
 
 Refereed conference papers
 1. *Rao, N., Lanzino, A., Chenore, R., Adhikari, I., Brown, S. A., Quek, F., & Chu, S. L. (2026).

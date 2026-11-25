@@ -432,6 +432,7 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     venue: string;
     url?: string;
     award?: string;
+    factsNumber?: number;
   }>;
   const listed = (id: string) =>
     publications.find((pub) => pub.id === id && pub.type !== 'in-preparation' && !pub.verify);
@@ -461,7 +462,14 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
       if (!pub.url) continue;
       const doi = /^https:\/\/doi\.org\/(10\.\d{4,}\/\S+)$/.exec(pub.url);
       expect(doi, pub.id).not.toBeNull();
-      expect(FACTS.replace(/\s+/g, ' '), pub.id).toContain(`DOI ${doi![1]}`);
+      // In the paper's own entry of facts.md §6, whole (not a prefix of a longer DOI).
+      const section = FACTS.slice(FACTS.indexOf('## 6. Publications'), FACTS.indexOf('## 7. '));
+      const n = (pub as { factsNumber?: number }).factsNumber;
+      const entry =
+        new RegExp(`\\n${n}\\. \\*?[\\s\\S]*?(?=\\n\\d+\\. |\\n\\n)`).exec(section)?.[0] ?? '';
+      expect(entry.replace(/\s+/g, ' '), pub.id).toMatch(
+        new RegExp(`DOI ${doi![1]!.replace(/[.()]/g, '\\$&')}(?=[.\\s(]|$)`),
+      );
     }
     for (const id of [
       'icalt-2026-interest-extraction',

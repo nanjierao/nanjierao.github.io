@@ -704,7 +704,7 @@ export const SCENES: Scene[] = [
       checkedBy: 'A study that compared PRIS with notecards',
     },
     source: 'PRIS, a real-time system for personalized teaching support (HCI International 2022).',
-    note: 'The classroom, the students and their information in this scene are made up for illustration.',
+    note: 'The classroom, what the teacher says, the students and their information in this scene are made up for illustration.',
     paper: 'hcii-2022-information-retrieval',
   },
   {
