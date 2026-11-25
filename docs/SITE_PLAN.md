@@ -92,8 +92,8 @@ Top to bottom (D21):
   region, a panel showing what the system builds, one hands-on step, the result it leads to and,
   when it comes from a paper, the paper's reference with, where facts.md §6 has one, its DOI link
   (D73). The scene buttons sit
-  under a "Pick a scene" cue; the row ends with a link to the three teacher scenes on
-  /research/teacher-support/ (D73), kept off the home page for its LCP budget.
+  under a "Pick a scene" cue; the row ends with a link to the four teacher scenes on
+  /research/teacher-support/ (D73, D75), kept off the home page for its LCP budget.
   Words in `src/data/sketch-scenes.ts`, drawings in `src/data/sketch-drawings.ts`, behavior in
   `src/scripts/sketch-scenes.ts` (under 4 KB gzipped, no library). Without JavaScript all five
   show finished. Then the learner and teacher work: one line of work as a diagram, four study

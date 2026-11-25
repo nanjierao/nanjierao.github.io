@@ -1,11 +1,11 @@
-// Words and structure of the sketch scenes (D68, D73): five on the home page, three teacher
+// Words and structure of the sketch scenes (D68, D73, D75): five on the home page, four teacher
 // scenes on /research/teacher-support/. Every statement comes from content/facts.md (§5.1, §5.3,
 // §5.4, §5.5, §7, §5.8); tests/unit/learners-teachers.test.ts reads every string here and checks
 // its numbers against that file. The line drawings are in sketch-drawings.ts. Interests,
 // records, reports, posts and students shown in the scenes are made up, and each scene says so.
 
 export type SceneId =
-  'tracker' | 'dorm' | 'dining' | 'puppet' | 'city' | 'views' | 'pris' | 'context';
+  'tracker' | 'dorm' | 'dining' | 'puppet' | 'city' | 'views' | 'pris' | 'zoom' | 'context';
 
 export const SKETCH_SUBTITLE =
   'Each scene shows where the data comes from, what the system builds from it, and who checks it.';
@@ -22,9 +22,13 @@ export const SCENE_GROUPS: SceneGroup[] = [
   { label: 'City', scenes: ['city'] },
 ];
 
-/** The teacher scenes, on /research/teacher-support/ (D73): one per teacher-facing paper. */
+/**
+ * The teacher scenes, on /research/teacher-support/ (D73): one per teacher-facing paper, and for
+ * PRIS two, its in-person pilot with a Kinect and then the study on Zoom that the paper reports
+ * (D75).
+ */
 export const TEACHER_SCENE_GROUPS: SceneGroup[] = [
-  { label: 'Teachers', scenes: ['views', 'pris', 'context'] },
+  { label: 'Teachers', scenes: ['views', 'pris', 'zoom', 'context'] },
 ];
 
 /** A link from one set of scenes to the other, at the end of its row of scene buttons. */
@@ -36,7 +40,7 @@ export interface ScenesLink {
 
 export const TEACHER_SCENES_LINK: ScenesLink = {
   group: 'Teachers',
-  label: 'Three scenes on their own page',
+  label: 'Four scenes on their own page',
   href: '/research/teacher-support/#scenes',
 };
 
@@ -632,12 +636,12 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'pris',
-    label: 'Classroom, Kinect',
+    label: 'Classroom, Kinect pilot',
     heading: 'A teacher’s words, heard by a Kinect and matched to students',
     badge: 'Synthetic sample',
     alt: 'Line drawing: a teacher walks between tables of students in a classroom and talks. A Kinect sensor under the board picks up what the teacher says and follows where the teacher stands, marked by a ring on the floor. A speech bubble shows a picture of what the teacher talks about, and the students it matches are highlighted at their table.',
     steps: [
-      { line: 'A classroom with tables of students.', draw: 0 },
+      { line: 'First, PRIS in person: a classroom with tables of students.', draw: 0 },
       { line: 'A teacher walks between the tables and talks.', draw: 1 },
       {
         line: 'A Kinect sensor picks up what the teacher says and where the teacher stands.',
@@ -698,17 +702,107 @@ export const SCENES: Scene[] = [
     },
     results: [
       {
-        text: 'In the study, PRIS was compared with notecards. With PRIS, usability was better, the teacher’s cognitive load was lower, and personalized teaching happened more often.',
+        text: 'This in-person version was built and pilot-tested. Then COVID came, and the experiment did not go on. The study the paper reports ran later, in simulated online classes on Zoom: the next scene.',
+      },
+    ],
+    locked: 'Pick what the teacher says to see how this version was tested.',
+    summary: {
+      data: 'The teacher’s speech and position in the classroom, from a Kinect',
+      builds: 'In real time, students’ personal information that relates to what the teacher says',
+      checkedBy: 'A pilot test, before COVID stopped the experiment',
+    },
+    source:
+      'The in-person version of PRIS, a real-time system for personalized teaching support. The paper (HCI International 2022) reports the later study on Zoom, not this pilot.',
+    note: 'The classroom, what the teacher says, the students and their information in this scene are made up for illustration.',
+  },
+  {
+    id: 'zoom',
+    label: 'Zoom class, laptop',
+    heading: 'A teacher’s words on Zoom, heard by the laptop and matched to students',
+    badge: 'Synthetic sample',
+    alt: 'Line drawing: a teacher sits at a laptop on a desk and talks. On the laptop’s screen, a class on Zoom shows four students, each in a video tile, next to a card of their information. Sound waves run from the teacher toward the laptop’s microphone. A speech bubble shows a picture of what the teacher talks about, and the students it matches are marked in their tiles.',
+    steps: [
+      {
+        line: 'Later, PRIS on Zoom: a simulated online class, with researchers as the students.',
+        draw: 0,
+      },
+      { line: 'A teacher teaches from a laptop and talks.', draw: 1 },
+      { line: 'The laptop’s microphone picks up the teacher’s voice.', draw: 2 },
+      {
+        line: 'Speech recognition turns the teacher’s words into text, in real time.',
+        flyFrom: 'mic',
+        reveal: [0, 1],
+      },
+      {
+        line: 'Keyword matching finds students’ personal information that relates to those words, and PRIS shows it to the teacher.',
+        reveal: [2],
+      },
+      { line: 'The teacher can bring what it shows into the lesson.' },
+    ],
+    panel: {
+      title: 'What PRIS works with',
+      empty: 'Nothing picked up yet.',
+      entries: [
+        {
+          glyph: 'mic',
+          name: 'Speech',
+          why: 'the teacher’s words, from the laptop’s microphone, recognized as text',
+        },
+        {
+          glyph: 'search',
+          name: 'Keywords',
+          why: 'words that match students’ personal information',
+        },
+        {
+          glyph: 'card',
+          name: 'Students',
+          why: 'their personal information that relates to the words, shown to the teacher',
+        },
+      ],
+    },
+    task: {
+      kind: 'choose',
+      prompt: 'You are the teacher. Pick what you say next.',
+      question: 'Say',
+      options: [
+        {
+          value: 'volcano',
+          label: '“Today: volcanoes.”',
+          outcome:
+            'PRIS shows two students: one hiked up a volcano on a family trip, one built a model volcano.',
+        },
+        {
+          value: 'pizza',
+          label: '“Let’s cut a pizza into eighths.”',
+          outcome: 'PRIS shows a student who helps at a family pizza shop on weekends.',
+        },
+        {
+          value: 'bees',
+          label: '“Who has seen a beehive?”',
+          outcome: 'PRIS shows a student whose family keeps bees.',
+        },
+      ],
+      sample: 'volcano',
+      sampleNote: 'A sample is shown.',
+    },
+    results: [
+      {
+        big: '8',
+        text: 'participants each taught a simulated online class on Zoom, and four researchers played the students.',
+      },
+      {
+        text: 'PRIS was compared with notecards. With PRIS, usability was better, the teacher’s cognitive load was lower, and personalized teaching happened more often.',
       },
     ],
     locked: 'Pick what the teacher says to see what the study found.',
     summary: {
-      data: 'The teacher’s speech and position in the classroom, from a Kinect',
+      data: 'The teacher’s speech, from the laptop’s microphone',
       builds: 'In real time, students’ personal information that relates to what the teacher says',
-      checkedBy: 'A study that compared PRIS with notecards',
+      checkedBy: 'A within-subjects study with 8 participants that compared PRIS with notecards',
     },
-    source: 'PRIS, a real-time system for personalized teaching support (HCI International 2022).',
-    note: 'The classroom, what the teacher says, the students and their information in this scene are made up for illustration.',
+    source:
+      'PRIS in simulated online classes on Zoom: the study the paper reports (HCI International 2022).',
+    note: 'The class, what the teacher says, the students and their information in this scene are made up for illustration.',
     paper: 'hcii-2022-information-retrieval',
   },
   {

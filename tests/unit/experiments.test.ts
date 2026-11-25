@@ -223,8 +223,9 @@ describe('the Experiments page (D74)', () => {
         { href: '/#sk-dining', label: 'Dining hall, phone' },
       ],
       'study-1': [],
+      // The Zoom study the paper reports; the Kinect pilot is not in the paper (D75).
       'hcii-2022-information-retrieval': [
-        { href: '/research/teacher-support/#sk-pris', label: 'Classroom, Kinect' },
+        { href: '/research/teacher-support/#sk-zoom', label: 'Zoom class, laptop' },
       ],
       'icalt-2021-visual-efficiency': [
         { href: '/research/teacher-support/#sk-views', label: 'Classroom, tablet' },
