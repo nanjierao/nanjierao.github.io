@@ -12,9 +12,13 @@ note is not in the repository at all (step 3).
    its UTC send time: `TZ=America/New_York date -d '<send time>' '+%F %H:%M %Z'` (for
    2026-11-26T03:10:00Z it prints `2026-11-25 22:10 EST`; output without EST or EDT means a
    mistyped zone). A message sent between midnight and 04:00 there belongs to the day before:
-   he is writing about the day that just ended. The note is
-   `src/content/notes/<YYYY-MM-DD>.yaml`. If that file already exists, ask Jimmy whether the new
-   text replaces the note or is added to it, and wait for his answer.
+   he is writing about the day that just ended. If the date he gives is later than the day the
+   message was sent in New York, ask him before writing anything. Never change his date, or the
+   date test in `tests/unit/notes.test.ts`, to make a check pass: if he confirms a date that
+   `npm run test` still calls later than today, wait until that date has begun in UTC, then run
+   step 5 and ship. The note is `src/content/notes/<YYYY-MM-DD>.yaml`. If that file already
+   exists, ask Jimmy whether the new text replaces the note or is added to it, and wait for his
+   answer.
 2. **His words.** One sentence per line, exactly as written: keep his wording, spelling,
    punctuation and language. Don't correct, translate, shorten, reorder or add anything. If he
    sends one paragraph, split it only at sentence ends; if he sends separate lines, keep them.
@@ -30,6 +34,9 @@ note is not in the repository at all (step 3).
    - touches the class study at all (CLAUDE.md rules 12 and 13, D69): its people, even by role;
      who or how many take part, sign up, join or leave; its survey, diaries, coding or meetings;
      any data, number or result from it; its course;
+   - contains a course code, however it is written (`ABC 1234`, `abc 1234`, `Abc1234`), other
+     than the courses on /teaching: the repository never names the class study's course, so you
+     can't tell the two apart;
    - contains an email address other than raon@ufl.edu, a phone number, a street address or an
      ID number;
    - quotes a study participant or a private message.
@@ -55,21 +62,25 @@ note is not in the repository at all (step 3).
 5. **Checks.** `npm run format`, then `npm run build` (the real build, without the fixture
    variables) and `npm run test:e2e` against it, so the notes, width and accessibility tests see
    the real note; the fixture-only tests skip themselves. Then `npm run check`, `npm run lint`,
-   `npm run test` and `npm run check:privacy`. If browsers can't run in the session, say so in
-   the pull request.
+   `npm run test` and `npm run check:privacy`. If `npm run test:e2e` can't start a browser, the
+   checks have not passed (D67): push, open the pull request, say so in it, leave it open, and
+   tell Jimmy in your reply.
    If a check flags one of his lines (`tests/unit/notes.test.ts` names it by file, line and
    fingerprint; `check:privacy` by file), the note is held back as in step 3: keep his words and
    keep the patterns, and ask Jimmy, quoting the line only in your reply. If he says it is fine
    (an RFC or ISO number is not a course number; a count of his own section's students is not
-   about the class study), add the fingerprint and his reason, with the date, to `CLEARED_LINES`
-   in `tests/unit/notes.test.ts` (for `check:privacy`, to `scripts/privacy-allowlist.json`) in
-   the note's pull request, and say so in its description. Never clear a line on your own
-   judgment.
+   about the class study), add the fingerprint to `CLEARED_LINES` in `tests/unit/notes.test.ts`
+   (for `check:privacy`, to `scripts/privacy-allowlist.json`) in the note's pull request, with a
+   reason you write yourself in a few words and the date, such as `Jimmy, 2026-11-26: an RFC
+   number, not a course number.` The reason names no course, person, count or §15 detail,
+   doesn't repeat the flagged words, and never pastes his message; the unit test runs the
+   patterns over it too. The pull request gives the fingerprint and that reason, not his
+   message. Never clear a line on your own judgment.
 6. **Ship (D67).** Commit `content: daily note for <YYYY-MM-DD>`, push, and open the pull
    request. It quotes the note instead of attaching screenshots: a note changes no layout, and
-   step 5's end-to-end tests check it on the real build. Merge it once CI passes. When the site
-   is deployed, reply with `https://nanjierao.github.io/notes/#<YYYY-MM-DD>` and the date you
-   used.
+   step 5's end-to-end tests check it on the real build. Merge it once step 5's checks, the
+   end-to-end tests included, and CI pass. When the site is deployed, reply with
+   `https://nanjierao.github.io/notes/#<YYYY-MM-DD>` and the date you used.
 
 **To change or remove a past note** when Jimmy asks: check the new text first (step 3), then edit
 or delete its file, run step 5, and ship as in step 6 with the commit

@@ -15,7 +15,7 @@ import {
   isNoteDate,
   noteLine,
 } from '../../src/lib/notes.ts';
-import { CLASS_STUDY_FORBIDDEN, VENUE_YEAR } from './class-study-patterns.ts';
+import { CLASS_STUDY_FORBIDDEN, COURSE_NUMBER, VENUE_YEAR } from './class-study-patterns.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const SITE = join(ROOT, 'src', 'content', 'notes');
@@ -24,8 +24,11 @@ const FIXTURES = join(ROOT, 'tests', 'fixtures', 'notes');
 /**
  * Lines of real notes that a pattern below flags but that Jimmy confirmed are fine, for example
  * "ISO 8601", which is not a course number. Each key is the first 16 hex characters of the line's
- * SHA-256, as the failing test prints it, and each value is his reason, with the date. Add one only
- * on his word, in that note's pull request (add-note skill, step 5).
+ * SHA-256, as the failing test prints it. Each value is a reason of a few words with the date,
+ * written by the session and never pasted from his message ("Jimmy, 2026-11-26: an RFC number,
+ * not a course number."): it names no course, person, count or facts.md §15 detail, and the
+ * patterns run over it too. Add one only on his word, in that note's pull request (add-note
+ * skill, step 5).
  */
 const CLEARED_LINES: Readonly<Record<string, string>> = {};
 
@@ -84,27 +87,63 @@ const EVERY_LINE: ReadonlyArray<readonly [what: string, pattern: RegExp]> = [
   ],
 ];
 
-/** A line that mentions a study, a course or the people in one also gets the class study's rules. */
+/**
+ * A line that mentions a study, a course or the people in one also gets the class study's rules.
+ * "Of course" is not a course, and 实验室 (a lab) is not an experiment.
+ */
 const ABOUT_A_STUDY =
-  /\b(?:stud(?:y|ies|ents?)|participants?|consent\w*|co-?authors?|courses?|class(?:es|mates?)?|instructors?|TAs?|surveys?|diar(?:y|ies))\b|研究|实验|课|学生|同学|参与者|被试|同意书|共同作者|问卷|日记/iu;
+  /\b(?:stud(?:y|ies|ents?)|participants?|consent\w*|co-?authors?|courses?|class(?:es|mates?)?|instructors?|TAs?|teaching\s+assistants?|surveys?|diar(?:y|ies))\b|研究|实验(?!室)|课|学生|同学|参与者|被试|同意书|共同作者|问卷|日记|助教/iu;
+const NOT_A_COURSE = /\bof\s+course\b/gi;
 
 /**
- * More of the class study's rules, for notes: a head count with words between the number and the
- * people ("two more students"), joining or leaving without "has", and both in Chinese.
+ * Words that come with a course. A line with one also gets the course-number pattern in any case
+ * ("abc 1234"), which on every line would stop sentences like "Did 8000 steps today."
+ */
+const ABOUT_A_COURSE =
+  /\b(?:labs?|lectures?|homework|assignments?|exams?|midterms?|quiz(?:zes)?|syllabus|semesters?|rubrics?|recitations?|office\s+hours)\b|作业|考试|期中|期末|学期/iu;
+
+/**
+ * The class study's rules for a line about a study, without its broad address pattern: every
+ * line is checked for addresses already, and that pattern reads "astro@7.4.1" as one.
+ */
+const STUDY_RULES = CLASS_STUDY_FORBIDDEN.filter(([what]) => what !== 'an email address');
+
+/** People, or what stands for them in a count, in English or Chinese. */
+const WHO = String.raw`(?:学生|同学|参与者|被试|人(?!工智能|机)|共同作者|作者|同意书|问卷|日记|\b(?:students?|co-?authors?|authors?|participants?|people|classmates?|volunteers?|respondents?|responses?|consent\s*forms?|surveys?|diar(?:y|ies))\b)`;
+const NUMBER_WORD = String.raw`one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|(?:thir|four|fif|six|seven|eigh|nine)teen|(?:twen|thir|for|fif|six|seven|eigh|nine)ty|hundreds?|several|dozens?`;
+
+/**
+ * More of the class study's rules, for notes, in either language or both mixed: a head count with
+ * up to two words between the number and the people ("two more students", "7+ students",
+ * "7个participants", "十多个学生", "七份同意书"); joining or leaving without "has" ("joined",
+ * "sign up了", "学生加入"); a name with a Chinese title ("甲老师"), not a role ("课的老师", "当助教").
  */
 const MORE_FORBIDDEN: ReadonlyArray<readonly [what: string, pattern: RegExp]> = [
   [
     'a head count',
-    /\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|several|dozens?)\s+(?:[a-z-]+\s+){0,2}(?:students?|co-?authors?|authors?|participants?|people|classmates?|volunteers?)\b/i,
+    new RegExp(String.raw`\b(?:\d+\+?|${NUMBER_WORD})\s+(?:[a-z-]+\s+){0,2}${WHO}`, 'iu'),
   ],
-  ['who has joined', /\b(?:joined|signed\s+up|dropped\s+out|withdrew|consented)\b/i],
   [
     'a head count',
-    /[0-9０-９一二两三四五六七八九十几百]+\s*(?:个|位|名)\s*(?:学生|同学|参与者|被试|人|共同作者|作者)/u,
+    new RegExp(
+      String.raw`[0-9０-９一二两三四五六七八九十几百]+[多来余]?\s*(?:个|位|名|份)\s*${WHO}`,
+      'iu',
+    ),
   ],
   [
     'who has joined',
-    /(?:学生|同学|参与者|被试|共同作者|作者)[^。，；！？]{0,6}(?:加入|报名|退出|同意)|报名|签了?同意书|退课/u,
+    /\b(?:joined|signed\s+up|dropped\s+out|withdrew|consented)\b|\b(?:join|sign\s*up|drop(?:\s*out)?|withdraw|quit)\s*了/iu,
+  ],
+  [
+    'who has joined',
+    new RegExp(
+      String.raw`${WHO}[^。，；！？]{0,6}(?:加入|报名|退出|同意)|报名|签了?同意书|退课`,
+      'iu',
+    ),
+  ],
+  [
+    'a person with a title',
+    /[^\P{Script=Han}的和跟与同给对问找请让被是有个位名们当做]\s*(?:老师|教授|助教)|\b\p{Lu}\p{Ll}+\s*(?:老师|教授|助教)/u,
   ],
 ];
 
@@ -119,9 +158,12 @@ function flags(line: string): string[] {
   if (PERSON.email) text = text.replaceAll(PERSON.email, '');
   for (const code of PUBLIC_COURSES)
     text = text.replace(new RegExp(`\\b${code.replace(' ', '[\\s-]*')}\\b`, 'gi'), '');
-  const rules = ABOUT_A_STUDY.test(text)
-    ? [...EVERY_LINE, ...CLASS_STUDY_FORBIDDEN, ...MORE_FORBIDDEN]
-    : EVERY_LINE;
+  const topic = text.replace(NOT_A_COURSE, '');
+  const rules: ReadonlyArray<readonly [what: string, pattern: RegExp]> = ABOUT_A_STUDY.test(topic)
+    ? [...EVERY_LINE, ...STUDY_RULES, ...MORE_FORBIDDEN]
+    : ABOUT_A_COURSE.test(topic)
+      ? [...EVERY_LINE, ['a course number', COURSE_NUMBER]]
+      : EVERY_LINE;
   return [...new Set(rules.filter(([, pattern]) => pattern.test(text)).map(([what]) => what))];
 }
 
@@ -202,6 +244,8 @@ describe('daily notes on the site (D71)', () => {
     for (const [key, reason] of Object.entries(CLEARED_LINES)) {
       expect(lines, `${key} matches no line of a note`).toContain(key);
       expect(reason.trim().length, `${key} gives no reason`).toBeGreaterThan(10);
+      // The reason is public too: it must pass the same patterns.
+      expect(problemsIn(`the reason for ${key}`, [reason], {})).toEqual([]);
     }
   });
 
@@ -213,18 +257,23 @@ describe('daily notes on the site (D71)', () => {
     expect(lines.some((line) => line.includes('#'))).toBe(true);
     expect(lines.some((line) => line.includes("'"))).toBe(true);
     expect(lines.some((line) => line.includes('\\'))).toBe(true);
-    // A line all in Chinese, a Chinese line with an English word, an English line with Chinese.
+    // A line all in Chinese (one starts with a number), a Chinese line with an English word, an
+    // English line with Chinese.
     expect(marked.some((line) => line.lang === 'zh-CN')).toBe(true);
+    expect(lines.some((line) => /^\d/.test(line) && noteLine(line).lang === 'zh-CN')).toBe(true);
     expect(marked.some((line) => !line.lang && line.runs[0]?.lang === 'zh-CN')).toBe(true);
     expect(
       marked.some((line) => !line.lang && !line.runs[0]?.lang && line.runs.some((run) => run.lang)),
     ).toBe(true);
     expect(new Set(fixtures.map((note) => note.id.slice(0, 7))).size).toBeGreaterThan(1);
     // The newest note reaches the home page's card: it has Chinese, and a long name with no
-    // place to break, which must wrap on a phone.
+    // place to break, which must wrap on a phone. It also has "protocol v2", which this test
+    // lets through: the class-study page's end-to-end check of the home page must leave the
+    // card out, or it would stop such a note.
     const newest = [...fixtures].sort((a, b) => b.id.localeCompare(a.id))[0];
     expect(newest?.lines.some((line) => /\p{Script=Han}/u.test(line))).toBe(true);
     expect(newest?.lines.some((line) => /\S{40,}/.test(line))).toBe(true);
+    expect(newest?.lines.some((line) => /\bprotocol\s+\S*\d/.test(line))).toBe(true);
   });
 });
 
@@ -241,8 +290,23 @@ describe('daily notes: the patterns', () => {
       'Bumped astro@7.4.1 and answered a question sent to raon@ufl.edu.',
       'Signed up for a 10K race in December.',
       'Had lunch with two people from my lab.',
+      'Did 8000 steps today.',
       '今天跑了 5 公里，学会了用 Playwright 截图。',
       '读了一篇 CHI 论文，有九个作者。',
+      // Words that look like a study or a course but are not.
+      'Of course, two people from my lab came to lunch.',
+      'Of course I ran 5000 meters before breakfast.',
+      '和实验室的两个人吃了午饭。',
+      '今天一个人在实验室待到很晚。',
+      // Lines about a study or a course without a count, a joining or a name.
+      'Bumped astro@7.4.1 on the course website.',
+      "TA'd two sections of the course today.",
+      'Wrote the Study 2 analysis plan and a survey design.',
+      'Graded the homework for my COP 3530 section.',
+      '今天读了一个人机交互方向的研究。',
+      '瑜伽课的老师人很好。',
+      '研究生院的老师帮我改了论文格式。',
+      '当助教的第一周，讲了两个小时。',
     ];
     expect(problemsIn('ordinary', ordinary, {})).toEqual([]);
   });
@@ -251,6 +315,10 @@ describe('daily notes: the patterns', () => {
     const flagged = (line: string) => problemsIn('x', [line], {}).map((p) => p.split(': ')[1]);
     expect(flagged('Example only: ABC 1234 met today.')).toEqual(['a course number']);
     expect(flagged('Example only: abc1234 and abc-1234.')).toEqual(['a course number']);
+    // In lower or title case with a space, a code counts in a line about a course.
+    expect(flagged('Example only: graded abc 1234 homework tonight.')).toEqual(['a course number']);
+    expect(flagged('Example only: gave the Abc 1234 lecture.')).toEqual(['a course number']);
+    expect(flagged('Abc 1234 lab today, example only.')).toEqual(['a course number']);
     expect(flagged('Example only: IRB-000000 came back.')).toEqual([
       'a review-board or protocol number',
     ]);
@@ -271,6 +339,23 @@ describe('daily notes: the patterns', () => {
     expect(flagged('Example only: Dr. Example visited the sample class.')).toBe(true);
     expect(flagged('虚构的例子：这个研究又有三个同学报名了。')).toBe(true);
     expect(flagged('虚构的例子：有同学退出了这门课。')).toBe(true);
+    expect(flagged('Example only: the course ABC 2050 started.')).toBe(true);
+    // Counts that are approximate, above twelve, or of forms; mixed Chinese and English.
+    for (const line of [
+      'Example only: 7+ students are in the made-up study so far.',
+      'Example only: thirteen students are in the made-up study now.',
+      'Example only: got 7 consent forms back for the made-up study.',
+      'A made-up example: two more joined class today.',
+      '虚构的例子：这个研究现在有十多个学生。',
+      '虚构的例子：收到了七份同意书。',
+      '虚构的例子：又有一个人加入了研究。',
+      '虚构的例子：这个课题又多了两个人。',
+      '虚构的例子：这个study有7个participants。',
+      '虚构的例子：又有两个participants加入了study。',
+      '虚构的例子：又有学生sign up了study。',
+      '虚构的例子：这门课的甲老师今天来了。',
+    ])
+      expect(flagged(line), line).toBe(true);
     // The same words in a line about neither are fine.
     expect(flagged('Seven people came to the reading group.')).toBe(false);
   });
@@ -353,10 +438,22 @@ describe('daily notes: helpers', () => {
       expect(runs.map((run) => run.text).join('')).toBe(line);
       return [lang ?? null, runs.filter((run) => run.lang).map((run) => run.text)];
     };
-    // All Chinese: the whole line.
-    expect(marked('今天把网站的新页面做好了。')).toEqual(['zh-CN', []]);
-    expect(marked('今天跑了 5 公里。')).toEqual(['zh-CN', []]);
-    expect(marked('他说“好的”。')).toEqual(['zh-CN', []]);
+    // Chinese without Latin letters: the whole line, its numbers and punctuation included.
+    for (const line of [
+      '今天把网站的新页面做好了。',
+      '今天跑了 5 公里。',
+      '他说“好的”。',
+      '3点才睡，书看完了。',
+      '2026年的第一场雪。',
+      '今天跑了5.2公里。',
+      '手机电量只剩12.5%。',
+      '下午3:30开会。',
+      '今天写了3,000字。',
+      '今天好累……',
+      '11月25日，下雪了。',
+      '——今天的感想。',
+    ])
+      expect(marked(line), line).toEqual(['zh-CN', []]);
     // Chinese with English terms: each run of Chinese, the terms in the page's English.
     expect(marked('今天学会用 Playwright 截图。')).toEqual([null, ['今天学会用', '截图。']]);
     expect(marked('读了 CHI paper')).toEqual([null, ['读了']]);

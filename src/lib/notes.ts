@@ -71,12 +71,15 @@ export interface NoteRun {
 
 /**
  * One line of a note, marked for language (WCAG 2.2, 3.1.2) without guessing at the line as a
- * whole: Chinese characters are Chinese, everything else is the page's English. A line that is
- * all Chinese gets lang="zh-CN" itself. In a mixed line each run of Chinese gets its own, so a
- * Chinese sentence with English terms and an English sentence with a Chinese phrase both come
- * out right. The runs join back into the line, character for character.
+ * whole. A line with Chinese characters and no Latin letters is all Chinese and gets
+ * lang="zh-CN" itself, its numbers and punctuation included (2026年, 5.2公里, 12.5%, ……). In a
+ * mixed line each run of Chinese gets its own and the rest is the page's English, so a Chinese
+ * sentence with English terms and an English sentence with a Chinese phrase both come out
+ * right. The runs join back into the line, character for character.
  */
 export function noteLine(line: string): { lang?: 'zh-CN'; runs: NoteRun[] } {
+  if (/\p{Script=Han}/u.test(line) && !/\p{Script=Latin}/u.test(line))
+    return { lang: 'zh-CN', runs: [{ text: line }] };
   const runs: NoteRun[] = line
     .split(CHINESE_RUN)
     .map((text, i) => (i % 2 === 1 ? { text, lang: 'zh-CN' as const } : { text }))

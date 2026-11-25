@@ -5,12 +5,12 @@
 /** Venue and year, as the lists of works write them: not a course number. */
 export const VENUE_YEAR = /\b(?:CHI|ICER) 20\d{2}\b/g;
 
+/** Three letters and four digits, however written: "ABC 1234", "abc-1234", "ABC1234C". */
+export const COURSE_NUMBER =
+  /(?<![A-Za-z])[A-Za-z]{3}[\s-]*(?!(?:19|20)\d{2}(?!\d))\d{4}[A-Za-z]?(?![A-Za-z\d])/;
+
 export const CLASS_STUDY_FORBIDDEN: ReadonlyArray<readonly [what: string, pattern: RegExp]> = [
-  // Three letters and four digits, however written: "ABC 1234", "abc-1234", "ABC1234C".
-  [
-    'a course number',
-    /(?<![A-Za-z])[A-Za-z]{3}[\s-]*(?!(?:19|20)\d{2}(?!\d))\d{4}[A-Za-z]?(?![A-Za-z\d])/,
-  ],
+  ['a course number', COURSE_NUMBER],
   ['a course number', /(?<![A-Za-z])[A-Z]{3}[\s-]*\d{4}[A-Za-z]?(?![A-Za-z\d])/],
   ['a person with a title', /\b(?:Dr|Prof|Professor|Mr|Mrs|Ms|Mx)\.?\s+\p{Lu}/u],
   ['an email address', /[\w.+-]+@[\w-]+\.[\w.]+/],

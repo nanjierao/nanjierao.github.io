@@ -372,6 +372,16 @@ test.describe('daily notes (D71)', () => {
   const misLabelled = (lists: Element[]) =>
     lists.flatMap((list) => {
       const found: string[] = [];
+      // A line in Chinese, without Latin letters, is marked as a whole, its numbers included.
+      for (const line of list.querySelectorAll('li')) {
+        const text = line.textContent ?? '';
+        if (
+          /\p{Script=Han}/u.test(text) &&
+          !/\p{Script=Latin}/u.test(text) &&
+          line.getAttribute('lang') !== 'zh-CN'
+        )
+          found.push(`not marked as a whole: ${text}`);
+      }
       const walker = document.createTreeWalker(list, NodeFilter.SHOW_TEXT);
       for (let node = walker.nextNode(); node; node = walker.nextNode()) {
         const text = node.textContent ?? '';
@@ -496,7 +506,8 @@ test.describe('daily notes (D71)', () => {
     await expect(note.locator('li').nth(3)).toHaveText(
       'A backslash stays as written in single quotes: \\textbf{bold} and C:\\temp.',
     );
-    // A line all in Chinese is marked as a whole; in a mixed line, each run of Chinese is.
+    // A line in Chinese, without Latin letters, is marked as a whole; in a mixed line, each run
+    // of Chinese is.
     const lines = (id: string) => page.locator(`article.note[id="${id}"] li`);
     await expect(lines('2026-10-02').nth(2)).toHaveAttribute('lang', 'zh-CN');
     await expect(lines('2026-10-02').nth(2).locator('span')).toHaveCount(0);
@@ -510,7 +521,7 @@ test.describe('daily notes (D71)', () => {
     await page.goto('/');
     await expect(page.locator(`${CARD} li`)).toHaveCount(4);
     await expect(page.locator(`${CARD} li[lang="zh-CN"]`)).toHaveText([
-      '这是一句用来检查中文排版的测试句子。',
+      '10月2日，这是一句用来检查中文排版的测试句子。',
     ]);
     await page.goto('/notes/');
     // /notes/#<date> brings that day into view: to the top, with a margin above its heading,
@@ -1586,6 +1597,11 @@ test.describe('the ongoing class study (D69)', () => {
     await isolate(page);
     for (const path of [PATH, '/', '/research/', '/cv/']) {
       await page.goto(path);
+      // The Daily notes card repeats Jimmy's newest note: notes.test.ts checks each of its lines,
+      // and a line he cleared there (CLEARED_LINES) must not fail here (D71).
+      await page
+        .locator('section[aria-labelledby="daily-notes"]')
+        .evaluateAll((cards) => cards.forEach((card) => card.remove()));
       const text = await page.locator('main').innerText();
       if (path === PATH) {
         // Three letters and four digits, however written, are a course number; a venue with
