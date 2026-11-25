@@ -6,6 +6,8 @@ summary: Teacher-facing work on bringing students’ personally relevant informa
 facts: ['5.5', '6']
 publications:
   [icalt-2023-context-for-contextualizing, hcii-2022-information-retrieval, icalt-2021-visual-efficiency]
+# One sketch scene per paper (D73), after the text; the home page's row of scenes links here.
+scenes: teachers
 # The survey of 81 studies (update in preparation for IEEE TLT) is a working paper: listed only if
 # Jimmy approves working papers (D28). TODO(jimmy): decide.
 ---

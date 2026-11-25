@@ -944,6 +944,21 @@ test.describe('sketch scenes on the home page (D68)', () => {
       ).toHaveCount(count);
     await expect(page.getByRole('button', { name: 'Replay' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Show all' })).toBeVisible();
+    // A cue over the buttons names them, and the teacher scenes are a link away (D73).
+    await expect(page.locator(`${SK} .sk__cue`)).toHaveText(/^Pick a scene/);
+    await expect(
+      page.getByRole('group', { name: 'Pick a scene', exact: true }).getByRole('button'),
+    ).toHaveCount(5);
+    const teachers = page.getByRole('group', { name: 'Teachers', exact: true });
+    await expect(teachers.getByRole('button')).toHaveCount(0);
+    await expect(
+      teachers.getByRole('link', { name: 'Three scenes on their own page', exact: true }),
+    ).toHaveAttribute('href', '/research/teacher-support/#scenes');
+    // The open scene's button is filled in; the others look like buttons waiting to be pressed.
+    const fill = (id: string) =>
+      tab(page, id).evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(await fill('tracker')).not.toBe(await fill('dorm'));
+    expect(await fill('dorm')).not.toBe('rgba(0, 0, 0, 0)');
     for (const id of SCENES) {
       await tab(page, id).click();
       await expect(tab(page, id)).toHaveAttribute('aria-pressed', 'true');
@@ -1151,6 +1166,41 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await post.check();
     await expect(status).toHaveText(/^Confirmed\./);
     await expect(city.locator('[data-part="cell-tick"]')).toBeVisible();
+  });
+
+  test('cites the paper under each scene that comes from one, linked to its DOI', async ({
+    page,
+  }) => {
+    await openStill(page);
+    const papers: Record<string, string | null> = {
+      tracker: null,
+      dorm: 'https://doi.org/10.1109/ICALT68022.2026.00023',
+      dining: 'https://doi.org/10.1109/ICALT68022.2026.00023',
+      puppet: 'https://doi.org/10.1007/978-3-030-77599-5_46',
+      // No link has been found for the DTRUE 2026 extended abstract yet.
+      city: '',
+    };
+    for (const [id, url] of Object.entries(papers)) {
+      await tab(page, id).click();
+      const reference = scene(page, id).locator('.sk__paper');
+      if (url === null) {
+        // The tracker is an unpublished prototype: no paper to cite.
+        await expect(reference, id).toHaveCount(0);
+        continue;
+      }
+      await expect(reference, id).toBeVisible();
+      await expect(reference, id).toHaveText(/^Paper: Rao, N\., .*\(20\d\d\)\. .+\./);
+      await expect(reference.locator('cite'), id).toHaveCount(1);
+      if (url) {
+        await expect(reference.getByRole('link'), id).toHaveAttribute('href', url);
+        await expect(reference.getByRole('link'), id).toHaveText(url.replace('https://', ''));
+      } else {
+        await expect(reference.getByRole('link'), id).toHaveCount(0);
+      }
+    }
+    const city = scene(page, 'city').locator('.sk__paper');
+    await expect(city).toContainText('Proceedings: EPiC Series in Computing.');
+    await expect(city.locator('.sk__award')).toHaveText('Best Paper Mention');
   });
 
   test('"Show all" shows results with sample answers, and Replay clears the step', async ({
@@ -1404,7 +1454,11 @@ test.describe('sketch scenes on the home page (D68)', () => {
       'A puppet tracked by a camera and a motion sensor',
       'A flooded street, seen through three channels',
     ]);
-    await expect(page.locator(`${SK} .sk__bar`)).toBeHidden();
+    // The scene buttons could do nothing: only the link to the teacher scenes stays.
+    await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
+    await expect(page.locator(`${SK} .sk__cue`)).toBeHidden();
+    await expect(page.locator(`${SK} .sk__ctl`)).toBeHidden();
+    await expect(page.locator(`${SK} .sk__jump`)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Turn the puppet' })).toBeHidden();
     await expect(page.locator(`${SK} .sk__locked:visible`)).toHaveCount(0);
     for (const id of SCENES) {
@@ -1455,7 +1509,9 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await page.goto('/');
     await expect(page.locator(SK)).toHaveAttribute('data-failed', '', { timeout: 8_000 });
     await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(5);
-    await expect(page.locator(`${SK} .sk__bar`)).toBeHidden();
+    await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
+    await expect(page.locator(`${SK} .sk__ctl`)).toBeHidden();
+    await expect(page.locator(`${SK} .sk__jump`)).toBeVisible();
     await expect(scene(page, 'dining').locator('.sk__after > .sk__results')).toBeVisible();
     await expect(scene(page, 'dining').locator('.sk__results')).toContainText('56.3%');
   });
@@ -1492,8 +1548,9 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await openStill(page);
     for (const id of SCENES) {
       await tab(page, id).click();
+      // The link in a scene's reference is part of a sentence: WCAG 2.5.8 leaves it out.
       const controls = page.locator(
-        `${SK} .sk__bar button, ${SK} [data-scene="${id}"] :is(button, input)`,
+        `${SK} .sk__bar :is(button, a), ${SK} [data-scene="${id}"] :is(button, input)`,
       );
       for (const control of await controls.all()) {
         const box = (await control.boundingBox())!;
@@ -1587,6 +1644,351 @@ test.describe('sketch scenes on the home page (D68)', () => {
     }
     expect(total).toBeLessThan(50_000);
     // React's client runtime alone is larger than that (D68): the home page must not load it.
+    expect(sources.join(' ')).not.toMatch(/client\.[\w-]+\.js/);
+  });
+});
+
+test.describe('teacher scenes on the teacher support page (D73)', () => {
+  const PATH = '/research/teacher-support/';
+  const SK = '#scenes .sk';
+  const SCENES = ['views', 'pris', 'context'];
+  const scene = (page: Page, id: string) => page.locator(`${SK} [data-scene="${id}"]`);
+  const tab = (page: Page, id: string) => page.locator(`${SK} [data-scene-button="${id}"]`);
+  const shown = (scope: Locator) => scope.locator('.sk__when:visible');
+  const undrawn = (scope: Locator) =>
+    scope
+      .locator('.sk__ink')
+      .evaluateAll(
+        (paths) => paths.filter((p) => parseFloat(getComputedStyle(p).strokeDashoffset) > 0).length,
+      );
+  /** The options whose parts the drawing shows, by what the browser renders. */
+  const pictured = (scope: Locator) =>
+    scope.locator('svg [data-part^="pick-"]').evaluateAll((parts) => [
+      ...new Set(
+        parts
+          .filter((part) => {
+            const style = getComputedStyle(part);
+            return style.visibility !== 'hidden' && style.opacity !== '0';
+          })
+          .map((part) => part.getAttribute('data-part')),
+      ),
+    ]);
+  /** Every option of a scene: its value, the radio's name and the outcome it shows. */
+  const options = (scope: Locator) =>
+    scope.locator('.sk__pick input').evaluateAll((inputs) =>
+      inputs.map((input) => ({
+        value: (input as HTMLInputElement).value,
+        name: input.nextElementSibling!.textContent!.trim(),
+        sample: input.hasAttribute('data-sample'),
+        outcome: input
+          .closest('[data-scene]')!
+          .querySelector(`.sk__status [data-when="${(input as HTMLInputElement).value}"]`)!
+          .textContent!.trim(),
+      })),
+    );
+
+  async function openStill(page: Page) {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await isolate(page);
+    await page.goto(PATH);
+    await page.locator(SK).scrollIntoViewIfNeeded();
+  }
+
+  test('sit after the page text and before its publications, and link back to the home scenes', async ({
+    page,
+  }) => {
+    await openStill(page);
+    await expect(page.locator('main h2')).toHaveText(['One scene per paper', 'Publications']);
+    await expect(page.locator(`${SK} .sk__cue`)).toHaveText(/^Pick a scene/);
+    await expect(page.locator(`${SK} [data-scene-button]`)).toHaveText([
+      'Classroom, tablet',
+      'Classroom, Kinect',
+      'Staff room, focus group',
+    ]);
+    await expect(
+      page.getByRole('group', { name: 'Teachers', exact: true }).getByRole('button'),
+    ).toHaveCount(3);
+    const back = page
+      .getByRole('group', { name: 'Learners, hands, city', exact: true })
+      .getByRole('link', { name: 'Five scenes on the home page', exact: true });
+    await expect(back).toHaveAttribute('href', '/#learners-and-teachers');
+    for (const id of SCENES) {
+      await tab(page, id).click();
+      await expect(tab(page, id)).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(1);
+      await expect(scene(page, id).locator('.sk__badge')).toHaveText('Synthetic sample');
+      await expect(scene(page, id).locator('.sk__summary dt')).toHaveText([
+        'Data from',
+        'It builds',
+        'Checked by',
+      ]);
+      await expect(scene(page, id).locator('.sk__source')).toContainText('made up');
+    }
+    await back.click();
+    await expect(page).toHaveURL(/\/#learners-and-teachers$/);
+    await expect(page.locator('#learners-and-teachers .sk [data-scene-button]')).toHaveCount(5);
+    // And from the home page's row of buttons to this page's scenes.
+    await page.getByRole('link', { name: 'Three scenes on their own page', exact: true }).click();
+    await expect(page).toHaveURL(/\/research\/teacher-support\/#scenes$/);
+    await expect(page.locator(SK)).toBeVisible();
+  });
+
+  test('cites each scene’s paper with its DOI, and only ICALT 2021’s recognition', async ({
+    page,
+  }) => {
+    await openStill(page);
+    const dois: Record<string, string> = {
+      views: 'https://doi.org/10.1109/ICALT52272.2021.00011',
+      pris: 'https://doi.org/10.1007/978-3-031-19682-9_25',
+      context: 'https://doi.org/10.1109/ICALT58122.2023.00027',
+    };
+    for (const [id, url] of Object.entries(dois)) {
+      await tab(page, id).click();
+      const reference = scene(page, id).locator('.sk__paper');
+      await expect(reference).toHaveText(/^Paper: Rao, N\., .*\(20\d\d\)\. .+\./);
+      await expect(reference.getByRole('link')).toHaveAttribute('href', url);
+    }
+    await expect(scene(page, 'views').locator('.sk__award')).toHaveText(
+      'Best Short Paper Nomination',
+    );
+    for (const id of ['pris', 'context'])
+      await expect(scene(page, id).locator('.sk__award')).toHaveCount(0);
+    expect(await page.locator(SK).innerText()).not.toMatch(/best paper|award/i);
+  });
+
+  test('each pick changes the drawing and the outcome, and the first one opens the results', async ({
+    page,
+  }) => {
+    await openStill(page);
+    for (const id of SCENES) {
+      await tab(page, id).click();
+      const active = scene(page, id);
+      await expect(active).toHaveAttribute('data-state', 'ready');
+      // Nothing picked yet: no option in the drawing, no outcome, results waiting.
+      await expect(active.locator('.sk__pick input:checked')).toHaveCount(0);
+      expect(await pictured(active), id).toEqual([]);
+      await expect(shown(active.locator('.sk__status'))).toHaveCount(0);
+      await expect(active.locator('.sk__results')).toBeHidden();
+      await expect(active.locator('.sk__after .sk__locked')).toBeVisible();
+      const all = await options(active);
+      expect(all.length, id).toBe(3);
+      for (const [index, option] of all.entries()) {
+        const radio = active.getByRole('radio', { name: option.name, exact: true });
+        if (index === 0) {
+          // With the keyboard: focus the option and press Space.
+          await radio.focus();
+          await page.keyboard.press('Space');
+        } else await radio.check();
+        await expect(radio).toBeChecked();
+        await expect(active).toHaveAttribute('data-state', 'done');
+        expect(await pictured(active), `${id}: ${option.value}`).toEqual([`pick-${option.value}`]);
+        await expect(shown(active.locator('.sk__status'))).toHaveText(option.outcome);
+        await expect(active.locator('.sk__results')).toBeVisible();
+        if (index === 0) {
+          // Said once: the outcome, then the results it released.
+          const live = page.locator(`${SK} [data-live]`);
+          await expect(live).toContainText(option.outcome);
+          await expect(live).toContainText(await active.locator('.sk__result').first().innerText());
+        }
+      }
+    }
+  });
+
+  test('"Show all" picks the sample and says so; Replay clears the pick', async ({ page }) => {
+    await openStill(page);
+    for (const id of SCENES) {
+      await tab(page, id).click();
+      const active = scene(page, id);
+      const sample = (await options(active)).find((option) => option.sample)!;
+      await page.getByRole('button', { name: 'Show all' }).click();
+      await expect(active).toHaveAttribute('data-state', 'done');
+      await expect(active.getByRole('radio', { name: sample.name, exact: true })).toBeChecked();
+      expect(await pictured(active), id).toEqual([`pick-${sample.value}`]);
+      await expect(shown(active.locator('.sk__status'))).toHaveText(sample.outcome);
+      await expect(active.locator('.sk__sample-note')).toBeVisible();
+      await page.getByRole('button', { name: 'Replay' }).click();
+      await expect(active).toHaveAttribute('data-state', 'ready');
+      await expect(active.locator('input:checked')).toHaveCount(0);
+      expect(await pictured(active), id).toEqual([]);
+      await expect(active.locator('.sk__sample-note')).toBeHidden();
+    }
+  });
+
+  test('draws each scene without the options, then shows only the one picked', async ({ page }) => {
+    test.slow();
+    await isolate(page);
+    await page.goto(PATH);
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
+    await scene(page, 'views')
+      .locator('svg[data-svg]')
+      .evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await expect(scene(page, 'views')).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    for (const id of SCENES) {
+      await tab(page, id).click();
+      const active = scene(page, id);
+      await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '4'));
+      if (id === 'views') await page.getByRole('button', { name: 'Replay' }).click();
+      await expect(active).toHaveAttribute('data-state', 'playing');
+      // While it draws, the pencil never traces an option: none is picked.
+      const seen = await active.evaluate(
+        (el) =>
+          new Promise<string[]>((resolve) => {
+            const found = new Set<string>();
+            const sample = () => {
+              for (const part of el.querySelectorAll('svg [data-part^="pick-"]')) {
+                const style = getComputedStyle(part);
+                if (style.visibility !== 'hidden' && style.opacity !== '0')
+                  found.add(part.getAttribute('data-part')!);
+              }
+              if ((el as HTMLElement).dataset.state === 'playing') requestAnimationFrame(sample);
+              else resolve([...found]);
+            };
+            sample();
+          }),
+      );
+      expect(seen, id).toEqual([]);
+      await expect(active).toHaveAttribute('data-state', 'ready');
+      expect(await undrawn(active), id).toBe(0);
+      const last = (await options(active)).at(-1)!;
+      await active.getByRole('radio', { name: last.name, exact: true }).check();
+      await expect.poll(() => pictured(active), { message: id }).toEqual([`pick-${last.value}`]);
+    }
+  });
+
+  test('keeps the page still while each scene draws and when its results appear', async ({
+    page,
+  }) => {
+    test.slow();
+    await isolate(page);
+    await page.goto(PATH);
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
+    await scene(page, 'views')
+      .locator('svg[data-svg]')
+      .evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await expect(scene(page, 'views')).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '8'));
+    for (const id of SCENES) {
+      await tab(page, id).click();
+      if (id === 'views') await page.getByRole('button', { name: 'Replay' }).click();
+      const active = scene(page, id);
+      const heights = await active.evaluate(
+        (el) =>
+          new Promise<number[]>((resolve) => {
+            const seen = new Set<number>();
+            const sample = () => {
+              seen.add(Math.round(el.getBoundingClientRect().height * 10) / 10);
+              if ((el as HTMLElement).dataset.state === 'playing') requestAnimationFrame(sample);
+              else resolve([...seen]);
+            };
+            sample();
+          }),
+      );
+      expect(heights, id).toHaveLength(1);
+      for (const option of await options(active)) {
+        await active.getByRole('radio', { name: option.name, exact: true }).check();
+        await expect(active).toHaveAttribute('data-state', 'done');
+        expect(
+          Math.round((await active.evaluate((el) => el.getBoundingClientRect().height)) * 10) / 10,
+          `${id}: ${option.value}`,
+        ).toBe(heights[0]);
+      }
+    }
+  });
+
+  test('without JavaScript, the three scenes are there, finished, with the sample picked', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto(PATH);
+    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(3);
+    await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
+    await expect(page.locator(`${SK} .sk__jump`)).toBeVisible();
+    for (const id of SCENES) {
+      const active = scene(page, id);
+      expect(await undrawn(active), id).toBe(0);
+      const sample = (await options(active)).find((option) => option.sample)!;
+      await expect(active.getByRole('radio', { name: sample.name, exact: true })).toBeChecked();
+      await expect(active.locator('input:enabled')).toHaveCount(0);
+      expect(await pictured(active), id).toEqual([`pick-${sample.value}`]);
+      await expect(shown(active.locator('.sk__status'))).toHaveText(sample.outcome);
+      await expect(active.locator('.sk__sample-note')).toBeVisible();
+      await expect(active.locator('.sk__after > .sk__results')).toBeVisible();
+      await expect(active.locator('.sk__paper')).toBeVisible();
+    }
+    await context.close();
+  });
+
+  test('has no accessibility violations in any scene, light or dark, before and after a pick', async ({
+    page,
+  }) => {
+    test.slow();
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await openStill(page);
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      for (const id of SCENES) {
+        await tab(page, id).click();
+        for (const finished of [false, true]) {
+          if (finished) await page.getByRole('button', { name: 'Show all' }).click();
+          await expect(scene(page, id)).toHaveAttribute('data-state', finished ? 'done' : 'ready');
+          const results = await new AxeBuilder({ page })
+            .include(SK)
+            .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+            .analyze();
+          expect(
+            results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(' | ')}`),
+            `${id}, ${colorScheme}, ${finished ? 'finished' : 'ready'}`,
+          ).toEqual([]);
+        }
+      }
+    }
+  });
+
+  test('every control is a target of at least 24 px, at every width, with no sideways scroll', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await isolate(page);
+    for (const width of [320, 375, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(PATH);
+      for (const id of SCENES) {
+        await tab(page, id).click();
+        const controls = page.locator(
+          `${SK} .sk__bar :is(button, a), ${SK} [data-scene="${id}"] :is(button, input)`,
+        );
+        for (const control of await controls.all()) {
+          const box = (await control.boundingBox())!;
+          expect(
+            Math.min(box.width, box.height),
+            `${id} at ${width}px: ${await control.evaluate((el) => el.outerHTML.slice(0, 80))}`,
+          ).toBeGreaterThanOrEqual(24);
+        }
+        await page.getByRole('button', { name: 'Show all' }).click();
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+          `${id} at ${width}px`,
+        ).toBeLessThanOrEqual(width);
+      }
+    }
+  });
+
+  test('loads under 50 KB of JavaScript, and no framework runtime', async ({ page }) => {
+    await isolate(page);
+    await page.goto(PATH);
+    const sources = await page
+      .locator('script[src]')
+      .evaluateAll((scripts) => scripts.map((script) => script.getAttribute('src')!));
+    let total = 0;
+    for (const src of sources) {
+      const file = readFileSync(new URL(`../../dist${src}`, import.meta.url));
+      total += gzipSync(file).length;
+      for (const [, name] of file.toString().matchAll(/from\s*"\.\/([^"]+\.js)"/g))
+        total += gzipSync(
+          readFileSync(new URL(`../../dist/_astro/${name}`, import.meta.url)),
+        ).length;
+    }
+    expect(total).toBeLessThan(50_000);
     expect(sources.join(' ')).not.toMatch(/client\.[\w-]+\.js/);
   });
 });

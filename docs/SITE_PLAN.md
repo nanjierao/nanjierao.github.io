@@ -88,7 +88,10 @@ Top to bottom (D21):
   portals arrive; the section's id stays `learners-and-teachers`). First, five sketch scenes:
   a browser tracker (prototype), a dorm laptop and a dining-hall phone (synthetic student), a
   classroom puppet, and a flooded street (simulated). Each is a line drawing with a caption per
-  region, a panel showing what the system builds, one hands-on step and the result it leads to.
+  region, a panel showing what the system builds, one hands-on step, the result it leads to and,
+  when it comes from a paper, the paper's reference with its DOI link (D73). The scene buttons sit
+  under a "Pick a scene" cue; the row ends with a link to the three teacher scenes on
+  /research/teacher-support/ (D73), kept off the home page for its LCP budget.
   Words in `src/data/sketch-scenes.ts`, drawings in `src/data/sketch-drawings.ts`, behavior in
   `src/scripts/sketch-scenes.ts` (under 4 KB gzipped, no library). Without JavaScript all five
   show finished. Then the learner and teacher work: one line of work as a diagram, four study
@@ -178,8 +181,9 @@ Full spec and copy: `content/life-portal.md`. Five acts:
 
 - **Research**: overview with the umbrella line and the three contexts (D27, D45), then theme
   pages adapted from facts.md and `source/dissertation-abstract.md`; no job-specific framing.
-  A study that is still running gets its own page, listed after the contexts under "Ongoing"
-  on the overview, the home page and the CV page (D69). The first one is the class study
+  The teacher support page ends its text with three sketch scenes, one per teacher-facing paper,
+  where the visitor picks an option (D73). A study that is still running gets its own page,
+  listed after the contexts under "Ongoing" on the overview, the home page and the CV page (D69). The first one is the class study
   (facts.md §5.9): Jimmy's words, design only, no names and no course number.
 - **Publications**: from facts.md §6, a TL;DR under first-author papers once approved (D28),
   filters that work without JS, BibTeX copy; Working papers only if approved.

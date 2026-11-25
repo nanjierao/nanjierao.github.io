@@ -1,7 +1,9 @@
 ---
-// The sketch scenes of the home page's "How AI learns about people and places" section (D68):
-// five line drawings, each with a caption for every part of the drawing, a panel that shows
-// what the system builds, one hands-on step, and the result that step leads to.
+// The sketch scenes (D68, D73): line drawings, each with a caption for every part of the
+// drawing, a panel that shows what the system builds, one hands-on step, the result that step
+// leads to, and the paper it comes from. The home page's section "How AI learns about people
+// and places" shows five; /research/teacher-support/ shows the three teacher scenes. Each set
+// links to the other at the end of its scene buttons.
 //
 // The page ships every scene finished: drawing, captions, sample answers and results. That is
 // what a visitor sees without JavaScript, and what a screen reader finds. With JavaScript,
@@ -20,11 +22,33 @@ import {
   SCENE_GROUPS,
   SKETCH_SUBTITLE,
   SUMMARY_LABELS,
+  type Scene,
+  type SceneGroup,
   type SceneId,
+  type ScenesLink,
 } from '../data/sketch-scenes.ts';
+import { getPublicationsByIds } from '../lib/content.ts';
+import { authorParts, isSelf } from '../lib/format.ts';
 
+interface Props {
+  /** The scenes, in groups of buttons: the home page's five unless given. */
+  groups?: SceneGroup[];
+  /** A link to the other set of scenes, after the buttons. */
+  link?: ScenesLink;
+}
+
+const { groups = SCENE_GROUPS, link } = Astro.props;
 const sceneById = new Map(SCENES.map((scene) => [scene.id, scene]));
-const firstId = SCENES[0]!.id;
+const scenes: Scene[] = groups.flatMap((group) => group.scenes.map((id) => sceneById.get(id)!));
+const firstId = scenes[0]!.id;
+/** The papers the scenes come from, as the publication list has them (hidden ones left out). */
+const papers = new Map(
+  (await getPublicationsByIds(scenes.flatMap((scene) => (scene.paper ? [scene.paper] : [])))).map(
+    (pub) => [pub.id, pub],
+  ),
+);
+/** A link's text: its address without the scheme, "doi.org/10.1109/…". */
+const linkText = (url: string): string => url.replace(/^https?:\/\//, '');
 /** The dorm scene's sample confirmations, which the finished dining-hall scene carries over. */
 const carried = sceneById
   .get('dorm')!
@@ -43,15 +67,24 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
   const anchor = shape.part ? DRAWINGS[id].anchors[shape.part] : undefined;
   return anchor ? `transform-origin: ${anchor[0]}px ${anchor[1]}px` : undefined;
 }
+
+/** Where the visitor picks an option, the drawing's parts for the sample option. */
+function chosen(scene: Scene, shape: Shape): boolean {
+  return scene.task.kind === 'choose' && shape.part === `pick-${scene.task.sample}`;
+}
 ---
 
 <div class="sk" data-sketch data-speed="1" data-shown={CONTROLS.shown}>
   <p class="sk__sub">{SKETCH_SUBTITLE}</p>
 
-  <div class="sk__bar" data-js-only>
-    <div class="sk__tabs" role="group" aria-label={CONTROLS.scenes}>
-      {SCENE_GROUPS.map((group) => (
-        <div class="sk__group" role="group" aria-label={group.label}>
+  <div class="sk__bar">
+    <p class="sk__cue" id="sk-cue" data-js-only>
+      {CONTROLS.pick}
+      <span aria-hidden="true"> ↓</span>
+    </p>
+    <div class="sk__tabs" role="group" aria-labelledby="sk-cue">
+      {groups.map((group) => (
+        <div class="sk__group" role="group" aria-label={group.label} data-js-only>
           <span class="sk__group-label" aria-hidden="true">
             {group.label}
           </span>
@@ -67,8 +100,21 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
           ))}
         </div>
       ))}
+      {/* The other set of scenes, on its own page: a link, not a scene button, and there
+          without JavaScript too. */}
+      {link && (
+        <div class="sk__group" role="group" aria-label={link.group}>
+          <span class="sk__group-label" aria-hidden="true">
+            {link.group}
+          </span>
+          <a class="sk__jump" href={link.href}>
+            {link.label}
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      )}
     </div>
-    <div class="sk__ctl">
+    <div class="sk__ctl" data-js-only>
       <button type="button" class="sk__btn" data-replay>
         {CONTROLS.replay}
       </button>
@@ -78,9 +124,10 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     </div>
   </div>
 
-  {SCENES.map((scene) => {
+  {scenes.map((scene) => {
     const { task } = scene;
     const drawing = DRAWINGS[scene.id];
+    const paper = scene.paper ? papers.get(scene.paper) : undefined;
     return (
       <div
         class:list={['sk__scene', { 'is-active': scene.id === firstId }]}
@@ -92,6 +139,7 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
         data-answer={task.kind === 'answer' ? task.sample : undefined}
         data-facing={task.kind === 'turn' ? 'right' : undefined}
         data-count={task.kind === 'toggle' ? task.channels.length : undefined}
+        data-choice={task.kind === 'choose' ? task.sample : undefined}
       >
         <div class="sk__head">
           <h3 class="sk__heading" id={`sk-${scene.id}`}>
@@ -124,7 +172,11 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
                     .filter((shape) => shape.fill)
                     .map((shape) => (
                       <path
-                        class={`sk__fill sk__fill--${shape.fill}`}
+                        class:list={[
+                          'sk__fill',
+                          `sk__fill--${shape.fill}`,
+                          { 'is-chosen': chosen(scene, shape) },
+                        ]}
                         d={shape.d}
                         data-part={shape.part}
                         style={pivot(scene.id, shape)}
@@ -134,7 +186,13 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
                     .filter((shape) => !shape.fill)
                     .map((shape) => (
                       <path
-                        class:list={['sk__ink', { 'sk__ink--thin': shape.stroke === 'thin' }]}
+                        class:list={[
+                          'sk__ink',
+                          {
+                            'sk__ink--thin': shape.stroke === 'thin',
+                            'is-chosen': chosen(scene, shape),
+                          },
+                        ]}
                         d={shape.d}
                         data-part={shape.part}
                         style={pivot(scene.id, shape)}
@@ -353,6 +411,39 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
                 </p>
               )}
               {task.kind === 'answer' && <p class="sk__sample-note">{task.sampleNote}</p>}
+              {task.kind === 'choose' && (
+                <>
+                  <fieldset class="sk__pick">
+                    <legend>{task.question}</legend>
+                    <div class="sk__choices">
+                      {task.options.map((option) => (
+                        <label class="sk__choice">
+                          <input
+                            type="radio"
+                            name={`sk-${scene.id}-choice`}
+                            value={option.value}
+                            checked={option.value === task.sample}
+                            data-sample={option.value === task.sample ? '' : undefined}
+                            disabled
+                          />
+                          <span class="sk__choice-face">{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <div class="sk__status sk__stack">
+                    {task.options.map((option) => (
+                      <p
+                        class:list={['sk__when', { 'is-chosen': option.value === task.sample }]}
+                        data-when={option.value}
+                      >
+                        {option.outcome}
+                      </p>
+                    ))}
+                  </div>
+                  <p class="sk__sample-note">{task.sampleNote}</p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -397,6 +488,33 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
         <p class="sk__source small muted">
           {scene.source} {scene.note}
         </p>
+        {paper && (
+          <p class="sk__paper small">
+            <span class="sk__paper-label">{CONTROLS.paper}</span>{' '}
+            {authorParts(paper.authors).map(({ before, name }) => (
+              <>
+                {before}
+                {isSelf(name) ? <strong>{name}</strong> : name}
+              </>
+            ))}{' '}
+            {paper.year && <>({paper.year}). </>}
+            <cite>{paper.title}.</cite> {paper.venue}
+            {paper.details && `, ${paper.details}`}.
+            {paper.notes.length > 0 && ` ${paper.notes.join('. ')}.`}
+            {paper.award && (
+              <>
+                {' '}
+                <span class="sk__award">{paper.award}</span>
+              </>
+            )}
+            {paper.url && (
+              <>
+                {' '}
+                <a href={paper.url}>{linkText(paper.url)}</a>
+              </>
+            )}
+          </p>
+        )}
       </div>
     );
   })}
@@ -456,6 +574,13 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     gap: var(--space-2);
   }
 
+  /* "Pick a scene", on its own line above the buttons. */
+  .sk__cue {
+    flex-basis: 100%;
+    margin: 0;
+    font-weight: 650;
+  }
+
   .sk__tabs {
     gap: var(--space-2) var(--space-5);
   }
@@ -492,12 +617,34 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     border-color: var(--color-text);
   }
 
-  /* The open scene: a heavier outline and weight as well as the paper color. */
+  /* A scene button looks like one at a glance: a filled chip with a raised lower edge. */
+  .sk__tab {
+    background: var(--color-surface);
+    box-shadow: 0 2px 0 var(--color-border);
+  }
+
+  .sk__tab:hover {
+    background: var(--color-paper);
+  }
+
+  /* The open scene: filled with the text color, bold, and pressed down onto its edge. */
   .sk__tab[aria-pressed='true'] {
     border-color: var(--color-text);
-    box-shadow: inset 0 0 0 1.5px var(--color-text);
-    background: var(--color-paper);
+    background: var(--color-text);
+    color: var(--color-bg);
+    box-shadow: none;
     font-weight: 650;
+    transform: translateY(2px);
+  }
+
+  /* The other set of scenes: a link, so it reads as one. */
+  .sk__jump {
+    display: inline-flex;
+    gap: 0.3em;
+    align-items: center;
+    min-height: 44px;
+    font-size: var(--text-sm);
+    font-weight: 600;
   }
 
   .sk__btn {
@@ -686,6 +833,19 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     stroke-opacity: 0.5;
     fill-opacity: 0.5;
     stroke-dasharray: 3 8;
+  }
+
+  /* A scene where the visitor picks an option: the drawing shows the option picked, and only
+     that one (the sample without JavaScript). */
+  .sk__svg [data-part^='pick-'] {
+    transition:
+      opacity 0.35s ease,
+      visibility 0.35s;
+  }
+
+  .sk__svg [data-part^='pick-']:not(.is-chosen) {
+    opacity: 0;
+    visibility: hidden;
   }
 
   /* The map cell: filled and ticked when three channels agree, hatched when two do, empty
@@ -965,7 +1125,8 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
   .sk__scene[data-count='3'] [data-when='3'],
   .sk__scene[data-count='2'] [data-when='2'],
   .sk__scene[data-count='1'] [data-when='1'],
-  .sk__scene[data-count='0'] [data-when='0'] {
+  .sk__scene[data-count='0'] [data-when='0'],
+  .sk__scene[data-kind='choose'] .sk__stack > .sk__when.is-chosen {
     visibility: inherit;
   }
 
@@ -1112,6 +1273,38 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     clear: both;
   }
 
+  /* The options of a pick: plain, like the other controls of the panel, and as many lines
+     as a long option needs. */
+  .sk__pick {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .sk__pick legend {
+    margin: 0 0 var(--space-2);
+    padding: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .sk__pick .sk__choices {
+    flex-wrap: wrap;
+  }
+
+  .sk__pick .sk__choice {
+    max-width: 100%;
+  }
+
+  .sk__pick .sk__choice-face {
+    height: auto;
+    min-height: 44px;
+    padding: var(--space-2) var(--space-3);
+    line-height: 1.3;
+    text-align: start;
+  }
+
   .sk__status {
     margin: var(--space-3) 0 0;
     font-size: var(--text-sm);
@@ -1222,6 +1415,29 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     margin: 0;
   }
 
+  /* The paper the scene comes from, as the publication list cites it, with its link. */
+  .sk__paper {
+    max-width: var(--measure);
+    margin: var(--space-2) 0 0;
+  }
+
+  .sk__paper-label {
+    font-weight: 600;
+  }
+
+  .sk__paper a {
+    overflow-wrap: anywhere;
+  }
+
+  .sk__award {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--color-series-a);
+    border-radius: 999px;
+    background: var(--color-surface);
+    font-weight: 600;
+  }
+
   @media (max-width: 56rem) {
     .sk__stage {
       grid-template-columns: minmax(0, 1fr);
@@ -1291,6 +1507,10 @@ function pivot(id: SceneId, shape: Shape): string | undefined {
     /* The open scene's button and the confirmed map cell must not rest on a fill or a shadow. */
     .sk__tab[aria-pressed='true'] {
       border-width: 3px;
+      border-color: Highlight;
+      background: Highlight;
+      color: HighlightText;
+      forced-color-adjust: none;
     }
 
     .sk__svg [data-part='cell'] {

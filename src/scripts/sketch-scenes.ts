@@ -1,7 +1,7 @@
-// Behavior of the home page's sketch scenes (D68). The page already holds every scene finished
-// (see SketchScenes.astro); this script shows one scene at a time, draws it stroke by stroke,
-// and runs each scene's hands-on step. All words stay in the HTML: the script only moves
-// attributes and classes, so it never needs the copy.
+// Behavior of the sketch scenes (D68, D73), on the home page and on the teacher support page.
+// The page already holds every scene finished (see SketchScenes.astro); this script shows one
+// scene at a time, draws it stroke by stroke, and runs each scene's hands-on step. All words
+// stay in the HTML: the script only moves attributes and classes, so it never needs the copy.
 //
 // Motion: a scene draws once when it first comes into view or when the visitor picks it, and
 // "Show all" stops it at any point. Nothing loops. With prefers-reduced-motion the drawings
@@ -10,7 +10,7 @@
 const STOP = Symbol('stop');
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-type Kind = 'answer' | 'judge' | 'turn' | 'toggle';
+type Kind = 'answer' | 'judge' | 'turn' | 'toggle' | 'choose';
 
 function init(root: HTMLElement): void {
   // The page has already fallen back to its finished scenes (the script came very late). Taking
@@ -93,10 +93,12 @@ function init(root: HTMLElement): void {
   const frame = (): Promise<number> => new Promise((resolve) => requestAnimationFrame(resolve));
   const ease = (x: number): number => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
 
+  /** The parts of options the visitor has not picked: out of the picture, so never drawn. */
+  const unpicked = (el: Element): boolean => el.matches('[data-part^="pick-"]:not(.is-chosen)');
   const inks = (scope: Element): SVGPathElement[] =>
     all<SVGPathElement>(scope, '.sk__ink').filter(
       // Lines that the current state hides (the hatch of the map cell) are not drawn.
-      (path) => getComputedStyle(path).visibility !== 'hidden',
+      (path) => !unpicked(path) && getComputedStyle(path).visibility !== 'hidden',
     );
   const fills = (scope: Element): SVGPathElement[] => all<SVGPathElement>(scope, '.sk__fill');
 
@@ -187,7 +189,7 @@ function init(root: HTMLElement): void {
       await drawPath(svg, path, Math.max(40, ((ms * 2) / 3) * (path.getTotalLength() / total)), t);
     }
     svg.querySelector('[data-pen]')?.removeAttribute('data-on');
-    const colors = fills(region);
+    const colors = fills(region).filter((fill) => !unpicked(fill));
     if (colors.length) await fade(colors, ms / 3, t);
   }
 
@@ -352,6 +354,15 @@ function init(root: HTMLElement): void {
 
   // ------------------------------------------------------------------ hands-on steps
 
+  /** A pick: the drawing's parts and the outcome line of the option picked, and no other. */
+  function applyChoice(scene: HTMLElement): void {
+    const choice = scene.dataset.choice ?? 'none';
+    for (const part of all(scene, '[data-part^="pick-"]'))
+      part.classList.toggle('is-chosen', part.getAttribute('data-part') === `pick-${choice}`);
+    for (const line of all<HTMLElement>(scene, '.sk__status [data-when]'))
+      line.classList.toggle('is-chosen', line.dataset.when === choice);
+  }
+
   /** Back to before the visitor (or the sample) answered. */
   function resetTask(scene: HTMLElement): void {
     scene.removeAttribute('data-task-done');
@@ -366,6 +377,10 @@ function init(root: HTMLElement): void {
       row.removeAttribute('data-sampled');
     }
     if (kind(scene) === 'answer') scene.dataset.answer = 'none';
+    if (kind(scene) === 'choose') {
+      scene.dataset.choice = 'none';
+      applyChoice(scene);
+    }
     if (kind(scene) === 'turn') scene.dataset.facing = 'right';
     if (kind(scene) === 'toggle') applyChannels(scene);
     const tally = scene.querySelector('[data-tally]');
@@ -463,6 +478,15 @@ function init(root: HTMLElement): void {
         scene.setAttribute('data-sampled', '');
       }
     }
+    if (kind(scene) === 'choose' && scene.dataset.choice === 'none') {
+      const sample = scene.querySelector<HTMLInputElement>('input[data-sample]');
+      if (sample) {
+        sample.checked = true;
+        scene.dataset.choice = sample.value;
+        scene.setAttribute('data-sampled', '');
+        applyChoice(scene);
+      }
+    }
     completeTask(scene);
   }
 
@@ -477,6 +501,7 @@ function init(root: HTMLElement): void {
         const row = input.closest<HTMLElement>('[data-entry]');
         if (input.type === 'checkbox') input.checked = !row?.hasAttribute('data-off');
         else if (kind(scene) === 'answer') input.checked = input.value === scene.dataset.answer;
+        else if (kind(scene) === 'choose') input.checked = input.value === scene.dataset.choice;
         else input.checked = input.value === row?.dataset.mark;
       }
     }
@@ -577,6 +602,11 @@ function init(root: HTMLElement): void {
       sayStep(scene, '.sk__entry--label .sk__when', completeTask(scene));
     } else if (kind(scene) === 'toggle') {
       applyChannels(scene);
+      sayStep(scene, '.sk__status .sk__when', completeTask(scene));
+    } else if (kind(scene) === 'choose') {
+      scene.dataset.choice = input.value;
+      scene.removeAttribute('data-sampled');
+      applyChoice(scene);
       sayStep(scene, '.sk__status .sk__when', completeTask(scene));
     }
   });

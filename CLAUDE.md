@@ -151,7 +151,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
   one line, CV / Publications / Email) first, then the word cloud and portals, then the section
   "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
-  step, then the learner and teacher work. The footer carries the annotation legend (D30), the
+  step and, when it comes from a paper, that paper's reference and DOI link, then the learner and
+  teacher work. Its row of scene buttons links to the three teacher scenes on
+  /research/teacher-support/ (D73), which link back. The footer carries the annotation legend (D30), the
   public email address (D70) and a link to the Daily notes. In Recent, the cards after the three
   news items start with Daily notes, which links to /notes/ and shows the newest note, an item
   with a bold lead by its lead alone (D71).

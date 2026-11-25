@@ -1,20 +1,50 @@
-// Words and structure of the home page's sketch scenes (D68). Every statement comes from
-// content/facts.md (§5.1, §5.3, §5.4, §7, §5.8); tests/unit/learners-teachers.test.ts reads every
-// string here and checks its numbers against that file. The line drawings are in
-// sketch-drawings.ts. Interests, records, reports and posts shown in the scenes are made up,
-// and each scene says so.
+// Words and structure of the sketch scenes (D68, D73): five on the home page, three teacher
+// scenes on /research/teacher-support/. Every statement comes from content/facts.md (§5.1, §5.3,
+// §5.4, §5.5, §7, §5.8); tests/unit/learners-teachers.test.ts reads every string here and checks
+// its numbers against that file. The line drawings are in sketch-drawings.ts. Interests,
+// records, reports, posts and students shown in the scenes are made up, and each scene says so.
 
-export type SceneId = 'tracker' | 'dorm' | 'dining' | 'puppet' | 'city';
+export type SceneId =
+  'tracker' | 'dorm' | 'dining' | 'puppet' | 'city' | 'views' | 'pris' | 'context';
 
 export const SKETCH_SUBTITLE =
   'Each scene shows where the data comes from, what the system builds from it, and who checks it.';
 
-/** Scene buttons, grouped by what is being observed. */
-export const SCENE_GROUPS: Array<{ label: string; scenes: SceneId[] }> = [
+export interface SceneGroup {
+  label: string;
+  scenes: SceneId[];
+}
+
+/** The home page's scene buttons, grouped by what is being observed. */
+export const SCENE_GROUPS: SceneGroup[] = [
   { label: 'Learners', scenes: ['tracker', 'dorm', 'dining'] },
   { label: 'Hands', scenes: ['puppet'] },
   { label: 'City', scenes: ['city'] },
 ];
+
+/** The teacher scenes, on /research/teacher-support/ (D73): one per teacher-facing paper. */
+export const TEACHER_SCENE_GROUPS: SceneGroup[] = [
+  { label: 'Teachers', scenes: ['views', 'pris', 'context'] },
+];
+
+/** A link from one set of scenes to the other, at the end of its row of scene buttons. */
+export interface ScenesLink {
+  group: string;
+  label: string;
+  href: string;
+}
+
+export const TEACHER_SCENES_LINK: ScenesLink = {
+  group: 'Teachers',
+  label: 'Three scenes on their own page',
+  href: '/research/teacher-support/#scenes',
+};
+
+export const HOME_SCENES_LINK: ScenesLink = {
+  group: 'Learners, hands, city',
+  label: 'Five scenes on the home page',
+  href: '/#learners-and-teachers',
+};
 
 export type Glyph =
   | 'search'
@@ -26,7 +56,15 @@ export type Glyph =
   | 'camera'
   | 'chip'
   | 'sensor'
-  | 'post';
+  | 'post'
+  | 'fish'
+  | 'sprout'
+  | 'wave'
+  | 'mic'
+  | 'pin'
+  | 'card'
+  | 'clock'
+  | 'runner';
 
 export interface Entry {
   glyph: Glyph;
@@ -104,7 +142,22 @@ export interface Verdict {
   text: string;
 }
 
-export type Task = AnswerTask | JudgeTask | TurnTask | ToggleTask;
+/**
+ * Teacher scenes: the visitor picks one option, and the drawing and the outcome follow it. The
+ * drawing's shapes for an option carry the part `pick-<value>`.
+ */
+export interface ChooseTask {
+  kind: 'choose';
+  prompt: string;
+  /** Legend of the options. */
+  question: string;
+  options: Array<{ value: string; label: string; outcome: string }>;
+  /** The option shown before the visitor picks one, and without JavaScript. */
+  sample: string;
+  sampleNote: string;
+}
+
+export type Task = AnswerTask | JudgeTask | TurnTask | ToggleTask | ChooseTask;
 
 export interface Scene {
   id: SceneId;
@@ -126,6 +179,8 @@ export interface Scene {
   summary: { data: string; builds: string; checkedBy: string };
   source: string;
   note: string;
+  /** The published paper the scene comes from (an id in src/content/publications.yaml). */
+  paper?: string;
 }
 
 export const SUMMARY_LABELS = {
@@ -137,6 +192,10 @@ export const SUMMARY_LABELS = {
 /** Fixed words of the controls. */
 export const CONTROLS = {
   scenes: 'Scenes',
+  /** The cue before the scene buttons. */
+  pick: 'Pick a scene',
+  /** Before a scene's reference. */
+  paper: 'Paper:',
   replay: 'Replay',
   showAll: 'Show all',
   yourTurn: 'Your turn',
@@ -289,6 +348,7 @@ export const SCENES: Scene[] = [
     },
     source: LEARNER_SOURCE,
     note: LEARNER_NOTE,
+    paper: 'icalt-2026-interest-extraction',
   },
   {
     id: 'dining',
@@ -357,6 +417,7 @@ export const SCENES: Scene[] = [
     },
     source: LEARNER_SOURCE,
     note: LEARNER_NOTE,
+    paper: 'icalt-2026-interest-extraction',
   },
   {
     id: 'puppet',
@@ -417,6 +478,7 @@ export const SCENES: Scene[] = [
     source:
       'Puppet storytelling system, built for the NSF project To Enact, To Tell, To Write (HCII 2021).',
     note: 'The drawing is an illustration, not a picture of the system.',
+    paper: 'hcii-2021-puppet-system',
   },
   {
     id: 'city',
@@ -498,5 +560,224 @@ export const SCENES: Scene[] = [
     source:
       'CS-UDT flood prototype for Jacksonville (DTRUE 2026, with Jatin Verma and Ava Prator).',
     note: 'Everything in this scene is simulated: the replay is modeled on a past hurricane, and the reports and posts are synthetic.',
+    paper: 'dtrue-2026-csudt-framework',
+  },
+  {
+    id: 'views',
+    label: 'Classroom, tablet',
+    heading: 'A student’s experiences, shown to the teacher three ways',
+    badge: 'Synthetic sample',
+    alt: 'Line drawing: a teacher stands in a classroom and holds a tablet, while a student at a desk raises a hand. A magnified view of the tablet shows what the student has experienced: as lines of text, as a mind map or as a small picture, depending on the view picked.',
+    steps: [
+      { line: 'A classroom in the middle of a lesson.', draw: 0 },
+      { line: 'A student raises a hand, and the teacher turns to them.', draw: 1 },
+      {
+        line: 'On a tablet, the teacher looks at what this student has experienced, to link the lesson to it.',
+        draw: 2,
+      },
+      {
+        line: 'The same information can be shown as plain text, as a mind map or as a story illustration.',
+        flyFrom: 'tablet',
+        reveal: [0, 1, 2],
+      },
+      { line: 'Which view does the teacher take in fastest, and with the least effort?' },
+    ],
+    panel: {
+      title: 'What this student has experienced',
+      empty: 'Nothing shown yet.',
+      entries: [
+        { glyph: 'fish', name: 'fishing trips', why: 'goes fishing with a grandparent' },
+        { glyph: 'sprout', name: 'a vegetable garden', why: 'grows tomatoes at home' },
+        { glyph: 'wave', name: 'a trip to the coast', why: 'saw tide pools last summer' },
+      ],
+    },
+    task: {
+      kind: 'choose',
+      prompt: 'You are the teacher. Pick a view of the student’s experiences.',
+      question: 'Show them as',
+      options: [
+        {
+          value: 'text',
+          label: 'Plain text',
+          outcome: 'Plain text: one sentence per experience, to read in turn.',
+        },
+        {
+          value: 'map',
+          label: 'Mind map',
+          outcome: 'Mind map: the student in the middle, and one branch per experience.',
+        },
+        {
+          value: 'story',
+          label: 'Story illustration',
+          outcome: 'Story illustration: the three experiences drawn as one small scene.',
+        },
+      ],
+      sample: 'text',
+      sampleNote: 'A sample view is shown.',
+    },
+    results: [
+      {
+        text: 'In the study, the story illustration, and to a lesser extent the mind map, lowered the mental effort and the time needed to take in the information.',
+      },
+    ],
+    locked: 'Pick a view to see what the study found.',
+    summary: {
+      data: 'A student’s personal experiences',
+      builds: 'A view of them for the teacher: plain text, a mind map or a story illustration',
+      checkedBy: 'A within-subjects study of response accuracy, response time and mental effort',
+    },
+    source: 'Three visualizations compared in a hypothetical teaching scenario (IEEE ICALT 2021).',
+    note: 'The student and the experiences in this scene are made up for illustration.',
+    paper: 'icalt-2021-visual-efficiency',
+  },
+  {
+    id: 'pris',
+    label: 'Classroom, Kinect',
+    heading: 'A teacher’s words, heard by a Kinect and matched to students',
+    badge: 'Synthetic sample',
+    alt: 'Line drawing: a teacher walks between tables of students in a classroom and talks. A Kinect sensor sits under the board, and a ring on the floor marks where the teacher stands. A speech bubble shows a picture of what the teacher talks about, and the table of the students it matches is highlighted.',
+    steps: [
+      { line: 'A classroom with tables of students.', draw: 0 },
+      { line: 'A teacher walks between the tables and talks.', draw: 1 },
+      {
+        line: 'A Kinect sensor picks up what the teacher says and where the teacher stands.',
+        draw: 2,
+      },
+      {
+        line: 'Speech recognition turns the teacher’s words into text, in real time.',
+        flyFrom: 'kinect',
+        reveal: [0, 1],
+      },
+      {
+        line: 'PRIS looks up students’ personal information that relates to those words.',
+        reveal: [2],
+      },
+      { line: 'The teacher can bring what it finds into the lesson.' },
+    ],
+    panel: {
+      title: 'What PRIS works with',
+      empty: 'Nothing picked up yet.',
+      entries: [
+        { glyph: 'mic', name: 'Speech', why: 'the teacher’s words, recognized as text' },
+        { glyph: 'pin', name: 'Position', why: 'where the teacher stands, from the Kinect' },
+        {
+          glyph: 'card',
+          name: 'Students',
+          why: 'their personal information that relates to the words',
+        },
+      ],
+    },
+    task: {
+      kind: 'choose',
+      prompt: 'You are the teacher. Pick what you say next.',
+      question: 'Say',
+      options: [
+        {
+          value: 'volcano',
+          label: '“Today: volcanoes.”',
+          outcome:
+            'PRIS finds two students at the table on the left: one hiked up a volcano on a family trip, one built a model volcano.',
+        },
+        {
+          value: 'pizza',
+          label: '“Let’s cut a pizza into eighths.”',
+          outcome:
+            'PRIS finds a student at the middle table who helps at a family pizza shop on weekends.',
+        },
+        {
+          value: 'bees',
+          label: '“Who has seen a beehive?”',
+          outcome: 'PRIS finds a student at the table on the right whose family keeps bees.',
+        },
+      ],
+      sample: 'volcano',
+      sampleNote: 'A sample is shown.',
+    },
+    results: [
+      {
+        text: 'In the study, PRIS was compared with notecards. With PRIS, usability was better, the teacher’s cognitive load was lower, and personalized teaching happened more often.',
+      },
+    ],
+    locked: 'Pick what the teacher says to see what the study found.',
+    summary: {
+      data: 'The teacher’s speech and position, from a Kinect',
+      builds: 'In real time, students’ personal information that relates to what the teacher says',
+      checkedBy: 'A study that compared PRIS with notecards',
+    },
+    source: 'PRIS, a real-time system for personalized teaching support (HCI International 2022).',
+    note: 'The classroom, the students and their information in this scene are made up for illustration.',
+    paper: 'hcii-2022-information-retrieval',
+  },
+  {
+    id: 'context',
+    label: 'Staff room, focus group',
+    heading: 'What teachers draw on to make a lesson relevant',
+    badge: 'Synthetic sample',
+    alt: 'Line drawing: four teachers sit around a table in a staff room and talk, with a lesson plan in the middle. Three speech bubbles above them hold a clock, a running figure and a map pin; the bubble of the kind of context picked is highlighted.',
+    steps: [
+      { line: 'A staff room after school.', draw: 0 },
+      { line: 'Teachers meet in a focus group, with a lesson plan on the table.', draw: 1 },
+      { line: 'They describe how they link a lesson to their students’ lives.', draw: 2 },
+      {
+        line: 'Three kinds of context come up: time, activity and location.',
+        flyFrom: 'bubbles',
+        reveal: [0, 1, 2],
+      },
+      { line: 'Each ties the lesson to what students have experienced.' },
+    ],
+    panel: {
+      title: 'The context for contextualizing',
+      empty: 'Nothing named yet.',
+      entries: [
+        { glyph: 'clock', name: 'Time', why: 'for example, the week of the first frost' },
+        { glyph: 'runner', name: 'Activity', why: 'for example, a weekend soccer game' },
+        { glyph: 'pin', name: 'Location', why: 'for example, the river on the way to school' },
+      ],
+    },
+    task: {
+      kind: 'choose',
+      prompt: 'Pick a kind of context to see how it could tie a lesson to students.',
+      question: 'Context',
+      options: [
+        {
+          value: 'time',
+          label: 'Time',
+          outcome:
+            'For example, a lesson on ice and water in the week of the first frost, when students have just seen ice on the windows.',
+        },
+        {
+          value: 'activity',
+          label: 'Activity',
+          outcome:
+            'For example, a lesson on speed and distance, linked to the soccer game many students played at the weekend.',
+        },
+        {
+          value: 'location',
+          label: 'Location',
+          outcome:
+            'For example, a lesson on erosion, linked to the river students cross on the way to school.',
+        },
+      ],
+      sample: 'time',
+      sampleNote: 'A sample is shown.',
+    },
+    results: [
+      {
+        text: 'The focus groups named three categories of context, time, activity and location, each tied to the lesson and to students’ prior experiences.',
+      },
+      {
+        text: 'The paper turns them into design implications for adaptive teacher support systems.',
+      },
+    ],
+    locked: 'Pick a kind of context to see what the focus groups found.',
+    summary: {
+      data: 'Focus groups with teachers',
+      builds:
+        'Three categories of context, and design implications for adaptive teacher support systems',
+      checkedBy: 'Teachers, describing their own experience of contextualizing',
+    },
+    source: 'Focus groups with teachers on making instruction relevant (IEEE ICALT 2023).',
+    note: 'The examples in this scene are made up for illustration.',
+    paper: 'icalt-2023-context-for-contextualizing',
   },
 ];

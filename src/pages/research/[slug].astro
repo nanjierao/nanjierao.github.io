@@ -4,6 +4,8 @@ import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BuildCard from '../../components/BuildCard.astro';
 import PublicationList from '../../components/PublicationList.astro';
+import SketchScenes from '../../components/SketchScenes.astro';
+import { HOME_SCENES_LINK, TEACHER_SCENE_GROUPS } from '../../data/sketch-scenes.ts';
 import { CONTEXT_LABELS, ONGOING_LABEL } from '../../content/schemas.ts';
 import { getBuildsByIds, getPublicationsByIds, getThemes, type Theme } from '../../lib/content.ts';
 
@@ -32,6 +34,13 @@ const builds = await getBuildsByIds(theme.data.builds);
   <div class="prose prose--wide">
     <Content />
   </div>
+
+  {theme.data.scenes === 'teachers' && (
+    <section class="theme-scenes" id="scenes" aria-labelledby="theme-scenes">
+      <h2 id="theme-scenes">One scene per paper</h2>
+      <SketchScenes groups={TEACHER_SCENE_GROUPS} link={HOME_SCENES_LINK} />
+    </section>
+  )}
 
   {publications.length > 0 && (
     <section aria-labelledby="theme-publications">

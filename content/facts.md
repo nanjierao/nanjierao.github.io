@@ -215,6 +215,23 @@ they supersede the CVs and the research statement wherever they differ.
   automation levels, Norman's action cycle); update covering 2021–2026 generative-AI systems in
   preparation for IEEE Transactions on Learning Technologies.
 - Teacher-facing papers: ICALT 2021 (Best Short Paper Nomination), HCII 2022, ICALT 2023.
+- What they did, from their abstracts (read through web-search listings on Nov 25, 2026; the
+  publisher pages are not reachable from the session; check):
+  - ICALT 2021: a within-subjects study of three visualizations of students' personal relevant
+    information (plain text, a graphical mind map, a story illustration) in a hypothetical
+    teaching scenario; visual efficiency measured as response accuracy, response time and
+    mental effort; the story illustration and, to a lesser extent, the mind map lowered mental
+    effort and the time needed to take in the information.
+  - HCII 2022: PRIS, a real-time system for personalized teaching support, built on a
+    speech-recognition-based pipeline that retrieves students' personal information; compared
+    with notecards, it showed better usability, lower teacher cognitive load and more frequent
+    personalized teaching behaviors. It used a Kinect for speech and position recognition in a
+    classroom (Jimmy, relayed Nov 25, 2026).
+  - ICALT 2023: focus groups with teachers about contextualizing; three categories of context
+    (time, activity, location), tied to the lesson and to students' prior experiences; design
+    implications for adaptive teacher support systems.
+- Recognition: mention only ICALT 2021's Best Short Paper Nomination; no award for ICALT 2023
+  (Jimmy, relayed Nov 25, 2026).
 
 ### 5.6 Explanation and recommendation
 - Explanation types and user motivations in recommender systems (AAAI HCOMP 2020, co-author).
@@ -259,8 +276,8 @@ scenes use the facts of the sections named below. What comes only from the desig
 says so.
 
 - Title: "How AI learns about people and places". Subtitle: "Each scene shows where the data
-  comes from, what the system builds from it, and who checks it." Five scenes; no teacher scene,
-  because §5.5 has only titles for that work.
+  comes from, what the system builds from it, and who checks it." Five scenes on the home page;
+  the three teacher scenes, below, are on a page of their own (D73).
 - Scene 0, Tracker Toolbox (§7; labeled a prototype; no numbers): it logs clicks, scrolls and
   searches, follows gaze with WebGazer.js, maps records to page content, and asks the learner
   once a minute. Design: the pop-up in the scene asks "Did you learn something in the last
@@ -285,6 +302,19 @@ says so.
   cell; when two agree, a one-tap verification quest; when three agree, confirmed; 10.8 hours
   into a 30-hour replay; four confirmed cells and three open quests at the peak. Design: the
   visitor can switch channels off, and with one channel left the scene says neither rule applies.
+
+- Teacher scenes (D73), on /research/teacher-support/, linked from the home page's row of scene
+  buttons; one per teacher-facing paper (§5.5), in the same form, each with one choice to make.
+  Their students, experiences, words and examples are made up, and each scene says so.
+  - Classroom, tablet (ICALT 2021): a student's experiences shown as plain text, a mind map or a
+    story illustration; the study's result as in §5.5. Design: the three made-up experiences.
+  - Classroom, Kinect (HCII 2022): a Kinect picks up the teacher's speech and position; PRIS
+    looks up students' personal information that relates to the words; the comparison with
+    notecards as in §5.5. Design: what the teacher says and the students it matches.
+  - Staff room, focus group (ICALT 2023): the three categories of context; design: the examples.
+- Every scene that comes from a published paper ends with the paper's full reference, linked to
+  its DOI where §6 has one (Jimmy, relayed Nov 25, 2026). The scene buttons sit under a "Pick a
+  scene" cue and look like tabs, with the picked one filled in.
 
 ### 5.9 Ongoing: analyzing data through an AI assistant without a programming background (a first-person study of one course; D69)
 Source: Jimmy's page text of Nov 24, 2026 (not in this repository). The page
@@ -415,7 +445,9 @@ Facts, in the page's order:
 ## 6. Publications (12 peer-reviewed; * = first author)
 
 Do not hard-code citation counts or h-index on the site (they go stale) — link to Google Scholar.
-DOIs/URLs: `TODO` — get them from a Google Scholar BibTeX export.
+DOIs: [2], [4], [5], [6] and [11] carry theirs (found by web search on Nov 25, 2026, from listings
+of the papers; the publisher pages and doi.org are not reachable from the session, so Jimmy
+checks them: `TODO(jimmy)`). The rest: `TODO`, from a Google Scholar BibTeX export.
 
 Refereed conference papers
 1. *Rao, N., Lanzino, A., Chenore, R., Adhikari, I., Brown, S. A., Quek, F., & Chu, S. L. (2026).
@@ -423,17 +455,19 @@ Refereed conference papers
    2026, Springer. Full paper, accepted.
 2. *Rao, N., Huang, Z., Kulkarni, A., Ragan, E., & Chu, S. L. (2026). Identifying Student
    Interests for Interest-Based Learning: A Comparison of Interest Extraction from Browsing
-   History and Social Media Posts. IEEE ICALT 2026. Full paper.
+   History and Social Media Posts. IEEE ICALT 2026. Full paper. DOI 10.1109/ICALT68022.2026.00023
+   (one listing; pages differ between listings, so none are given).
 3. Kulkarni, A., Powell, L., Murphy, S., Rao, N., & Chu, S. L. (2023). Everyday-Inspired Movies:
    Towards the Design of Movie Recommender Systems Based on Everyday Life through Personal Social
    Media. IFIP INTERACT 2023, Springer, pp. 160–169.
 4. *Rao, N., Li, Q., Murphy, S., & Chu, S. L. (2023). The Context for Contextualizing: Design
    Implications for Adaptive Teacher Support Systems for More Relevant Instruction. IEEE ICALT
-   2023, pp. 71–73.
+   2023, pp. 71–73. DOI 10.1109/ICALT58122.2023.00027.
 5. *Rao, N., & Chu, S. L. (2021). Enhancing the Visual Efficiency for Communicating Students'
-   Personal Relevant Information. IEEE ICALT 2021. Best Short Paper Nomination.
+   Personal Relevant Information. IEEE ICALT 2021, pp. 14–16. Best Short Paper Nomination. DOI
+   10.1109/ICALT52272.2021.00011.
 6. *Rao, N., Chu, S. L., & Chenore, R. (2021). Flexible Low-Cost Digital Puppet System. HCI
-   International (HCII 2021), Springer LNCS.
+   International (HCII 2021), Springer LNCS. DOI 10.1007/978-3-030-77599-5_46.
 7. Li, Q., Chu, S. L., Rao, N., & Nourani, M. (2020). Understanding the Effects of Explanation
    Types and User Motivations on Recommender System Use. AAAI HCOMP 2020.
 8. Zarei, N., Chu, S. L., Quek, F., Rao, N. J., & Brown, S. A. (2020). Investigating the Effects
@@ -448,7 +482,7 @@ Extended abstracts, posters, workshop papers
     Authors, order and title as the DTRUE 2026 certificate gives them (Jimmy, Nov 25, 2026).
 11. *Rao, N., Chu, S. L., Jing, Z., Kuang, H., Tang, Y., & Dong, Z. (2022). Exploring Information
     Retrieval for Personalized Teaching Support. HCI International 2022, Late Breaking Posters,
-    Springer, pp. 191–197.
+    Springer, pp. 191–197. DOI 10.1007/978-3-031-19682-9_25.
 12. *Rao, N., Zhang, L., Chu, S. L., Jurczyk, K., Candelora, C., Su, S., & Kozlin, C. (2020).
     Investigating the Necessity of Meaningful Context Anchoring in Augmented Reality Smart Glasses
     Interaction for Everyday Learning. IEEE VR 2020, workshop paper and poster.
