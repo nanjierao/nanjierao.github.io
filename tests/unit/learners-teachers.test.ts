@@ -540,6 +540,11 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
         /PRIS was compared with notecards\. With PRIS, usability was better, the teacher’s cognitive load was lower, and personalized teaching happened more often/,
       ],
       [
+        /It used a Kinect for speech and position recognition in a classroom/,
+        words('pris'),
+        /A Kinect sensor picks up what the teacher says/,
+      ],
+      [
         /The Kinect tracked the teacher's position, because where the teacher stands in the classroom matters/,
         words('pris'),
         /A Kinect sensor picks up what the teacher says and where the teacher stands\./,
