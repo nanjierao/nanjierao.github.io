@@ -725,7 +725,7 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
           },
         ],
       },
-      // The Kinect and the waves it senses with, and the speech bubble with the table of students it matches (parts 'pick-volcano', 'pick-pizza', 'pick-bees').
+      // The Kinect, its view of the teacher and the ring where the teacher stands (it tracks the teacher's position: facts.md §5.5), and the speech bubble with the table of students it matches (parts 'pick-volcano', 'pick-pizza', 'pick-bees').
       {
         ms: 2800,
         shapes: [
@@ -755,7 +755,11 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
           { d: 'M188 161 L188 165 M196 161 L196 165 M148 167 L234 165', stroke: 'ink' },
           { d: 'M160 167 L160 179 L172 167 M222 165 L222 177 L210 165', stroke: 'thin' },
           {
-            d: 'M243 145 C 247 149, 247 155, 243 159 M250 140 C 257 147, 257 157, 250 164 M257 135 C 267 145, 267 159, 257 169',
+            d: 'M238 151 C 264 150, 292 155, 316 162 M237 157 C 266 198, 291 290, 304 375',
+            stroke: 'thin',
+          },
+          {
+            d: 'M398 381 C 398 385, 376 389, 348 389 C 320 389, 298 385, 298 381 C 298 377, 320 373, 348 373 C 376 373, 398 377, 398 381 Z',
             stroke: 'thin',
           },
           {

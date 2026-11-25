@@ -540,9 +540,9 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
         /PRIS was compared with notecards\. With PRIS, usability was better, the teacher’s cognitive load was lower, and personalized teaching happened more often/,
       ],
       [
-        /It used a Kinect for speech and position recognition in a classroom/,
+        /The Kinect tracked the teacher's position, because where the teacher stands in the classroom matters/,
         words('pris'),
-        /A Kinect sensor picks up speech and position in the classroom/,
+        /A Kinect sensor picks up what the teacher says and where the teacher stands\./,
       ],
       [
         /focus groups with teachers about contextualizing; three categories of context \(time, activity, location\), tied to the lesson and to students' prior experiences; design implications for adaptive teacher support systems/,
@@ -558,6 +558,35 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     for (const id of ['views', 'pris', 'context'] as const)
       for (const text of strings(scene(id)))
         expect(text.replace(/\b(2021|2022|2023)\b/g, ''), `${id}: ${text}`).not.toMatch(/\d/);
+  });
+
+  it('has the Kinect follow the teacher, in its words and its drawing (Jimmy, Nov 25, 2026)', () => {
+    const pris = scene('pris');
+    // Everything the scene says about position is the teacher's.
+    const position = pris.panel.entries.find((entry) => entry.name === 'Position')!;
+    expect(position.why).toBe('where the teacher stands in the classroom, from the Kinect');
+    expect(pris.summary.data).toBe(
+      'The teacher’s speech and position in the classroom, from a Kinect',
+    );
+    expect(pris.alt).toContain('follows where the teacher stands, marked by a ring on the floor');
+    for (const text of strings(pris))
+      expect(text, text).not.toMatch(
+        /students?[’']s? (position|places?)|where (the )?students (stand|sit)/i,
+      );
+    // The drawing marks where the teacher stands: a closed ring on the floor, centered under the
+    // teacher, drawn with the Kinect (the step that names it).
+    const kinectStep = pris.steps.find((step) => step.line.startsWith('A Kinect sensor'))!;
+    const region = DRAWINGS.pris.regions[kinectStep.draw!]!;
+    const [teacherX] = DRAWINGS.pris.anchors.teacher!;
+    const rings = region.shapes.filter((shape) => {
+      if (!shape.stroke || shape.part || !shape.d.endsWith('Z')) return false;
+      const numbers = (shape.d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+      const xs = numbers.filter((_, index) => index % 2 === 0);
+      const ys = numbers.filter((_, index) => index % 2 === 1);
+      const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
+      return Math.abs(centerX - teacherX) <= 20 && Math.min(...ys) >= 365;
+    });
+    expect(rings).toHaveLength(1);
   });
 });
 
