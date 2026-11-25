@@ -453,13 +453,22 @@ test.describe('daily notes (D71)', () => {
       .locator('li')
       .evaluateAll((lines) =>
         lines.map((line) => {
+          // A lead is a whole sentence in bold at the start, with more after it: after a space,
+          // or straight after a Chinese sentence's end (noteLead in src/lib/notes.ts).
           const text = line.textContent ?? '';
           const first = line.firstChild;
+          const bold =
+            first instanceof HTMLElement && first.tagName === 'STRONG'
+              ? (first.textContent ?? '')
+              : '';
+          const rest = text.slice(bold.length);
+          const sentence = /[.!?\u3002\uFF01\uFF1F]['"\u2019\u201D)\uFF09\u300D\u300F]?$/u.test(
+            bold,
+          );
+          const chinese = /[\u3002\uFF01\uFF1F]['"\u2019\u201D)\uFF09\u300D\u300F]?$/u.test(bold);
           const lead =
-            first instanceof HTMLElement &&
-            first.tagName === 'STRONG' &&
-            /^\s+\S/.test(text.slice(first.textContent?.length ?? 0))
-              ? first.textContent
+            bold && sentence && (/^\s+\S/u.test(rest) || (chinese && /^\S/u.test(rest)))
+              ? bold
               : null;
           return { text, lead };
         }),
@@ -531,17 +540,21 @@ test.describe('daily notes (D71)', () => {
     ]);
     await expect(lines('2026-10-01').nth(4).locator('span[lang="zh-CN"]')).toHaveText(['测试短语']);
     // An item's bold lead is bold, and its words are kept without the asterisks.
+    // A lead that mixes English and Chinese is one bold element, its Chinese marked inside it.
     const led = lines('2026-10-02').nth(4);
-    await expect(led.locator('strong')).toHaveText('A bold lead for a longer test item.');
+    await expect(led.locator('strong')).toHaveText(
+      'A bold lead with a Chinese word, 中文, for a longer test item.',
+    );
+    await expect(led.locator('strong span[lang="zh-CN"]')).toHaveText('中文');
     await expect(led).toHaveText(
-      'A bold lead for a longer test item. The rest of the item follows on the same line, as in a note whose items are a bold lead and a short paragraph. The home page card shows only the lead and links to the full note.',
+      'A bold lead with a Chinese word, 中文, for a longer test item. The rest of the item follows on the same line, as in a note whose items are a bold lead and a short paragraph. The home page card shows only the lead and links to the full note.',
     );
     // The home card shows the newest test note, with its Chinese line marked, the bold item by
     // its lead alone, and a link to the full note.
     await page.goto('/');
     await expect(page.locator(`${CARD} li`)).toHaveCount(5);
     await expect(page.locator(`${CARD} li`).nth(4)).toHaveText(
-      'A bold lead for a longer test item.',
+      'A bold lead with a Chinese word, 中文, for a longer test item.',
     );
     await expect(
       page.locator(CARD).getByRole('link', { name: 'Read the full note' }),

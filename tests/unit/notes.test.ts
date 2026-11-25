@@ -5,7 +5,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isMap, isScalar, isSeq, parseDocument, Scalar } from 'yaml';
-import { NOTE_LINE_MAX, noteSchema } from '../../src/content/schemas.ts';
+import { NOTE_CARD_MAX, NOTE_LINE_MAX, noteSchema } from '../../src/content/schemas.ts';
 import { TEACHING_ASSISTANT } from '../../src/data/cv.ts';
 import { PERSON } from '../../src/data/site.ts';
 import {
@@ -242,6 +242,11 @@ describe('daily notes on the site (D71)', () => {
     });
   }
 
+  it('finds leads without asterisks in them, in every note', () => {
+    for (const note of [...site, ...fixtures])
+      for (const line of note.lines) expect(noteLead(line) ?? '', note.name).not.toContain('*');
+  });
+
   it('clears only lines that are in a note, each with a reason', () => {
     const lines = site.flatMap((note) => note.lines.map(fingerprint));
     for (const [key, reason] of Object.entries(CLEARED_LINES)) {
@@ -256,7 +261,10 @@ describe('daily notes on the site (D71)', () => {
     expect(fixtures.length).toBeGreaterThanOrEqual(3);
     for (const note of fixtures) expect(note.raw, note.name).toMatch(/^# Synthetic daily note/);
     const lines = fixtures.flatMap((note) => note.lines);
-    const marked = lines.map(noteLine);
+    const marked = lines.map((line) => {
+      const { lang, parts } = noteLine(line);
+      return { lang, runs: parts.flatMap((part) => part.runs) };
+    });
     expect(lines.some((line) => line.includes('#'))).toBe(true);
     expect(lines.some((line) => line.includes("'"))).toBe(true);
     expect(lines.some((line) => line.includes('\\'))).toBe(true);
@@ -388,8 +396,14 @@ describe('daily notes: the schema', () => {
     expect(lines('1', '2', '3', '4', '5')).toBe(true);
     expect(lines()).toBe(false);
     expect(lines('1', '2', '3', '4', '5', '6')).toBe(false);
-    expect(lines('x'.repeat(NOTE_LINE_MAX))).toBe(true);
-    expect(lines('x'.repeat(NOTE_LINE_MAX + 1))).toBe(false);
+    // An item without a bold lead is a short sentence: the home card shows it whole.
+    expect(lines('x'.repeat(NOTE_CARD_MAX))).toBe(true);
+    expect(lines('x'.repeat(NOTE_CARD_MAX + 1))).toBe(false);
+    // An item with a bold lead may be longer; the card shows the lead alone.
+    expect(lines(`**A lead.** ${'x'.repeat(NOTE_LINE_MAX - 12)}`)).toBe(true);
+    expect(lines(`**A lead.** ${'x'.repeat(NOTE_LINE_MAX - 11)}`)).toBe(false);
+    expect(lines(`**${'A'.repeat(NOTE_CARD_MAX - 1)}.** Rest.`)).toBe(true);
+    expect(lines(`**${'A'.repeat(NOTE_CARD_MAX)}.** Rest.`)).toBe(false);
   });
 
   it('refuses empty lines, padded lines, line breaks, control characters and anything but text', () => {
@@ -413,6 +427,20 @@ describe('daily notes: the schema', () => {
     expect(lines('Empty bold: ****.')).toBe(false);
     expect(lines('** Spaced inside **.')).toBe(false);
     expect(lines('One * star, as in 5 * 3, stays as written.')).toBe(true);
+    // Asterisks in code or maths are not bold: their ** stay, so the line waits for Jimmy
+    // instead of losing them.
+    for (const line of [
+      'In Python 2**10 is 1024 and 2**20 is about a million.',
+      'x**2 + y**2',
+      'Called f(**kwargs) and g(**opts).',
+      'Globs: src/**/*.ts and tests/**/*.ts.',
+      '***Bold italic*** text.',
+      'I tried ***bold italic*** today.',
+      '**Started a lead and forgot to close it. Then **one bold phrase** later.',
+    ])
+      expect(lines(line), line).toBe(false);
+    expect(lines('今天**学到**了一件事。')).toBe(true);
+    expect(lines('(**Note:** a bold label in brackets.)')).toBe(true);
   });
 });
 
@@ -450,7 +478,8 @@ describe('daily notes: helpers', () => {
 
   it('marks Chinese text as Chinese, by runs, and keeps every character', () => {
     const marked = (line: string) => {
-      const { lang, runs } = noteLine(line);
+      const { lang, parts } = noteLine(line);
+      const runs = parts.flatMap((part) => part.runs);
       expect(runs.map((run) => run.text).join('')).toBe(noteText(line));
       return [lang ?? null, runs.filter((run) => run.lang).map((run) => run.text)];
     };
@@ -486,39 +515,55 @@ describe('daily notes: helpers', () => {
     expect(marked('2026: 12 of 12.')).toEqual([null, []]);
   });
 
-  it("marks bold parts as bold, keeps the words, and finds an item's lead", () => {
+  it("marks each bold part as one part, keeps the words, and finds an item's lead", () => {
+    // Each part: bold or not, then its runs, a Chinese run as "zh-CN:text".
     const shown = (line: string) => {
-      const { lang, runs } = noteLine(line);
+      const { lang, parts } = noteLine(line);
+      const runs = parts.flatMap((part) => part.runs);
       expect(runs.map((run) => run.text).join('')).toBe(noteText(line));
       return [
         lang ?? null,
-        runs.map((run) => [run.text, run.strong ? 'bold' : '', run.lang ?? ''].join('|')),
+        parts.map(
+          (part) =>
+            `${part.strong ? 'bold' : ''}|${part.runs.map((run) => (run.lang ? `${run.lang}:${run.text}` : run.text)).join('+')}`,
+        ),
       ];
     };
     expect(shown('**A bold lead.** And the rest of the item.')).toEqual([
       null,
-      ['A bold lead.|bold|', ' And the rest of the item.||'],
+      ['bold|A bold lead.', '| And the rest of the item.'],
     ]);
     expect(shown('Plain, then **bold** in the middle.')).toEqual([
       null,
-      ['Plain, then ||', 'bold|bold|', ' in the middle.||'],
+      ['|Plain, then ', 'bold|bold', '| in the middle.'],
     ]);
     // A Chinese item with a bold lead: the whole line is Chinese, the lead is bold.
     expect(shown('**今天学到的一件事。** 写下来才记得住。')).toEqual([
       'zh-CN',
-      ['今天学到的一件事。|bold|', ' 写下来才记得住。||'],
+      ['bold|今天学到的一件事。', '| 写下来才记得住。'],
     ]);
-    // Bold with a Chinese phrase inside an English item.
+    // A bold lead with a Chinese phrase in an English item is one bold part.
     expect(shown('**Cooked 红烧肉.** It took two hours.')).toEqual([
       null,
-      ['Cooked |bold|', '红烧肉|bold|zh-CN', '.|bold|', ' It took two hours.||'],
+      ['bold|Cooked +zh-CN:红烧肉+.', '| It took two hours.'],
     ]);
     expect(noteText('**A** and **B**, then C.')).toBe('A and B, then C.');
     expect(noteText('No bold, 5 * 3.')).toBe('No bold, 5 * 3.');
+    expect(noteText('In Python 2**10 is 1024.')).toBe('In Python 2**10 is 1024.');
+    // A lead is a whole sentence in bold, with more of the item after it.
     expect(noteLead('**A bold lead.** And the rest.')).toBe('A bold lead.');
+    expect(noteLead('**A question?** Yes.')).toBe('A question?');
+    expect(noteLead('**He said "go."** So I went.')).toBe('He said "go."');
+    expect(noteLead('**今天学到的一件事。**写下来才记得住。')).toBe('今天学到的一件事。');
     expect(noteLead('**All of it bold.**')).toBe(undefined);
     expect(noteLead('A sentence with **bold** later.')).toBe(undefined);
     expect(noteLead('**Lead.**and no space')).toBe(undefined);
+    // A bold label or word is not a lead: the card shows the whole item.
+    expect(noteLead('**What I did:** finished the notes page.')).toBe(undefined);
+    expect(noteLead('**React** was too big for the page.')).toBe(undefined);
+    expect(noteLead('**50 KB** is the most JavaScript a page may ship.')).toBe(undefined);
+    expect(noteLead('**Budget first**: I set **50 KB** per page.')).toBe(undefined);
+    expect(noteLead('**Done**, and **then** more.')).toBe(undefined);
     expect(hasLoneBoldMarker('**A** and ** B')).toBe(true);
     expect(hasLoneBoldMarker('**A** and **B**')).toBe(false);
   });

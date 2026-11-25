@@ -22,10 +22,13 @@ lines:
   or a `\` stays as he wrote it. `npm run format` switches a line to double quotes only where that
   keeps the text. A unit test fails on an unquoted line, on a double-quoted line with a backslash
   (where `\t` would turn into a tab), and on a line whose quote ended early.
-- One to five items of at most 1,000 characters each (`noteSchema` in `src/content/schemas.ts`): a
-  short sentence, or a bold lead written `**like this**` and a short paragraph. Bold is the only
-  formatting and shows as bold on /notes/; a `**` without its partner fails the schema, so no
-  asterisks reach the page.
+- One to five items (`noteSchema` in `src/content/schemas.ts`): a short sentence of at most 300
+  characters, or a bold lead written `**like this**` (a whole sentence, at most 300 characters)
+  and a short paragraph, at most 1,000 characters in all. The home card shows a lead alone and
+  any other item whole; a bold label or word ("**Did:**", "**React** was…") is not a lead. Bold
+  is the only formatting and shows as bold on /notes/. Asterisks in code or maths (`2**10`,
+  `f(**kwargs)`) are not bold, and a `**` that does not pair up as bold fails the schema, so the
+  session asks Jimmy instead of dropping his asterisks.
 - Chinese text is marked `lang="zh-CN"` on the page by itself (`noteLine` in
   `src/lib/notes.ts`): a whole line when it has Chinese characters and no Latin letters, its
   numbers and punctuation included; otherwise each run of Chinese characters, and the rest of

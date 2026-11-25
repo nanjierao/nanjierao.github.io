@@ -2,7 +2,7 @@
 // Image fields take a validator so tests can substitute a plain string check for Astro's
 // `image()` helper, which only exists inside the collection config.
 import { z } from 'astro/zod';
-import { hasLoneBoldMarker } from '../lib/notes.ts';
+import { hasLoneBoldMarker, noteLead, noteText } from '../lib/notes.ts';
 
 /** Astro's `image()` in the collection config; a plain validator in tests. */
 type ImageValidator<T extends z.ZodType> = () => T;
@@ -184,6 +184,11 @@ export const newsSchema = z
 
 /** Longest item of a daily note: a bold lead and a short paragraph, with room to spare. */
 export const NOTE_LINE_MAX = 1000;
+/**
+ * Longest part of an item that the home page card shows: its bold lead, or else the whole item.
+ * An item without a lead is a short sentence, and the card stays as short as the cards beside it.
+ */
+export const NOTE_CARD_MAX = 300;
 
 /**
  * Daily notes (D71): one file per day, src/content/notes/<YYYY-MM-DD>.yaml, in Jimmy's words.
@@ -207,7 +212,11 @@ export const noteSchema = z.object({
           error: 'One item per line, without line breaks inside it',
         })
         .refine((line) => !hasLoneBoldMarker(line), {
-          error: 'Bold comes in pairs, **like this**: a lone ** would show as asterisks',
+          error:
+            'Bold comes in pairs, **like this**: a ** that does not pair up would show as asterisks',
+        })
+        .refine((line) => (noteLead(line) ?? noteText(line)).length <= NOTE_CARD_MAX, {
+          error: `An item without a bold lead, and a lead, are at most ${NOTE_CARD_MAX} characters: the home card shows them`,
         })
         .refine((line) => !/\p{Cc}/u.test(line), {
           // "\t" in double quotes becomes a tab: such a line belongs in single quotes.

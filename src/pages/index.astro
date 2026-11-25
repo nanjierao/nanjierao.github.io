@@ -176,12 +176,14 @@ const cvPdf = hasCvPdf();
             <ol class="daily-note small">
               {latestNote.data.lines.map((line) => {
                 // An item with a bold lead shows only the lead here; /notes/ has all of it.
-                const { lang, runs } = noteLine(noteLead(line) ?? line);
+                const { lang, parts } = noteLine(noteLead(line) ?? line);
                 return (
                   <li lang={lang}>
-                    {runs.map((run) => {
-                      const words = run.lang ? <span lang={run.lang}>{run.text}</span> : run.text;
-                      return run.strong ? <strong>{words}</strong> : words;
+                    {parts.map((part) => {
+                      const words = part.runs.map((run) =>
+                        run.lang ? <span lang={run.lang}>{run.text}</span> : run.text,
+                      );
+                      return part.strong ? <strong>{words}</strong> : words;
                     })}
                   </li>
                 );

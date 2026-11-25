@@ -66,65 +66,86 @@ const CHINESE_RUN = new RegExp(
 
 /**
  * Bold, written **like this** in a note: the only formatting a note has. The words inside start
- * and end with a character that is not a space, and end at the first closing ** ("??" is lazy:
- * "**A** and **B**" is two bold parts, not one).
+ * and end with a character that is not a space and hold no asterisk, and no letter, digit, slash
+ * or asterisk touches the markers from outside. So "2**10", "f(**kwargs)", a glob such as
+ * "src/**" and "***x***" are not bold: their ** stay, and the schema refuses the line, so Jimmy
+ * is asked instead of his asterisks disappearing.
  */
-const BOLD = /\*\*(\S(?:.*?\S)??)\*\*/u;
+const BOLD = /(?<![A-Za-z0-9*/])\*\*([^\s*](?:[^*]*[^\s*])?)\*\*(?![A-Za-z0-9*])/u;
 const EVERY_BOLD = new RegExp(BOLD.source, 'gu');
+/** The end of a sentence (. ! ? 。！？), perhaps with a closing quote or bracket after it. */
+const SENTENCE_END = /[.!?。！？]['"’”)）」』]?$/u;
+/** The end of a Chinese sentence, after which the next one starts without a space. */
+const CHINESE_SENTENCE_END = /[。！？]['"’”)）」』]?$/u;
 
 /** A line's words as a reader sees them: the line without its bold markers. */
 export function noteText(line: string): string {
   return line.replace(EVERY_BOLD, '$1');
 }
 
-/** Whether a line has a ** without its partner, which would show as asterisks. */
+/** Whether a line has a ** that does not pair up as bold, which would show as asterisks. */
 export function hasLoneBoldMarker(line: string): boolean {
   return line.replace(EVERY_BOLD, '').includes('**');
 }
 
-/** The bold lead an item starts with, when more of the item follows it. */
+/**
+ * The bold lead an item starts with: a whole sentence in bold, followed by more of the item,
+ * after a space or, in Chinese, straight after the sentence's end. A bold label ("**Did:**")
+ * or word ("**React** was too big") is not a lead. The home card shows an item's lead alone.
+ */
 export function noteLead(line: string): string | undefined {
-  return new RegExp(`^${BOLD.source}\\s+\\S`, 'u').exec(line)?.[1];
+  const match = new RegExp(`^${BOLD.source}`, 'u').exec(line);
+  const lead = match?.[1];
+  if (!match || !lead || !SENTENCE_END.test(lead)) return undefined;
+  const rest = line.slice(match[0].length);
+  const follows = /^\s+\S/u.test(rest) || (CHINESE_SENTENCE_END.test(lead) && /^\S/u.test(rest));
+  return follows ? lead : undefined;
 }
 
 export interface NoteRun {
   text: string;
   lang?: 'zh-CN';
+}
+
+/** A stretch of a line, bold or not, in runs of language. */
+export interface NotePart {
   strong?: true;
+  runs: NoteRun[];
 }
 
 /**
- * One line of a note, marked for language (WCAG 2.2, 3.1.2) without guessing at the line as a
- * whole, and with its bold parts marked as such. A line with Chinese characters and no Latin
- * letters is all Chinese and gets lang="zh-CN" itself, its numbers and punctuation included
- * (2026年, 5.2公里, 12.5%, ……). In a mixed line each run of Chinese gets its own and the rest is
- * the page's English, so a Chinese sentence with English terms and an English sentence with a
- * Chinese phrase both come out right. The runs join back into the line's words (noteText),
- * character for character.
+ * One line of a note: its bold parts, each one element on the page, and its language
+ * (WCAG 2.2, 3.1.2), marked without guessing at the line as a whole. A line with Chinese
+ * characters and no Latin letters is all Chinese and gets lang="zh-CN" itself, its numbers and
+ * punctuation included (2026年, 5.2公里, 12.5%, ……). In a mixed line each run of Chinese gets its
+ * own and the rest is the page's English, so a Chinese sentence with English terms and an
+ * English sentence with a Chinese phrase both come out right. The runs join back into the
+ * line's words (noteText), character for character.
  */
-export function noteLine(line: string): { lang?: 'zh-CN'; runs: NoteRun[] } {
-  const parts = line
+export function noteLine(line: string): { lang?: 'zh-CN'; parts: NotePart[] } {
+  const pieces = line
     .split(BOLD)
     .map((text, i) => ({ text, strong: i % 2 === 1 }))
-    .filter((part) => part.text !== '');
-  const text = parts.map((part) => part.text).join('');
-  const bold = (strong: boolean) => (strong ? { strong: true as const } : {});
+    .filter((piece) => piece.text !== '');
+  const text = pieces.map((piece) => piece.text).join('');
+  const part = (strong: boolean, runs: NoteRun[]): NotePart =>
+    strong ? { strong: true, runs } : { runs };
   if (/\p{Script=Han}/u.test(text) && !/\p{Script=Latin}/u.test(text))
     return {
       lang: 'zh-CN',
-      runs: parts.map((part) => ({ text: part.text, ...bold(part.strong) })),
+      parts: pieces.map((piece) => part(piece.strong, [{ text: piece.text }])),
     };
-  const runs: NoteRun[] = parts.flatMap((part) =>
-    part.text
-      .split(CHINESE_RUN)
-      .map((piece, i) => ({
-        text: piece,
-        ...(i % 2 === 1 ? { lang: 'zh-CN' as const } : {}),
-        ...bold(part.strong),
-      }))
-      .filter((run) => run.text !== ''),
+  const parts = pieces.map((piece) =>
+    part(
+      piece.strong,
+      piece.text
+        .split(CHINESE_RUN)
+        .map((run, i): NoteRun => (i % 2 === 1 ? { text: run, lang: 'zh-CN' } : { text: run }))
+        .filter((run) => run.text !== ''),
+    ),
   );
-  if (runs.length === 1 && runs[0]?.lang && !runs[0].strong)
-    return { lang: 'zh-CN', runs: [{ text }] };
-  return { runs };
+  const only = parts.length === 1 ? parts[0] : undefined;
+  if (only && !only.strong && only.runs.length === 1 && only.runs[0]?.lang)
+    return { lang: 'zh-CN', parts: [{ runs: [{ text }] }] };
+  return { parts };
 }

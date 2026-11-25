@@ -31,12 +31,14 @@ const months = groupNotesByMonth(await getNotes());
             </h3>
             <ol class="note__lines">
               {note.data.lines.map((line) => {
-                const { lang, runs } = noteLine(line);
+                const { lang, parts } = noteLine(line);
                 return (
                   <li lang={lang}>
-                    {runs.map((run) => {
-                      const words = run.lang ? <span lang={run.lang}>{run.text}</span> : run.text;
-                      return run.strong ? <strong>{words}</strong> : words;
+                    {parts.map((part) => {
+                      const words = part.runs.map((run) =>
+                        run.lang ? <span lang={run.lang}>{run.text}</span> : run.text,
+                      );
+                      return part.strong ? <strong>{words}</strong> : words;
                     })}
                   </li>
                 );

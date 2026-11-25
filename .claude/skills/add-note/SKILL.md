@@ -24,8 +24,9 @@ note is not in the repository at all (step 3).
    sentence ends. Keep his wording, spelling, punctuation, language and bold (`**like this**`,
    the only formatting the page shows). Don't correct, translate, shorten, reorder or add
    anything. Leave out only words addressed to the session ("today's note:") and his list
-   numbers, which the page draws itself. The schema takes one to five items of at most 1,000
-   characters each, with bold in pairs; if the note doesn't fit, ask.
+   numbers, which the page draws itself. The schema takes one to five items: a sentence of at
+   most 300 characters, or a bold lead (a whole sentence, at most 300) and a short paragraph, at
+   most 1,000 in all, with bold in pairs. If the note doesn't fit, ask.
 3. **Hold back and ask** before writing anything, when a line
    - touches anything in facts.md §15. Read all of §15 for each note; this list gives examples
      and doesn't replace it: job search (applications and application materials, interviews,
@@ -80,7 +81,8 @@ note is not in the repository at all (step 3).
    message. Never clear a line on your own judgment.
 6. **Ship (D67).** Commit `content: daily note for <YYYY-MM-DD>`, push, and open the pull
    request. It quotes the note instead of attaching screenshots: a note changes no layout, and
-   step 5's end-to-end tests check it on the real build. Merge it once step 5's checks, the
+   step 5's end-to-end tests check it on the real build. (A pull request that also changes the
+   site's code attaches screenshots, as any other does.) Merge it once step 5's checks, the
    end-to-end tests included, and CI pass. When the site is deployed, reply with
    `https://nanjierao.github.io/notes/#<YYYY-MM-DD>` and the date you used.
 
