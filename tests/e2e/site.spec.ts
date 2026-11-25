@@ -1909,14 +1909,14 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       'A pilot test, before COVID stopped the experiment',
     );
     expect(await pilot.innerText()).not.toMatch(
-      /notecards|usability|cognitive load|participants|\b8\b/,
+      /notecards|usability|cognitive load|participants|\b8\b/i,
     );
     // The Zoom scene: the study the paper reports, with its 8 participants and its results.
     await tab(page, 'zoom').click();
     const study = scene(page, 'zoom');
     await page.getByRole('button', { name: 'Show all' }).click();
     await expect(study.locator('.sk__steps li').first()).toHaveText(
-      'Later, PRIS on Zoom: a simulated online class, with researchers as the students.',
+      'Later, after an in-person pilot, PRIS on Zoom: a simulated online class, with researchers as the students.',
     );
     await expect(study.locator('.sk__result').first()).toContainText(
       '8 participants each taught as the teacher in simulated online classes on Zoom, and four researchers played the students.',

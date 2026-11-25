@@ -723,7 +723,7 @@ export const SCENES: Scene[] = [
     alt: 'Line drawing: a teacher sits at a laptop on a desk and talks. On the laptop’s screen, a class on Zoom shows four students, each in a video tile, next to a card of their information. Sound waves run from the teacher toward the laptop’s microphone. A speech bubble shows a picture of what the teacher talks about, and the students it matches are marked in their tiles.',
     steps: [
       {
-        line: 'Later, PRIS on Zoom: a simulated online class, with researchers as the students.',
+        line: 'Later, after an in-person pilot, PRIS on Zoom: a simulated online class, with researchers as the students.',
         draw: 0,
       },
       { line: 'A teacher teaches from a laptop and talks.', draw: 1 },
@@ -731,11 +731,11 @@ export const SCENES: Scene[] = [
       {
         line: 'Speech recognition turns the teacher’s words into text, in real time.',
         flyFrom: 'mic',
-        reveal: [0, 1],
+        reveal: [0],
       },
       {
         line: 'Keyword matching finds students’ personal information that relates to those words, and PRIS shows it to the teacher.',
-        reveal: [2],
+        reveal: [1, 2],
       },
       { line: 'The teacher can bring what it shows into the lesson.' },
     ],

@@ -602,12 +602,12 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     expect(pilot.label).toBe('Classroom, Kinect pilot');
     expect(study.label).toBe('Zoom class, laptop');
     expect(pilot.steps[0]!.line).toMatch(/^First, PRIS in person: /);
-    expect(study.steps[0]!.line).toMatch(/^Later, PRIS on Zoom: /);
+    expect(study.steps[0]!.line).toMatch(/^Later, after an in-person pilot, PRIS on Zoom: /);
     // The pilot carries no paper, no study and no numbers; the study and its 8 participants
     // belong to the Zoom scene only.
     expect(pilot.paper).toBeUndefined();
     expect(words('pris').replace(/\b2022\b/g, '')).not.toMatch(
-      /notecards|usability|cognitive load|participants|\d/,
+      /notecards|usability|cognitive load|participants|\d/i,
     );
     expect(pilot.summary.checkedBy).toBe('A pilot test, before COVID stopped the experiment');
     expect(study.paper).toBe('hcii-2022-information-retrieval');
@@ -639,24 +639,48 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     const drawing = DRAWINGS.zoom;
     expect(drawing.anchors.mic).toBeDefined();
     expect(study.steps.find((step) => step.flyFrom)!.flyFrom).toBe('mic');
-    // Each pick marks, in their tiles on the laptop's screen, as many students as its outcome
-    // names (the picture in the speech bubble is on the left, off the screen).
+    // Each pick marks, in line and in color, the tiles of as many students as its outcome names
+    // (the picture in the speech bubble is on the left, off the laptop).
     if (study.task.kind !== 'choose') throw new Error('the Zoom scene is a choose scene');
-    const onScreen = (d: string) =>
-      (d.match(/-?\d+(?:\.\d+)?/g) ?? [])
-        .map(Number)
-        .filter((_, index) => index % 2 === 0)
-        .every((x) => x >= 430 && x <= 690);
+    const subpaths = (d: string) => d.match(/M[^M]+/g) ?? [];
+    const center = (d: string) => {
+      const numbers = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+      const xs = numbers.filter((_, index) => index % 2 === 0);
+      const ys = numbers.filter((_, index) => index % 2 === 1);
+      return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+    };
+    // The four video tiles: region 0's thin shape made of four closed rectangles.
+    const tiles = drawing.regions[0]!.shapes.filter((shape) => shape.stroke === 'thin')
+      .map((shape) => subpaths(shape.d))
+      .filter((paths) => paths.length === 4 && paths.every((p) => /^M[\d .L]+Z\s*$/.test(p)))
+      .flat()
+      .map((p) => {
+        const numbers = (p.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+        const xs = numbers.filter((_, index) => index % 2 === 0);
+        const ys = numbers.filter((_, index) => index % 2 === 1);
+        return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] as const;
+      });
+    expect(tiles).toHaveLength(4);
+    const tileOf = (p: string) => {
+      const [x, y] = center(p) as [number, number];
+      return tiles.findIndex(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
+    };
     for (const option of study.task.options) {
-      const marks = drawing.regions
-        .flatMap((region) => region.shapes)
-        .filter(
-          (shape) =>
-            shape.part === `pick-${option.value}` && shape.stroke === 'thin' && onScreen(shape.d),
-        )
-        .flatMap((shape) => shape.d.match(/M/g) ?? []).length;
+      const marked = (kind: 'stroke' | 'fill') =>
+        [
+          ...new Set(
+            drawing.regions
+              .flatMap((region) => region.shapes)
+              .filter((shape) => shape.part === `pick-${option.value}` && shape[kind])
+              .flatMap((shape) => subpaths(shape.d))
+              .filter((p) => center(p)[0]! >= 400)
+              .map(tileOf),
+          ),
+        ].sort();
       const named = /\btwo students\b/.test(option.outcome) ? 2 : 1;
-      expect(marks, option.value).toBe(named);
+      expect(marked('stroke'), option.value).not.toContain(-1);
+      expect(marked('stroke'), option.value).toHaveLength(named);
+      expect(marked('fill'), option.value).toEqual(marked('stroke'));
     }
   });
 
