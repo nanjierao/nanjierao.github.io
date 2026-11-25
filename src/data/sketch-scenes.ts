@@ -1,8 +1,10 @@
-// Words and structure of the sketch scenes (D68, D73, D75): five on the home page, four teacher
-// scenes on /research/teacher-support/. Every statement comes from content/facts.md (§5.1, §5.3,
-// §5.4, §5.5, §7, §5.8); tests/unit/learners-teachers.test.ts reads every string here and checks
-// its numbers against that file. The line drawings are in sketch-drawings.ts. Interests,
-// records, reports, posts and students shown in the scenes are made up, and each scene says so.
+// Words and structure of the sketch scenes (D68, D73, D75, D76): all nine are on the home page,
+// five on learners, hands and a city, and four teacher scenes; /research/teacher-support/ lists
+// the teacher scenes and links each to its place there. Every statement comes from
+// content/facts.md (§5.1, §5.3, §5.4, §5.5, §7, §5.8); tests/unit/learners-teachers.test.ts reads
+// every string here and checks its numbers against that file. The line drawings are in
+// sketch-drawings.ts. Interests, records, reports, posts and students shown in the scenes are
+// made up, and each scene says so.
 
 export type SceneId =
   'tracker' | 'dorm' | 'dining' | 'puppet' | 'city' | 'views' | 'pris' | 'zoom' | 'context';
@@ -15,40 +17,26 @@ export interface SceneGroup {
   scenes: SceneId[];
 }
 
-/** The home page's scene buttons, grouped by what is being observed. */
+/**
+ * The home page's scene buttons, grouped by what is being observed. The teacher scenes are one
+ * per teacher-facing paper, and for PRIS two, its in-person pilot with a Kinect and then the
+ * study on Zoom that the paper reports (D73, D75); they are on the home page since D76.
+ */
 export const SCENE_GROUPS: SceneGroup[] = [
   { label: 'Learners', scenes: ['tracker', 'dorm', 'dining'] },
   { label: 'Hands', scenes: ['puppet'] },
   { label: 'City', scenes: ['city'] },
-];
-
-/**
- * The teacher scenes, on /research/teacher-support/ (D73): one per teacher-facing paper, and for
- * PRIS two, its in-person pilot with a Kinect and then the study on Zoom that the paper reports
- * (D75).
- */
-export const TEACHER_SCENE_GROUPS: SceneGroup[] = [
   { label: 'Teachers', scenes: ['views', 'pris', 'zoom', 'context'] },
 ];
 
-/** A link from one set of scenes to the other, at the end of its row of scene buttons. */
-export interface ScenesLink {
-  group: string;
-  label: string;
-  href: string;
-}
+/** The teacher scenes, which the teacher support page lists with a link to each (D76). */
+export const TEACHER_SCENES: SceneId[] = SCENE_GROUPS.find(
+  (group) => group.label === 'Teachers',
+)!.scenes;
 
-export const TEACHER_SCENES_LINK: ScenesLink = {
-  group: 'Teachers',
-  label: 'Four scenes on their own page',
-  href: '/research/teacher-support/#scenes',
-};
-
-export const HOME_SCENES_LINK: ScenesLink = {
-  group: 'Learners, hands, city',
-  label: 'Five scenes on the home page',
-  href: '/#learners-and-teachers',
-};
+/** The teacher support page's words above that list. */
+export const TEACHER_SCENES_NOTE =
+  'The sketch scenes for this work are on the home page, beside the scenes for learners, hands and a city. Each link opens its scene there.';
 
 export type Glyph =
   | 'search'

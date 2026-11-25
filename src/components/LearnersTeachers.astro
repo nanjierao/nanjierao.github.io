@@ -9,7 +9,6 @@ import Flow from './figures/Flow.astro';
 import PairedBars from './figures/PairedBars.astro';
 import PublicationList from './PublicationList.astro';
 import SketchScenes from './SketchScenes.astro';
-import { TEACHER_SCENES_LINK } from '../data/sketch-scenes.ts';
 import { STUDY2_SOURCES } from '../data/figures.ts';
 import {
   BREADTH_INTRO,
@@ -36,7 +35,7 @@ const breadthPapers = await getPublicationsByIds(BREADTH_PUBLICATIONS);
   <h2 id="lt-heading">{TITLE}</h2>
   <p class="lede">{LEDE}</p>
 
-  <SketchScenes link={TEACHER_SCENES_LINK} />
+  <SketchScenes />
 
   <div class="prose">
     {INTRO.map((paragraph) => (

@@ -1,9 +1,8 @@
 ---
-// The sketch scenes (D68, D73): line drawings, each with a caption for every part of the
+// The sketch scenes (D68, D73, D76): line drawings, each with a caption for every part of the
 // drawing, a panel that shows what the system builds, one hands-on step, the result that step
 // leads to, and the paper it comes from. The home page's section "How AI learns about people
-// and places" shows five; /research/teacher-support/ shows the four teacher scenes. Each set
-// links to the other at the end of its scene buttons.
+// and places" shows all nine, in groups: learners, hands, a city and teachers.
 //
 // The page ships every scene finished: drawing, captions, sample answers and results. That is
 // what a visitor sees without JavaScript, and what a screen reader finds. With JavaScript,
@@ -25,19 +24,16 @@ import {
   type Scene,
   type SceneGroup,
   type SceneId,
-  type ScenesLink,
 } from '../data/sketch-scenes.ts';
 import { getPublicationsByIds } from '../lib/content.ts';
 import { authorParts, isSelf } from '../lib/format.ts';
 
 interface Props {
-  /** The scenes, in groups of buttons: the home page's five unless given. */
+  /** The scenes, in groups of buttons: all of the home page's unless given. */
   groups?: SceneGroup[];
-  /** A link to the other set of scenes, after the buttons. */
-  link?: ScenesLink;
 }
 
-const { groups = SCENE_GROUPS, link } = Astro.props;
+const { groups = SCENE_GROUPS } = Astro.props;
 const sceneById = new Map(SCENES.map((scene) => [scene.id, scene]));
 const scenes: Scene[] = groups.flatMap((group) => group.scenes.map((id) => sceneById.get(id)!));
 const firstId = scenes[0]!.id;
@@ -101,19 +97,6 @@ function chosen(scene: Scene, shape: Shape): boolean {
         </div>
       ))}
     </div>
-    {/* The other set of scenes, on its own page: a link, not a scene button, and there
-        without JavaScript too. */}
-    {link && (
-      <div class="sk__group" role="group" aria-label={link.group}>
-        <span class="sk__group-label" aria-hidden="true">
-          {link.group}
-        </span>
-        <a class="sk__jump" href={link.href}>
-          {link.label}
-          <span aria-hidden="true">→</span>
-        </a>
-      </div>
-    )}
     <div class="sk__ctl" data-js-only>
       <button type="button" class="sk__btn" data-replay>
         {CONTROLS.replay}
@@ -635,16 +618,6 @@ function chosen(scene: Scene, shape: Shape): boolean {
     box-shadow: none;
     font-weight: 650;
     transform: translateY(2px);
-  }
-
-  /* The other set of scenes: a link, so it reads as one. */
-  .sk__jump {
-    display: inline-flex;
-    gap: 0.3em;
-    align-items: center;
-    min-height: 44px;
-    font-size: var(--text-sm);
-    font-weight: 600;
   }
 
   .sk__btn {

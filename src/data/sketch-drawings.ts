@@ -486,8 +486,8 @@ export const DRAWINGS: Record<SceneId, Drawing> = {
     ],
     anchors: { sensor: [380, 204], phone: [446, 260], post: [730, 231] },
   },
-  // Teacher scenes (D73), drawn for /research/teacher-support/ in the same style. A part
-  // named 'pick-<option>' shows only while that option is picked.
+  // Teacher scenes (D73), drawn in the same style; on the home page since D76. A part named
+  // 'pick-<option>' shows only while that option is picked.
   views: {
     regions: [
       // A classroom in the middle of a lesson.

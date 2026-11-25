@@ -223,13 +223,10 @@ describe('the Experiments page (D74)', () => {
         { href: '/#sk-dining', label: 'Dining hall, phone' },
       ],
       'study-1': [],
-      // The Zoom study the paper reports; the Kinect pilot is not in the paper (D75).
-      'hcii-2022-information-retrieval': [
-        { href: '/research/teacher-support/#sk-zoom', label: 'Zoom class, laptop' },
-      ],
-      'icalt-2021-visual-efficiency': [
-        { href: '/research/teacher-support/#sk-views', label: 'Classroom, tablet' },
-      ],
+      // The Zoom study the paper reports; the Kinect pilot is not in the paper (D75). Every scene
+      // is on the home page (D76).
+      'hcii-2022-information-retrieval': [{ href: '/#sk-zoom', label: 'Zoom class, laptop' }],
+      'icalt-2021-visual-efficiency': [{ href: '/#sk-views', label: 'Classroom, tablet' }],
       'hcii-2021-puppet-system': [{ href: '/#sk-puppet', label: 'Classroom, puppet' }],
       'ieeevr-2020-ar-smart-glasses': [],
       'icids-2019-emotional-priming': [],

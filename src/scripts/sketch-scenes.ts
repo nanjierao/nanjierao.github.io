@@ -651,9 +651,8 @@ function init(root: HTMLElement): void {
     if (reduce.matches && current.dataset.state === 'playing') finish(current);
   });
 
-  // An address that names a scene by its heading, such as /#sk-puppet or
-  // /research/teacher-support/#sk-zoom (the Experiments page links them, D74, D75), opens that scene
-  // and brings it into view. Without JavaScript every scene is shown, so the anchor just works.
+  // An address that names a scene by its heading, such as /#sk-puppet or /#sk-zoom (the
+  // Experiments page links them, D74, D76), opens that scene and brings it into view. Without JavaScript every scene is shown, so the anchor just works.
   function openFromHash(): void {
     const id = /^#sk-([a-z]+)$/.exec(window.location.hash)?.[1];
     const scene = id ? sceneOf(id) : undefined;

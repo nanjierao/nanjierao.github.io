@@ -176,22 +176,20 @@ describe('sketch scenes (D68)', () => {
       'zoom',
       'context',
     ]);
+    // All nine scenes are on the home page, the teacher scenes in a group of their own (D76,
+    // Jimmy's decision of Nov 25, 2026, which accepts the home page's heavier load).
     expect(sketch.SCENE_GROUPS).toEqual([
       { label: 'Learners', scenes: ['tracker', 'dorm', 'dining'] },
       { label: 'Hands', scenes: ['puppet'] },
       { label: 'City', scenes: ['city'] },
-    ]);
-    // The teacher scenes are on a page of their own (D73): the home page's budget has no room
-    // for them. Every scene is in one set or the other.
-    expect(sketch.TEACHER_SCENE_GROUPS).toEqual([
       { label: 'Teachers', scenes: ['views', 'pris', 'zoom', 'context'] },
     ]);
-    const home = sketch.SCENE_GROUPS.flatMap((group) => group.scenes);
-    const teachers = sketch.TEACHER_SCENE_GROUPS.flatMap((group) => group.scenes);
-    expect([...home, ...teachers]).toEqual(sketch.SCENES.map((item) => item.id));
-    // Each set links to the other, and the teacher support page is the one that shows them.
-    expect(sketch.TEACHER_SCENES_LINK.href).toBe('/research/teacher-support/#scenes');
-    expect(sketch.HOME_SCENES_LINK.href).toBe('/#learners-and-teachers');
+    expect(sketch.SCENE_GROUPS.flatMap((group) => group.scenes)).toEqual(
+      sketch.SCENES.map((item) => item.id),
+    );
+    // The teacher support page lists the teacher scenes and links each to the home page.
+    expect(sketch.TEACHER_SCENES).toEqual(['views', 'pris', 'zoom', 'context']);
+    expect(sketch.TEACHER_SCENES_NOTE).toMatch(/on the home page/);
     const theme = readFileSync(
       join(ROOT, 'src', 'content', 'themes', 'teacher-support.md'),
       'utf8',
@@ -597,7 +595,7 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     const pilot = scene('pris');
     const study = scene('zoom');
     // Side by side on the teacher page, the pilot first.
-    const teachers = sketch.TEACHER_SCENE_GROUPS.flatMap((group) => group.scenes);
+    const teachers = sketch.TEACHER_SCENES;
     expect(teachers.indexOf('zoom')).toBe(teachers.indexOf('pris') + 1);
     expect(pilot.label).toBe('Classroom, Kinect pilot');
     expect(study.label).toBe('Zoom class, laptop');
@@ -778,8 +776,8 @@ describe('publications and links in the learners-and-teachers section', () => {
     );
     // The scenes sit after the lede and before the "Observe, model, check" figure (D68).
     const part = readFileSync(join(ROOT, 'src', 'components', 'LearnersTeachers.astro'), 'utf8');
-    // With a link to the teacher scenes at the end of its row of scene buttons (D73).
-    const scenes = '<SketchScenes link={TEACHER_SCENES_LINK} />';
+    // All nine scenes, the teacher scenes among them (D76).
+    const scenes = '<SketchScenes />';
     expect(part.indexOf('{LEDE}')).toBeGreaterThan(-1);
     expect(part.indexOf('{LEDE}')).toBeLessThan(part.indexOf(scenes));
     expect(part.indexOf(scenes)).toBeLessThan(
