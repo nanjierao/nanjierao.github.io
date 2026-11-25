@@ -1,0 +1,265 @@
+---
+// The Experiments page (D74): the controlled experiments behind the work, one row per study,
+// from content/facts.md §5.10. The words are in src/data/experiments.ts; the citations and
+// their DOI links come from the publication list the rest of the site uses.
+//
+// Wide screens get a table. Below 52rem each study becomes a block of labeled lines, so the
+// page never scrolls sideways; the ARIA roles keep it a table for screen readers there, since
+// some browsers (Safari) drop a table's semantics once its CSS display changes. The roles are
+// redundant for the linter, which is why its two rules about them are off in this file.
+/* eslint-disable astro/jsx-a11y/no-redundant-roles, astro/jsx-a11y/no-interactive-element-to-noninteractive-role */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublicationsByIds } from '../../lib/content.ts';
+import { authorParts, isSelf } from '../../lib/format.ts';
+import {
+  CAPTION,
+  COLUMNS,
+  CO_AUTHORED,
+  DESCRIPTION,
+  FIRST_AUTHOR,
+  GROUPS,
+  INTRO,
+  NOTES,
+  TITLE,
+  scenesFor,
+  type ExperimentRow,
+} from '../../data/experiments.ts';
+
+const rows = [...FIRST_AUTHOR, ...CO_AUTHORED];
+const papers = new Map(
+  (await getPublicationsByIds(rows.flatMap((row) => (row.paper ? [row.paper] : [])))).map((pub) => [
+    pub.id,
+    pub,
+  ]),
+);
+// A study whose paper is hidden (VERIFY) or missing would lose its citation: stop the build.
+for (const row of rows)
+  if (row.paper && !papers.has(row.paper))
+    throw new Error(`Experiments: ${row.paper} is not a listed publication`);
+
+const groups: Array<{ id: string; label: string; rows: ExperimentRow[] }> = [
+  { id: 'first', label: GROUPS.first, rows: FIRST_AUTHOR },
+  { id: 'co', label: GROUPS.co, rows: CO_AUTHORED },
+];
+
+/** A row's citation: the paper's, or the dissertation's. */
+function citation(row: ExperimentRow) {
+  const pub = row.paper ? papers.get(row.paper) : undefined;
+  if (pub)
+    return {
+      authors: pub.authors,
+      year: pub.year,
+      title: pub.title,
+      venue: pub.details ? `${pub.venue}, ${pub.details}` : pub.venue,
+      url: pub.url,
+    };
+  const study = row.study!;
+  return { ...study, url: undefined };
+}
+
+const [, ...labels] = COLUMNS;
+---
+
+<BaseLayout title={TITLE} description={DESCRIPTION}>
+  <p class="breadcrumb">
+    <a href="/research/">Research</a>
+  </p>
+  <h1>{TITLE}</h1>
+  <div class="prose">
+    {INTRO.map((paragraph) => (
+      <p>{paragraph}</p>
+    ))}
+  </div>
+
+  <div class="exp">
+    <table class="exp__table" role="table">
+      <caption>{CAPTION}</caption>
+      <thead role="rowgroup">
+        <tr role="row">
+          {COLUMNS.map((column) => (
+            <th role="columnheader" scope="col">
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      {groups.map((group) => (
+        <tbody role="rowgroup">
+          <tr role="row" class="exp__group">
+            <th role="rowheader" scope="rowgroup" colspan={COLUMNS.length} id={`exp-${group.id}`}>
+              {group.label}
+            </th>
+          </tr>
+          {group.rows.map((row) => {
+            const cite = citation(row);
+            const scenes = scenesFor(row.paper);
+            const cells = [row.role, row.design, row.participants, row.comparison, row.analysis];
+            return (
+              <tr role="row" class="exp__row">
+                {/* The row's header is short enough to hear on every move along the row: the
+                    citation, with its title as the DOI link, and a note. */}
+                <th role="rowheader" scope="row" class="exp__study">
+                  <span class="exp__cite">
+                    {authorParts(cite.authors).map(({ before, name }) => (
+                      <>
+                        {before}
+                        {isSelf(name) ? <strong>{name}</strong> : name}
+                      </>
+                    ))}{' '}
+                    ({cite.year}).{' '}
+                    <cite>{cite.url ? <a href={cite.url}>{cite.title}</a> : cite.title}.</cite>{' '}
+                    {cite.venue}.
+                  </span>
+                  {row.note && <span class="exp__note">{row.note}</span>}
+                </th>
+                {cells.map((text, index) => (
+                  <td role="cell">
+                    <span class="exp__label" aria-hidden="true">
+                      {labels[index]}
+                    </span>
+                    {text}
+                    {labels[index] === 'Comparison' && scenes.length > 0 && (
+                      <span class="exp__scenes">
+                        {scenes.length > 1 ? 'Sketch scenes:' : 'Sketch scene:'}{' '}
+                        {scenes.map((scene, i) => (
+                          <>
+                            {i > 0 && ' and '}
+                            <a href={scene.href}>{scene.label}</a>
+                          </>
+                        ))}
+                      </span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      ))}
+    </table>
+  </div>
+
+  {NOTES.map((note) => (
+    <section class="exp-note" aria-labelledby={`exp-${note.id}`}>
+      <h2 id={`exp-${note.id}`}>{note.title}</h2>
+      <div class="prose">
+        {note.text.map((paragraph) => (
+          <p>{paragraph}</p>
+        ))}
+      </div>
+    </section>
+  ))}
+</BaseLayout>
+
+<style>
+  .exp {
+    margin: var(--space-5) 0 var(--space-6);
+  }
+
+  .exp__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    line-height: 1.45;
+  }
+
+  .exp__table caption {
+    margin-bottom: var(--space-3);
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .exp__table th,
+  .exp__table td {
+    padding: var(--space-3) var(--space-3) var(--space-3) 0;
+    border-bottom: 1px solid var(--color-rule);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .exp__table thead th {
+    border-bottom: 2px solid var(--color-text-muted);
+    font-weight: 650;
+    color: var(--color-text-muted);
+  }
+
+  /* The study's citation is the row's header: a little wider than the other columns. */
+  .exp__study {
+    width: 24%;
+    font-weight: 400;
+  }
+
+  .exp__group th {
+    padding-top: var(--space-5);
+    border-bottom: 2px solid var(--color-series-a);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    font-weight: 600;
+  }
+
+  .exp__cite,
+  .exp__note,
+  .exp__scenes {
+    display: block;
+  }
+
+  .exp__cite cite {
+    font-style: italic;
+  }
+
+  .exp__note {
+    margin-top: var(--space-1);
+    color: var(--color-text-muted);
+  }
+
+  .exp__scenes {
+    margin-top: var(--space-1);
+  }
+
+  /* The labels name each line where the table becomes a list of studies (below). */
+  .exp__label {
+    display: none;
+  }
+
+  .exp-note {
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 52rem) {
+    .exp__table,
+    .exp__table caption,
+    .exp__table tbody,
+    .exp__table tr,
+    .exp__table th,
+    .exp__table td {
+      display: block;
+      width: auto;
+    }
+
+    /* The column headers stay for screen readers; each line carries its own label instead. */
+    .exp__table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .exp__row {
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--color-rule);
+    }
+
+    .exp__table .exp__row > * {
+      padding: var(--space-1) 0;
+      border-bottom: 0;
+    }
+
+    .exp__label {
+      display: block;
+      font-weight: 650;
+      color: var(--color-text-muted);
+    }
+  }
+</style>

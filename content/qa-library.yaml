@@ -42,11 +42,11 @@ items:
   - id: dissertation
     q: "What is his dissertation about?"
     a: >-
-      It asks from what student interests should be identified so LLM tutors can teach through
-      them. It judges identification on four constructs — Accuracy, Depth, Richness, and Phase —
-      and runs two studies: what students disclose when a tutor asks (35 tutoring transcripts),
-      and how browsing history and social-media posts compare as sources an LLM reads (32 students,
-      IEEE ICALT 2026).
+      It is two evaluations of AI in learning. Study 1 asks what an LLM tutor finds out by asking
+      students about their interests (35 tutoring transcripts). Study 2 asks how accurately an LLM
+      reads those interests from students' browsing history and social media posts (32 students,
+      IEEE ICALT 2026). The dissertation judges identification on four constructs: Accuracy,
+      Depth, Richness, and Phase.
     sources: [/research/interest-identification/]
     audience: [faculty, general]
     status: ready

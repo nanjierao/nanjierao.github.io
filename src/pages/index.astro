@@ -12,6 +12,7 @@ import TimeAware from '../components/TimeAware.astro';
 import WordCloud from '../components/WordCloud.astro';
 import { HEADSHOT_ALT, PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
 import { STATUS } from '../data/cv.ts';
+import * as EXPERIMENTS from '../data/experiments.ts';
 import { CONTEXT_LABELS, ONGOING_LABEL } from '../content/schemas.ts';
 import {
   getNews,
@@ -126,6 +127,12 @@ const cvPdf = hasCvPdf();
         </ul>
       </section>
     )}
+    <section class="context" aria-labelledby="context-experiments">
+      <h3 id="context-experiments">{EXPERIMENTS.TITLE}</h3>
+      <p>
+        {EXPERIMENTS.SUMMARY_LINE} <a href={EXPERIMENTS.HREF}>{EXPERIMENTS.LINK_LABEL}</a>
+      </p>
+    </section>
     <p>
       <a href="/research/">Research overview</a>
     </p>

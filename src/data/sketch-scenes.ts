@@ -773,7 +773,8 @@ export const SCENES: Scene[] = [
       data: 'Focus groups with teachers',
       builds:
         'Three categories of context, and design implications for adaptive teacher support systems',
-      checkedBy: 'No separate check reported: the categories come from what the teachers described',
+      checkedBy:
+        'This site has no record of a separate check of the categories; they come from what the teachers described',
     },
     source: 'Focus groups with teachers on making instruction relevant (IEEE ICALT 2023).',
     note: 'The staff room, the teachers and the examples in this scene are made up for illustration.',

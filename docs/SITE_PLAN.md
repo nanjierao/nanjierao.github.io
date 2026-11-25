@@ -54,7 +54,8 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 /life                  Right portal: reflections → sample person or your own AI (+ live, S8) → lesson
 /research              Overview (Personal · Embodied · Civic) + theme pages: interest-identification ·
                        grounding · civic-digital-twins · embodied-learning · teacher-support;
-                       then "Ongoing" (D69): data-analysis-through-ai
+                       then "Ongoing" (D69): data-analysis-through-ai; and /research/experiments
+                       (D74): the controlled experiments, one table row per study
 /publications          Filterable list, TL;DRs, links, BibTeX
 /builds, /builds/[slug] Datasheet cards + "On GitHub" (JimmyRaoUF's public repositories)
 /blog, /blog/[slug]    Zhihu answers in Chinese, each with an English title and summary; RSS
@@ -182,6 +183,9 @@ Full spec and copy: `content/life-portal.md`. Five acts:
 
 - **Research**: overview with the umbrella line and the three contexts (D27, D45), then theme
   pages adapted from facts.md and `source/dissertation-abstract.md`; no job-specific framing.
+  The Experiments page (D74) lists the controlled experiments across the contexts: one table,
+  first-author studies first, then co-authored ones, and what the designs support. The home
+  page's Research section and the overview link it with the counts (six and three).
   The teacher support page ends its text with three sketch scenes, one per teacher-facing paper,
   where the visitor picks an option (D73). A study that is still running gets its own page,
   listed after the contexts under "Ongoing" on the overview, the home page and the CV page (D69). The first one is the class study

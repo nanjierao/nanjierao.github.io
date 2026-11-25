@@ -107,6 +107,10 @@ Research overview grouping (D27, D45):
 Source: final dissertation (Dec 2026, "RDoc_UseThis" version, 227 pp.). Use these numbers;
 they supersede the CVs and the research statement wherever they differ.
 
+- How to describe it (Jimmy, Nov 25, 2026): two evaluations of AI in learning. Study 1 asks
+  what an LLM tutor finds out by asking students about their interests. Study 2 asks how
+  accurately an LLM reads those interests from students' browsing history and social media
+  posts. Keep the numbers below.
 - Question (as the abstract puts it): "From what should student interests be identified?"
   Interest-based learning (IBL) connects instruction to topics each student cares about; LLM
   tutors could scale it if they identified interests automatically and effectively.
@@ -207,7 +211,8 @@ they supersede the CVs and the research statement wherever they differ.
 - Self-avatars and story-relevant avatars in children's creative storytelling (ACM CHI 2020,
   co-author).
 - AR smart glasses for everyday learning (IEEE VR 2020): Latin-square within-subjects study,
-  **N = 25**; speech-triggered display produced better learning and task scores;
+  **N = 25**; speech-triggered display produced better learning and task scores (see §5.10:
+  `TODO(jimmy)` on which app scored higher on the quiz);
   object-anchored display produced higher immersion and usability.
 
 ### 5.5 Teacher support technologies
@@ -227,7 +232,9 @@ they supersede the CVs and the research statement wherever they differ.
     with notecards, it showed better usability, lower teacher cognitive load and more frequent
     personalized teaching behaviors. It used a Kinect for speech and position recognition in a
     classroom (Jimmy, relayed Nov 25, 2026). `TODO(jimmy)`: whose position the Kinect tracked
-    (the teacher's or the students'), and what PRIS did with it; the scene says neither.
+    (the teacher's or the students'), and what PRIS did with it; the scene says neither. Also:
+    the study's 8 participants taught simulated online classes (§5.10); where did those classes
+    run, and does the scene's classroom fit them?
   - ICALT 2023: focus groups with teachers about contextualizing; three categories of context
     (time, activity, location), tied to the lesson and to students' prior experiences; design
     implications for adaptive teacher support systems.
@@ -271,6 +278,9 @@ sketch scenes, as he asked; say if it should move below them or be rewritten to 
 - IEEE VR 2020: this section says only that the speech-triggered display led to better learning
   scores. §5.4 also says "task scores" (check against the paper; if task scores did not differ,
   §5.4, the TL;DR draft for [12], the embodied-learning page and the Q&A answer need the same fix).
+  Also, §5.10 (Jimmy's table of Nov 25, 2026) lists "quiz 52.9 vs. 38.9" after "Object-triggered
+  vs. speech-triggered"; read in that order it contradicts the speech-triggered result above.
+  `TODO(jimmy)`: which app scored 52.9?
 
 ### 5.8 Sketch scenes (D68, D73)
 Source: Jimmy's design notes and sketch prototype of Nov 24, 2026 (not in this repository), for
@@ -451,13 +461,61 @@ Facts, in the page's order:
     Bridging the Abstraction Gap Between End-User Programmers and Code-Generating Large Language
     Models. CHI 2023. https://doi.org/10.1145/3544548.3580817
 
+### 5.10 Controlled experiments (Jimmy, Nov 25, 2026; D74)
+Source: Jimmy, Nov 25, 2026. He checked these facts against the method sections of the papers
+and of his dissertation (2 Nov 2026 text) on 25 Nov 2026. The page `/research/experiments/`
+shows them. The first table's last column gives each row's source; the co-authored rows have no
+Source column and rest on the same check by Jimmy.
+
+- Count: **six** controlled experiments as first author (the first table below, without the
+  dissertation's Study 1, a secondary analysis of a colleague's experiment) and **three** more
+  as co-author (the second table).
+- What these designs support (Jimmy's wording): the experiments compare conditions within
+  participants, in counterbalanced or randomized order; one co-authored study (AAAI HCOMP 2020)
+  assigned participants to conditions at random; the dissertation's Study 1 reports an
+  association, not an effect, because what students disclosed was not assigned.
+- Never say: "randomized controlled trial" (only HCOMP 2020 assigned participants to conditions
+  at random, and Jimmy was its third author); matching, weighting, difference-in-differences, a
+  field evaluation of a whole program, retention, transfer, IRT, or a pooled meta-analysis.
+- The older studies show their design only; results appear only where this file already has
+  them.
+- The IEEE VR 2020 row shows its analysis method only. Its results (quiz 52.9 vs. 38.9,
+  t(24) = 5.06; 17 of 25 preferred the object-triggered app) stay off the site: it is an older
+  study, and read in the table's order the quiz scores contradict §5.4, which says the
+  speech-triggered display produced better learning. `TODO(jimmy)`: which app scored 52.9 on the
+  quiz, and which 38.9?
+- Working with AI in research (Jimmy's wording): "When I use AI in research, every reported
+  number is re-derived from the data, every claim traces to a source, and every decision is
+  logged."
+
+First-author studies:
+
+| Study | Design | Participants | Comparison | Analysis | Source |
+|---|---|---|---|---|---|
+| Rao, Huang, Kulkarni, Ragan, Chu. Identifying Student Interests for Interest-Based Learning: A Comparison of Interest Extraction from Browsing History and Social Media Posts. IEEE ICALT 2026 (dissertation Study 2) | Within-subjects; each participant gave both samples, in random order | 32 college students, retained of 77 after data-quality screening | Browsing history vs. social media posts, with a self-reported list as the baseline | Paired t-tests with Wilcoxon signed-rank checks; precision 69.8% vs. 56.3%, paired t(31) = 8.59 | Dissertation §6.4.1–6.4.2 and Study 2 results. Note: the dissertation says "in random order"; the ICALT paper says the order was counterbalanced. Use the dissertation's wording |
+| Dissertation Study 1 (2026), secondary analysis | My analysis of a colleague's within-subjects experiment: each student met an interest-based and a generic tutor; tutor order alternated across enrollment; each student's two topics were randomly assigned to the tutors | 35 undergraduate computer-science majors | How much students told the tutor about their interests vs. four session outcomes | ANCOVA adjusted for the same student's generic-session score and condition order, with Benjamini–Hochberg adjustment; reported as an association | Dissertation §5.4.1, §5.6.3, §5.7 |
+| Rao, Chu, Jing, Kuang, Tang, Dong. Exploring Information Retrieval for Personalized Teaching Support. HCII 2022 (Late Breaking Posters) | Within-subjects; condition order and topics counterbalanced | 8 participants teaching simulated online classes | PRIS vs. normal notecards (usual practice) | Paired t-tests | Paper, study section |
+| Rao, Chu. Enhancing the Visual Efficiency for Communicating Students' Personal Relevant Information. IEEE ICALT 2021 (short paper) | Within-subjects; topics, visualizations and virtual students randomized across conditions | 70 university students | Plain text (baseline) vs. graphical mind map vs. story illustration | One-way ANOVAs with Tukey HSD on response time, response accuracy and mental effort | Paper, sections III to VI |
+| Rao, Chu, Chenore. Flexible Low-Cost Digital Puppet System. HCII 2021 | Online 2 × 2 mixed design; puppetry type within participants, order counterbalanced; story design between participants | 23 valid MTurk responses of 54 | Physical puppet enactment vs. the system's virtual animation | Two-way mixed ANOVA | Paper, §5 |
+| Rao, Zhang, Chu, Jurczyk, Candelora, Su, Kozlin. Investigating the Necessity of Meaningful Context Anchoring in AR Smart Glasses Interaction for Everyday Learning. IEEE VR 2020 (workshop paper) | Within-subjects, counterbalanced | 25 analyzed of 30 | Object-triggered vs. speech-triggered learning app on smart glasses | Paired t-tests; quiz 52.9 vs. 38.9, t(24) = 5.06; 17 of 25 preferred the object-triggered app | Paper, study and results sections |
+| Rao, Chu, Faris, Ospina. The Effects of Interactive Emotional Priming on Storytelling: An Exploratory Study. ICIDS 2019 | Within-subjects; condition order counterbalanced, story prompts randomized | 12 participants | Two interactive emotional-priming conditions vs. no priming | ANOVA and paired t-tests | Paper, study section |
+
+Co-authored studies (Jimmy's author position; he did not lead them):
+
+| Study | My position | Design | Participants | Comparison | Analysis |
+|---|---|---|---|---|---|
+| Kulkarni, Powell, Murphy, Rao, Chu. Everyday-Inspired Movies: Towards the Design of Movie Recommender Systems based on Everyday Life through Personal Social Media. INTERACT 2023. doi:10.1007/978-3-031-42286-7_9 | Fourth author | Within-subjects; presentation order random | 21 participants | System recommendations vs. a human-judgment baseline | Paired t-tests |
+| Li, Chu, Rao, Nourani. Understanding the Effects of Explanation Types and User Motivations on Recommender System Use. HCOMP 2020 | Third author | Online mixed design; motivation scenario randomly assigned between participants; explanation type within participants, order randomized | 78 participants | Explanation types under three motivation scenarios | Mixed ANOVA |
+| Zarei, Chu, Quek, Rao, Brown. Investigating the Effects of Self-Avatars and Story-Relevant Avatars on Children's Creative Storytelling. ACM CHI 2020 | Fourth author | Within-subjects, counterbalanced | 16 children aged 8 to 12 (20 recruited) | Self-avatar vs. story-relevant avatar | Repeated-measures ANOVA |
+
 ## 6. Publications (12 peer-reviewed; * = first author)
 
 Do not hard-code citation counts or h-index on the site (they go stale) — link to Google Scholar.
 DOIs: [2], [4], [5], [6] and [11] carry theirs (found by web search on Nov 25, 2026, from listings
 of the papers; the publisher pages and doi.org are not reachable from the session, so Jimmy
 checks them: `TODO(jimmy)`), and so was the page range of [5] (pp. 14–16), which Jimmy checks
-too. The rest: `TODO`, from a Google Scholar BibTeX export.
+too. [3] carries the DOI Jimmy gave (Nov 25, 2026). The rest: `TODO`, from a Google Scholar
+BibTeX export.
 
 Refereed conference papers
 1. *Rao, N., Lanzino, A., Chenore, R., Adhikari, I., Brown, S. A., Quek, F., & Chu, S. L. (2026).
@@ -469,7 +527,8 @@ Refereed conference papers
    (one listing; pages differ between listings, so none are given).
 3. Kulkarni, A., Powell, L., Murphy, S., Rao, N., & Chu, S. L. (2023). Everyday-Inspired Movies:
    Towards the Design of Movie Recommender Systems Based on Everyday Life through Personal Social
-   Media. IFIP INTERACT 2023, Springer, pp. 160–169.
+   Media. IFIP INTERACT 2023, Springer, pp. 160–169. DOI 10.1007/978-3-031-42286-7_9 (Jimmy,
+   Nov 25, 2026).
 4. *Rao, N., Li, Q., Murphy, S., & Chu, S. L. (2023). The Context for Contextualizing: Design
    Implications for Adaptive Teacher Support Systems for More Relevant Instruction. IEEE ICALT
    2023, pp. 71–73. DOI 10.1109/ICALT58122.2023.00027.
@@ -573,6 +632,10 @@ Other videos from the old site (ask Jimmy what they are before using):
 
 - ELX Lab: onboarded and mentored graduate and undergraduate research assistants in qualitative
   coding, inter-rater reliability, mixed-methods design, and documentation.
+- Mentoring (Jimmy, Nov 25, 2026): "I mentor undergraduate, master's, and PhD students and review
+  their research projects from study design to analysis."
+- Reviewing (Jimmy, Nov 25, 2026): "I have reviewed papers for the journal Computers & Education
+  and for the IDC, ICIDS, and TEI conferences."
 - Founder & team lead, Galaxy Studio (HUST, 2012–2016): student hardware/software studio;
   8 national and 21 university-level awards; PI on a national-grant undergraduate project.
 

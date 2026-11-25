@@ -1,5 +1,6 @@
 // CV and teaching facts, transcribed from content/facts.md (section noted on each block).
 // Lines facts.md marks VERIFY are left out until Jimmy confirms them.
+import { MENTORING_REVIEWING } from './experiments.ts';
 
 export interface EducationItem {
   degree: string;
@@ -114,8 +115,10 @@ export const TEACHING_INTERESTS: string[] = [
   'AI literacy and checking what AI tools assert',
 ];
 
-/** facts.md §9. */
+/** facts.md §9. The mentoring and reviewing lines are Jimmy's (Nov 25, 2026), the same on
+ *  /about and /research/experiments/. */
 export const MENTORING: string[] = [
+  ...MENTORING_REVIEWING,
   'ELX Lab: onboarded and mentored graduate and undergraduate research assistants in qualitative coding, inter-rater reliability, mixed-methods design, and documentation.',
   'Founder and team lead, Galaxy Studio (HUST, 2012–2016), a student hardware/software studio: 8 national and 21 university-level awards; PI on a national-grant undergraduate project.',
 ];

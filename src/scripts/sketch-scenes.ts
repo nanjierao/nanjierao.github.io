@@ -650,6 +650,19 @@ function init(root: HTMLElement): void {
   reduce.addEventListener('change', () => {
     if (reduce.matches && current.dataset.state === 'playing') finish(current);
   });
+
+  // An address that names a scene by its heading, such as /#sk-puppet or
+  // /research/teacher-support/#sk-pris (the Experiments page links them, D74), opens that scene
+  // and brings it into view. Without JavaScript every scene is shown, so the anchor just works.
+  function openFromHash(): void {
+    const id = /^#sk-([a-z]+)$/.exec(window.location.hash)?.[1];
+    const scene = id ? sceneOf(id) : undefined;
+    if (!scene) return;
+    select(scene);
+    scene.querySelector('.sk__heading')?.scrollIntoView({ block: 'start' });
+  }
+  openFromHash();
+  window.addEventListener('hashchange', openFromHash);
 }
 
 const sketch = document.querySelector<HTMLElement>('[data-sketch]');

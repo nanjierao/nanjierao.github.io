@@ -96,8 +96,9 @@ const groupClass = ['a', 'b', 'c', 'd'];
       <li class="cvtl__row">
         <span class="cvtl__label">
           Peer-reviewed papers listed on this site, per year{' '}
-          <span class="cvtl__when">
-            {papersByYear.map(({ year, count }) => `${year}: ${count}`).join(', ')}
+          {/* Pairs stay whole; the list wraps between them, so a phone never scrolls sideways. */}
+          <span class="cvtl__when cvtl__when--list">
+            {papersByYear.map(({ year, count }) => `${year}:\u00a0${count}`).join(', ')}
           </span>
         </span>
         <span class="cvtl__track" aria-hidden="true">
@@ -208,6 +209,10 @@ const groupClass = ['a', 'b', 'c', 'd'];
   .cvtl__when {
     color: var(--color-text-muted);
     white-space: nowrap;
+  }
+
+  .cvtl__when--list {
+    white-space: normal;
   }
 
   .cvtl__track {

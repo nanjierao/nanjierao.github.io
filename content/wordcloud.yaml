@@ -12,7 +12,7 @@ words:
   # ── Research (ask) ────────────────────────────────────────────────────
   - { text: 'interest-based learning', weight: 5, portal: ask, link: /research/interest-identification/, blurb: 'Teaching through what each learner already cares about: my dissertation’s starting point.' }
   - { text: 'LLM tutors', weight: 4, portal: ask, link: /research/interest-identification/, blurb: 'What an AI tutor must know about a student, and where it comes from.' }
-  - { text: 'asking vs. reading records', weight: 4, portal: ask, link: /research/interest-identification/, blurb: 'Ask the learner, or read the records they already produce? I compared both.' }
+  - { text: 'asking vs. reading records', weight: 4, portal: ask, link: /research/interest-identification/, blurb: 'Two evaluations of AI in learning: an LLM tutor asking, an LLM reading records.' }
   - { text: 'browsing history', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'Higher precision than posts in my ICALT 2026 study: 69.8% of its interests confirmed.' }
   - { text: 'social media posts', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'Carried more grounded detail per confirmed interest than browsing history.' }
   - { text: 'Accuracy · Depth · Richness · Phase', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'The four constructs my dissertation uses to judge interest identification.' }

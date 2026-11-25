@@ -1,0 +1,263 @@
+// The Experiments page (D74): every row is content/facts.md §5.10, the table Jimmy gave on
+// Nov 25, 2026, cell for cell; the copy around it keeps to his rules (no "randomized
+// controlled trial", none of the analyses he never ran, his author position on co-authored
+// studies), and the counts on the home page follow the table.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { parse as parseYaml } from 'yaml';
+import * as experiments from '../../src/data/experiments.ts';
+import { MENTORING } from '../../src/data/cv.ts';
+
+const ROOT = join(import.meta.dirname, '..', '..');
+const FACTS = readFileSync(join(ROOT, 'content', 'facts.md'), 'utf8');
+/** facts.md on one line, without emphasis marks, for matching sentences across line breaks. */
+const FACTS_LINE = FACTS.replace(/\*/g, '').replace(/\s+/g, ' ');
+/** The site uses typographic apostrophes; facts.md uses straight ones. */
+const plain = (text: string) => text.replace(/’/g, "'");
+
+/** The rows of the Markdown table that follows `heading` in facts.md §5.10. */
+function factsTable(heading: string): Array<Record<string, string>> {
+  const section = FACTS.slice(FACTS.indexOf('### 5.10 '), FACTS.indexOf('## 6. Publications'));
+  const start = section.indexOf(heading);
+  expect(start, heading).toBeGreaterThan(-1);
+  const lines = section
+    .slice(start)
+    .split('\n')
+    .slice(1)
+    .filter((line) => line.trim() !== '');
+  const end = lines.findIndex((line) => !line.startsWith('|'));
+  const table = end === -1 ? lines : lines.slice(0, end);
+  const cells = (line: string) =>
+    line
+      .slice(1, -1)
+      .split(' | ')
+      .map((cell) => cell.trim());
+  const [header, , ...rows] = table;
+  const names = cells(header!);
+  return rows.map((row) => Object.fromEntries(cells(row).map((cell, i) => [names[i], cell])));
+}
+
+const FIRST = factsTable('First-author studies:');
+const CO = factsTable('Co-authored studies');
+
+const publications = parseYaml(
+  readFileSync(join(ROOT, 'src', 'content', 'publications.yaml'), 'utf8'),
+) as Array<{
+  id: string;
+  authors: string[];
+  year?: number;
+  title: string;
+  verify?: boolean;
+  type: string;
+  firstAuthor: boolean;
+  url?: string;
+}>;
+const pub = (id: string) => publications.find((item) => item.id === id)!;
+
+/** All the words the page shows, besides the citations from publications.yaml. */
+const COPY = [
+  experiments.TITLE,
+  experiments.DESCRIPTION,
+  ...experiments.INTRO,
+  experiments.CAPTION,
+  ...experiments.COLUMNS,
+  ...Object.values(experiments.GROUPS),
+  ...[...experiments.FIRST_AUTHOR, ...experiments.CO_AUTHORED].flatMap((row) => [
+    row.note ?? '',
+    row.role,
+    row.design,
+    row.participants,
+    row.comparison,
+    row.analysis,
+    ...experiments.scenesFor(row.paper).map((scene) => scene.label),
+  ]),
+  ...experiments.NOTES.flatMap((note) => [note.title, ...note.text]),
+  experiments.SUMMARY_LINE,
+  experiments.LINK_LABEL,
+].join('\n');
+
+describe('the Experiments page (D74)', () => {
+  it('has one row per study in facts.md §5.10, in its order, with its cells word for word', () => {
+    expect(FIRST).toHaveLength(7);
+    expect(CO).toHaveLength(3);
+    const check = (rows: experiments.ExperimentRow[], facts: Array<Record<string, string>>) => {
+      expect(rows).toHaveLength(facts.length);
+      rows.forEach((row, i) => {
+        const fact = facts[i]!;
+        const where = fact['Study']!.slice(0, 40);
+        expect(plain(row.design), where).toBe(fact['Design']);
+        expect(plain(row.participants), where).toBe(fact['Participants']);
+        expect(plain(row.comparison), where).toBe(fact['Comparison']);
+        // The AR glasses row shows its analysis without the quiz scores until Jimmy says which
+        // condition each belongs to (facts.md §5.4 reads the other way; TODO(jimmy)).
+        if (row.paper === 'ieeevr-2020-ar-smart-glasses') {
+          // The analysis method only: none of the row's results reaches the page.
+          expect(row.analysis, where).toBe('Paired t-tests');
+          expect(fact['Analysis']!.startsWith(`${row.analysis};`), where).toBe(true);
+        } else expect(plain(row.analysis), where).toBe(fact['Analysis']);
+        if (fact['My position']) expect(row.role, where).toBe(fact['My position']);
+      });
+    };
+    check(experiments.FIRST_AUTHOR, FIRST);
+    check(experiments.CO_AUTHORED, CO);
+  });
+
+  it('cites each study’s own paper, by its authors and year, and links what facts.md links', () => {
+    const rows = [...experiments.FIRST_AUTHOR, ...experiments.CO_AUTHORED];
+    const facts = [...FIRST, ...CO];
+    rows.forEach((row, i) => {
+      const study = facts[i]!['Study']!;
+      if (!row.paper) {
+        // The dissertation's Study 1: no paper of its own.
+        expect(study).toMatch(/^Dissertation Study 1 \(2026\), secondary analysis$/);
+        expect(row.study!.authors).toEqual(['Rao, N.']);
+        expect(FACTS_LINE).toContain(plain(row.study!.title));
+        return;
+      }
+      const paper = pub(row.paper);
+      expect(paper, row.paper).toBeDefined();
+      expect(paper.verify, row.paper).toBeFalsy();
+      expect(paper.type, row.paper).not.toBe('in-preparation');
+      // "Rao, Huang, Kulkarni, Ragan, Chu." in facts.md is the paper's author list, in order.
+      const surnames = paper.authors.map((author) => author.split(',')[0]).join(', ');
+      expect(study.startsWith(`${surnames}.`), row.paper).toBe(true);
+      expect(study, row.paper).toContain(String(paper.year));
+      // A DOI shown on the page is one facts.md gives.
+      if (paper.url) expect(FACTS, row.paper).toContain(paper.url.replace('https://doi.org/', ''));
+    });
+    // The co-authored studies are the papers Jimmy did not lead, and say his position.
+    for (const row of experiments.CO_AUTHORED) {
+      expect(pub(row.paper!).firstAuthor, row.paper).toBe(false);
+      expect(row.role).toMatch(/^(Third|Fourth) author$/);
+    }
+    for (const row of experiments.FIRST_AUTHOR)
+      if (row.paper) expect(pub(row.paper).firstAuthor, row.paper).toBe(true);
+  });
+
+  it('lists newest first within each group', () => {
+    for (const group of [experiments.FIRST_AUTHOR, experiments.CO_AUTHORED]) {
+      const years = group.map((row) => (row.paper ? pub(row.paper).year! : row.study!.year));
+      expect(years).toEqual([...years].sort((a, b) => b - a));
+    }
+  });
+
+  it('counts six experiments run as first author and three co-authored, as the home page says', () => {
+    const run = experiments.FIRST_AUTHOR.filter((row) => row.role === 'First author');
+    expect(run).toHaveLength(6);
+    expect(experiments.CO_AUTHORED).toHaveLength(3);
+    expect(experiments.SUMMARY_LINE).toBe(
+      'I have run six controlled experiments as first author and three more as co-author.',
+    );
+    // The page's opening says the same.
+    expect(experiments.INTRO[0]).toContain(
+      'I ran six of them as first author and co-authored three more',
+    );
+    expect(FACTS).toMatch(/Count: \*\*six\*\* controlled experiments as first author/);
+    expect(FACTS).toMatch(/and \*\*three\*\* more\s+as co-author/);
+  });
+
+  it('claims only what the designs support, in Jimmy’s words', () => {
+    const claims = experiments.NOTES.find((note) => note.id === 'claims')!.text.join(' ');
+    expect(claims).toContain(
+      'The experiments compare conditions within participants, in counterbalanced or randomized order.',
+    );
+    expect(claims).toContain('assigned participants to conditions at random');
+    expect(claims).toContain(
+      'My dissertation’s Study 1 reports an association, not an effect, because what students disclosed was not assigned.',
+    );
+    // Only HCOMP 2020 assigned participants at random, and Jimmy was its third author.
+    expect(claims).toContain('One co-authored study, AAAI HCOMP 2020,');
+    for (const term of [
+      /randomi[sz]ed controlled trial/i,
+      /\bRCT\b/,
+      /\bmatch(ed|ing)\b/i,
+      /\bweight(ed|ing)\b/i,
+      /difference-in-differences/i,
+      /field (evaluation|study|trial)/i,
+      /\bretention\b/i,
+      /\btransfer\b/i,
+      /\bIRT\b|item response/i,
+      /meta-analys/i,
+      /\bled\b|\bleading\b/i,
+    ])
+      expect(COPY).not.toMatch(term);
+  });
+
+  it('gives the mentoring and reviewing lines as facts.md §9 has them, on the CV too', () => {
+    for (const line of experiments.MENTORING_REVIEWING) {
+      expect(FACTS_LINE).toContain(plain(line));
+      expect(MENTORING).toContain(line);
+    }
+    expect(experiments.INTRO.join(' ')).toContain(
+      'When I use AI in research, every reported number is re-derived from the data, every claim traces to a source, and every decision is logged.',
+    );
+    expect(FACTS_LINE).toContain(
+      'When I use AI in research, every reported number is re-derived from the data, every claim traces to a source, and every decision is logged.',
+    );
+  });
+
+  it('keeps the copy plain: first person, no em dashes, none of the words CLAUDE.md rules out', () => {
+    expect(COPY).not.toContain('—');
+    expect(COPY).not.toMatch(/\b(passionate|cutting-edge|leverage|innovative)\b/i);
+    expect(COPY).not.toMatch(/TODO|VERIFY|DRAFT/);
+    expect(experiments.INTRO.join(' ')).toMatch(/^I /);
+    // "Two or three sentences in first person."
+    const sentences = experiments.INTRO.join(' ').split(/(?<=[.!?])\s+(?=[A-Z])/);
+    expect(sentences.length).toBeGreaterThanOrEqual(2);
+    expect(sentences.length).toBeLessThanOrEqual(3);
+    // No job-specific framing.
+    expect(COPY).not.toMatch(/\b(employer|position|posting|application|hiring|candidate)\b/i);
+  });
+
+  it('links each paper’s sketch scenes, and only those, so that each opens on its own', () => {
+    const links = Object.fromEntries(
+      [...experiments.FIRST_AUTHOR, ...experiments.CO_AUTHORED].map((row, i) => [
+        row.paper ?? `study-${i}`,
+        experiments.scenesFor(row.paper),
+      ]),
+    );
+    expect(links).toEqual({
+      'icalt-2026-interest-extraction': [
+        { href: '/#sk-dorm', label: 'Dorm, laptop' },
+        { href: '/#sk-dining', label: 'Dining hall, phone' },
+      ],
+      'study-1': [],
+      'hcii-2022-information-retrieval': [
+        { href: '/research/teacher-support/#sk-pris', label: 'Classroom, Kinect' },
+      ],
+      'icalt-2021-visual-efficiency': [
+        { href: '/research/teacher-support/#sk-views', label: 'Classroom, tablet' },
+      ],
+      'hcii-2021-puppet-system': [{ href: '/#sk-puppet', label: 'Classroom, puppet' }],
+      'ieeevr-2020-ar-smart-glasses': [],
+      'icids-2019-emotional-priming': [],
+      'interact-2023-everyday-inspired-movies': [],
+      'hcomp-2020-explanation-types': [],
+      'chi-2020-self-avatars': [],
+    });
+  });
+
+  it('describes the dissertation as two evaluations of AI in learning wherever it is summarized', () => {
+    const read = (...parts: string[]) => readFileSync(join(ROOT, ...parts), 'utf8');
+    const qa = (
+      parseYaml(read('content', 'qa-library.yaml')) as { items: Array<{ id: string; a: string }> }
+    ).items.find((item) => item.id === 'dissertation')!;
+    expect(qa.a).toMatch(/^It is two evaluations of AI in learning\. Study 1 asks /);
+    // The four constructs are the dissertation's, not each study's.
+    expect(qa.a).toContain('The dissertation judges identification on four constructs');
+    const word = (
+      parseYaml(read('content', 'wordcloud.yaml')) as {
+        words: Array<{ text: string; blurb?: string }>;
+      }
+    ).words.find((item) => item.text === 'asking vs. reading records')!;
+    expect(word.blurb).toMatch(/^Two evaluations of AI in learning/);
+    expect(word.blurb).not.toMatch(/compared both/i);
+    const theme = read('src', 'content', 'themes', 'interest-identification.mdx');
+    expect(theme).toMatch(/^summary: 'My dissertation’s two evaluations of AI in learning:/m);
+    expect(theme).toContain('My dissertation is two evaluations of AI in learning.');
+    expect(FACTS_LINE).toContain(
+      'two evaluations of AI in learning. Study 1 asks what an LLM tutor finds out by asking students about their interests. Study 2 asks how accurately an LLM reads those interests',
+    );
+  });
+});
