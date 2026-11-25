@@ -1896,6 +1896,57 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     }
   });
 
+  test('shows the option picked in line as well as color, also in forced colors', async ({
+    page,
+  }) => {
+    await openStill(page);
+    await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+    for (const id of SCENES) {
+      await tab(page, id).click();
+      const active = scene(page, id);
+      for (const option of await options(active)) {
+        await active.getByRole('radio', { name: option.name, exact: true }).check();
+        const lines = active.locator(`svg .sk__ink[data-part="pick-${option.value}"]`);
+        expect(await lines.count(), `${id}: ${option.value}`).toBeGreaterThan(0);
+        for (const line of await lines.all()) await expect(line).toBeVisible();
+      }
+    }
+  });
+
+  test('a control that takes the focus is never hidden under the drawing (WCAG 2.4.11)', async ({
+    page,
+  }) => {
+    // An upright tablet: the drawing stays at the top of the window while the panel scrolls.
+    await page.setViewportSize({ width: 768, height: 1024 });
+    const coveredByDrawing = () =>
+      page.evaluate(() => {
+        const el = document.activeElement as HTMLElement;
+        const box = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return Boolean(hit?.closest('.sk__board'));
+      });
+    await openStill(page);
+    await tab(page, 'context').click();
+    const context = scene(page, 'context');
+    await context.getByRole('radio', { name: 'Activity', exact: true }).check();
+    await context.locator('.sk__paper a').focus();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(context.getByRole('radio', { name: 'Activity', exact: true })).toBeFocused();
+    expect(await coveredByDrawing()).toBe(false);
+    // The same on the home page, where the dorm scene's marks sit under its drawing.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.locator('#learners-and-teachers .sk [data-scene-button="dorm"]').click();
+    const dorm = page.locator('#learners-and-teachers .sk [data-scene="dorm"]');
+    await dorm.locator('.sk__paper a').focus();
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press('Shift+Tab');
+      expect(await coveredByDrawing(), `Shift+Tab ${i + 1}`).toBe(false);
+    }
+  });
+
   test('without JavaScript, the three scenes are there, finished, with the sample picked', async ({
     browser,
   }) => {

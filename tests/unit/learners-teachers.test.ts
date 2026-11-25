@@ -389,6 +389,14 @@ describe('sketch scenes (D68)', () => {
           ? item.task.options.map((option) => `pick-${option.value}`)
           : [];
       expect(picks, item.id).toEqual(options.sort());
+      // Each option is drawn in line as well as color: fills disappear in forced colors.
+      for (const part of picks)
+        expect(
+          DRAWINGS[item.id].regions.some((region) =>
+            region.shapes.some((shape) => shape.part === part && shape.stroke),
+          ),
+          `${item.id}: ${part}`,
+        ).toBe(true);
     }
     for (const [id, drawing] of Object.entries(DRAWINGS)) {
       for (const region of drawing.regions) {

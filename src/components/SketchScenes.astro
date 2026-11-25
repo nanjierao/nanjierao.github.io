@@ -1466,6 +1466,12 @@ function chosen(scene: Scene, shape: Shape): boolean {
       border-radius: 0;
       box-shadow: 0 1.5px 0 var(--color-border);
     }
+
+    /* A control that takes the keyboard focus is scrolled clear of the drawing above it, which
+       is as tall as 9/16 of its width (WCAG 2.2, 2.4.11 Focus Not Obscured). */
+    :root.js .sk:not([data-failed]) .sk__scene :is(input, button, a) {
+      scroll-margin-top: calc(100vw * 9 / 16 + 1rem);
+    }
   }
 
   @media (max-width: 40rem) {
@@ -1511,6 +1517,11 @@ function chosen(scene: Scene, shape: Shape): boolean {
       background: Highlight;
       color: HighlightText;
       forced-color-adjust: none;
+    }
+
+    /* forced-color-adjust: none keeps the site's focus color too; use the system's. */
+    .sk__tab[aria-pressed='true']:focus-visible {
+      outline-color: CanvasText;
     }
 
     .sk__svg [data-part='cell'] {
