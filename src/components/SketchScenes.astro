@@ -82,9 +82,9 @@ function chosen(scene: Scene, shape: Shape): boolean {
       {CONTROLS.pick}
       <span aria-hidden="true"> ↓</span>
     </p>
-    <div class="sk__tabs" role="group" aria-labelledby="sk-cue">
+    <div class="sk__tabs" role="group" aria-labelledby="sk-cue" data-js-only>
       {groups.map((group) => (
-        <div class="sk__group" role="group" aria-label={group.label} data-js-only>
+        <div class="sk__group" role="group" aria-label={group.label}>
           <span class="sk__group-label" aria-hidden="true">
             {group.label}
           </span>
@@ -100,20 +100,20 @@ function chosen(scene: Scene, shape: Shape): boolean {
           ))}
         </div>
       ))}
-      {/* The other set of scenes, on its own page: a link, not a scene button, and there
-          without JavaScript too. */}
-      {link && (
-        <div class="sk__group" role="group" aria-label={link.group}>
-          <span class="sk__group-label" aria-hidden="true">
-            {link.group}
-          </span>
-          <a class="sk__jump" href={link.href}>
-            {link.label}
-            <span aria-hidden="true">→</span>
-          </a>
-        </div>
-      )}
     </div>
+    {/* The other set of scenes, on its own page: a link, not a scene button, and there
+        without JavaScript too. */}
+    {link && (
+      <div class="sk__group" role="group" aria-label={link.group}>
+        <span class="sk__group-label" aria-hidden="true">
+          {link.group}
+        </span>
+        <a class="sk__jump" href={link.href}>
+          {link.label}
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    )}
     <div class="sk__ctl" data-js-only>
       <button type="button" class="sk__btn" data-replay>
         {CONTROLS.replay}

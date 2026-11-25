@@ -622,12 +622,12 @@ export const SCENES: Scene[] = [
     ],
     locked: 'Pick a view to see what the study found.',
     summary: {
-      data: 'A student’s personal experiences',
-      builds: 'A view of them for the teacher: plain text, a mind map or a story illustration',
+      data: 'A student’s personally relevant information, such as their experiences',
+      builds: 'A view of it for the teacher: plain text, a mind map or a story illustration',
       checkedBy: 'A within-subjects study of response accuracy, response time and mental effort',
     },
     source: 'Three visualizations compared in a hypothetical teaching scenario (IEEE ICALT 2021).',
-    note: 'The student and the experiences in this scene are made up for illustration.',
+    note: 'The classroom, the student and the experiences in this scene are made up for illustration.',
     paper: 'icalt-2021-visual-efficiency',
   },
   {
