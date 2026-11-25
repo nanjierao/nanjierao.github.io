@@ -2132,8 +2132,26 @@ test.describe('the Experiments page (D74)', () => {
       '10.1007/978-3-031-42286-7_9',
     ])
       await expect(table.locator(`a[href="https://doi.org/${doi}"]`)).toHaveCount(1);
-    await expect(table.locator('a[href="/#learners-and-teachers"]')).toHaveCount(2);
-    await expect(table.locator('a[href="/research/teacher-support/#scenes"]')).toHaveCount(2);
+    // Each sketch scene drawn from a paper is linked by name and opens on its own.
+    for (const [href, name] of [
+      ['/#sk-dorm', 'Dorm, laptop'],
+      ['/#sk-dining', 'Dining hall, phone'],
+      ['/#sk-puppet', 'Classroom, puppet'],
+      ['/research/teacher-support/#sk-views', 'Classroom, tablet'],
+      ['/research/teacher-support/#sk-pris', 'Classroom, Kinect'],
+    ])
+      await expect(table.locator(`a[href="${href}"]`)).toHaveText(name);
+    // The notes come after the table.
+    expect(
+      await page.evaluate(() =>
+        Boolean(
+          document
+            .querySelector('main table')!
+            .compareDocumentPosition(document.querySelector('main h2')!) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+      ),
+    ).toBe(true);
     // The two notes under the table.
     await expect(page.locator('main h2')).toHaveText([
       'What I claim from these designs',
@@ -2141,6 +2159,8 @@ test.describe('the Experiments page (D74)', () => {
     ]);
     const text = await page.locator('main').innerText();
     expect(text).toContain('reports an association, not an effect');
+    // The AR glasses study shows its analysis method only (facts.md §5.10, TODO(jimmy)).
+    expect(text).not.toMatch(/52\.9|38\.9|t\(24\)|17 of 25/);
     expect(text).not.toMatch(
       /randomi[sz]ed controlled trial|\bRCT\b|difference-in-differences|meta-analys|\bIRT\b/i,
     );
@@ -2173,6 +2193,17 @@ test.describe('the Experiments page (D74)', () => {
     for (const label of await row.locator('.exp__label').all()) await expect(label).toBeVisible();
     // Still a table for screen readers: the rows keep their header cells.
     await expect(page.getByRole('row')).toHaveCount(13);
+    // Playwright reads roles from tags as well, so check that the roles are written out: they
+    // are what keeps the stacked table a table in Safari.
+    for (const [selector, count] of [
+      ['table[role="table"]', 1],
+      ['[role="rowgroup"]', 3],
+      ['tr[role="row"]', 13],
+      ['th[role="columnheader"]', 6],
+      ['th[role="rowheader"]', 12],
+      ['td[role="cell"]', 50],
+    ] as const)
+      await expect(page.locator(selector), selector).toHaveCount(count);
     await expect(page.getByRole('rowheader').first()).toHaveText('First-author studies');
     await expect(page.getByRole('columnheader')).toHaveCount(6);
     // On a wide screen the labels give way to the column headers.
@@ -2215,11 +2246,49 @@ test.describe('the Experiments page (D74)', () => {
       'My dissertation is two evaluations of AI in learning. Study 1 asks what an LLM tutor finds out by asking students about their interests. Study 2 asks how accurately an LLM reads those interests from students’ browsing history and social media posts.',
     );
     await page.goto('/research/');
-    await expect(page.locator('main')).toContainText('Two evaluations of AI in learning:');
+    await expect(page.locator('main')).toContainText(
+      'My dissertation’s two evaluations of AI in learning:',
+    );
     await page.goto('/');
     await expect(page.locator('#learners-and-teachers .study h4').first()).toHaveText(
       'The dissertation: two evaluations of AI in learning',
     );
+  });
+  test('a link to one scene opens that scene, on the home page and the teacher page', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const [path, id] of [
+      ['/#sk-puppet', 'puppet'],
+      ['/#sk-dining', 'dining'],
+      ['/research/teacher-support/#sk-pris', 'pris'],
+    ]) {
+      await page.goto(path);
+      await expect(page.locator(`[data-scene-button="${id}"]`), path).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      await expect(page.locator(`[data-scene="${id}"]`), path).toBeVisible();
+      await expect(page.locator(`#sk-${id}`), path).toBeInViewport();
+    }
+    // Following a link within the page works too.
+    await page.goto('/');
+    await page.evaluate(() => (window.location.hash = '#sk-city'));
+    await expect(page.locator('[data-scene-button="city"]')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  test('the CV fits a 320 px phone, its per-year list wrapping', async ({ page }) => {
+    await isolate(page);
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.goto('/cv/');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      320,
+    );
+    await expect(page.locator('#cv-mentoring')).toHaveText('Mentoring, reviewing and leadership');
   });
 });
 

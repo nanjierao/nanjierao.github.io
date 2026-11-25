@@ -2,6 +2,7 @@
 // work, one row per study. Every cell is content/facts.md §5.10 (Jimmy, Nov 25, 2026), word for
 // word apart from typographic apostrophes; tests/unit/experiments.test.ts holds the rows to
 // that table. The citations and their links come from src/content/publications.yaml.
+import { HOME_SCENES_LINK, SCENES, SCENE_GROUPS, TEACHER_SCENES_LINK } from './sketch-scenes.ts';
 
 export interface ExperimentRow {
   /** The study's paper in publications.yaml: its citation and DOI link. */
@@ -15,8 +16,19 @@ export interface ExperimentRow {
   participants: string;
   comparison: string;
   analysis: string;
-  /** Sketch scenes drawn from this paper (D68, D73). */
-  scenes?: { href: string; label: string };
+}
+
+const HOME_PAGE = HOME_SCENES_LINK.href.split('#')[0]!;
+const TEACHER_PAGE = TEACHER_SCENES_LINK.href.split('#')[0]!;
+const HOME_SCENE_IDS = new Set(SCENE_GROUPS.flatMap((group) => group.scenes));
+
+/** The sketch scenes drawn from a paper (D68, D73), each linked so that it opens on its own. */
+export function scenesFor(paper: string | undefined): Array<{ href: string; label: string }> {
+  if (!paper) return [];
+  return SCENES.filter((scene) => scene.paper === paper).map((scene) => ({
+    href: `${HOME_SCENE_IDS.has(scene.id) ? HOME_PAGE : TEACHER_PAGE}#sk-${scene.id}`,
+    label: scene.label,
+  }));
 }
 
 export const TITLE = 'Experiments';
@@ -37,9 +49,6 @@ export const COLUMNS = ['Study', 'My role', 'Design', 'Participants', 'Compariso
 
 export const GROUPS = { first: 'First-author studies', co: 'Co-authored studies' } as const;
 
-const HOME_SCENES = '/#learners-and-teachers';
-const TEACHER_SCENES = '/research/teacher-support/#scenes';
-
 /** facts.md §5.10, first table, in its order (newest first). */
 export const FIRST_AUTHOR: ExperimentRow[] = [
   {
@@ -52,7 +61,6 @@ export const FIRST_AUTHOR: ExperimentRow[] = [
       'Browsing history vs. social media posts, with a self-reported list as the baseline',
     analysis:
       'Paired t-tests with Wilcoxon signed-rank checks; precision 69.8% vs. 56.3%, paired t(31) = 8.59',
-    scenes: { href: HOME_SCENES, label: 'Sketch scenes: Dorm, laptop and Dining hall, phone' },
   },
   {
     // TODO(jimmy): the dissertation's UF Digital Collections link once it is released.
@@ -79,7 +87,6 @@ export const FIRST_AUTHOR: ExperimentRow[] = [
     participants: '8 participants teaching simulated online classes',
     comparison: 'PRIS vs. normal notecards (usual practice)',
     analysis: 'Paired t-tests',
-    scenes: { href: TEACHER_SCENES, label: 'Sketch scene: Classroom, Kinect' },
   },
   {
     paper: 'icalt-2021-visual-efficiency',
@@ -90,7 +97,6 @@ export const FIRST_AUTHOR: ExperimentRow[] = [
     participants: '70 university students',
     comparison: 'Plain text (baseline) vs. graphical mind map vs. story illustration',
     analysis: 'One-way ANOVAs with Tukey HSD on response time, response accuracy and mental effort',
-    scenes: { href: TEACHER_SCENES, label: 'Sketch scene: Classroom, tablet' },
   },
   {
     paper: 'hcii-2021-puppet-system',
@@ -100,7 +106,6 @@ export const FIRST_AUTHOR: ExperimentRow[] = [
     participants: '23 valid MTurk responses of 54',
     comparison: 'Physical puppet enactment vs. the system’s virtual animation',
     analysis: 'Two-way mixed ANOVA',
-    scenes: { href: HOME_SCENES, label: 'Sketch scene: Classroom, puppet' },
   },
   {
     // TODO(jimmy): a DOI or publisher link for this paper (facts.md §6 [12] has none).
@@ -110,8 +115,9 @@ export const FIRST_AUTHOR: ExperimentRow[] = [
     design: 'Within-subjects, counterbalanced',
     participants: '25 analyzed of 30',
     comparison: 'Object-triggered vs. speech-triggered learning app on smart glasses',
-    // facts.md §5.10 also gives this study's quiz scores, but not which condition each belongs
-    // to, and §5.4 reads the other way round. Design only until Jimmy says which is which.
+    // The analysis method only. facts.md §5.10 also gives this row's results (the quiz scores,
+    // t(24) = 5.06, and the 17 of 25 who preferred the object-triggered app), but older studies
+    // show their design only, and the quiz scores read the other way round from §5.4.
     // TODO(jimmy): which app scored 52.9 on the quiz, and which 38.9?
     analysis: 'Paired t-tests',
   },

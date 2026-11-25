@@ -45,8 +45,8 @@ items:
       It is two evaluations of AI in learning. Study 1 asks what an LLM tutor finds out by asking
       students about their interests (35 tutoring transcripts). Study 2 asks how accurately an LLM
       reads those interests from students' browsing history and social media posts (32 students,
-      IEEE ICALT 2026). Both judge identification on four constructs: Accuracy, Depth, Richness,
-      and Phase.
+      IEEE ICALT 2026). The dissertation judges identification on four constructs: Accuracy,
+      Depth, Richness, and Phase.
     sources: [/research/interest-identification/]
     audience: [faculty, general]
     status: ready

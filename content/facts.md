@@ -211,7 +211,8 @@ they supersede the CVs and the research statement wherever they differ.
 - Self-avatars and story-relevant avatars in children's creative storytelling (ACM CHI 2020,
   co-author).
 - AR smart glasses for everyday learning (IEEE VR 2020): Latin-square within-subjects study,
-  **N = 25**; speech-triggered display produced better learning and task scores;
+  **N = 25**; speech-triggered display produced better learning and task scores (see §5.10:
+  `TODO(jimmy)` on which app scored higher on the quiz);
   object-anchored display produced higher immersion and usability.
 
 ### 5.5 Teacher support technologies
@@ -231,7 +232,9 @@ they supersede the CVs and the research statement wherever they differ.
     with notecards, it showed better usability, lower teacher cognitive load and more frequent
     personalized teaching behaviors. It used a Kinect for speech and position recognition in a
     classroom (Jimmy, relayed Nov 25, 2026). `TODO(jimmy)`: whose position the Kinect tracked
-    (the teacher's or the students'), and what PRIS did with it; the scene says neither.
+    (the teacher's or the students'), and what PRIS did with it; the scene says neither. Also:
+    the study's 8 participants taught simulated online classes (§5.10); where did those classes
+    run, and does the scene's classroom fit them?
   - ICALT 2023: focus groups with teachers about contextualizing; three categories of context
     (time, activity, location), tied to the lesson and to students' prior experiences; design
     implications for adaptive teacher support systems.
@@ -275,6 +278,9 @@ sketch scenes, as he asked; say if it should move below them or be rewritten to 
 - IEEE VR 2020: this section says only that the speech-triggered display led to better learning
   scores. §5.4 also says "task scores" (check against the paper; if task scores did not differ,
   §5.4, the TL;DR draft for [12], the embodied-learning page and the Q&A answer need the same fix).
+  Also, §5.10 (Jimmy's table of Nov 25, 2026) lists "quiz 52.9 vs. 38.9" after "Object-triggered
+  vs. speech-triggered"; read in that order it contradicts the speech-triggered result above.
+  `TODO(jimmy)`: which app scored 52.9?
 
 ### 5.8 Sketch scenes (D68, D73)
 Source: Jimmy's design notes and sketch prototype of Nov 24, 2026 (not in this repository), for
@@ -458,7 +464,8 @@ Facts, in the page's order:
 ### 5.10 Controlled experiments (Jimmy, Nov 25, 2026; D74)
 Source: Jimmy, Nov 25, 2026. He checked these facts against the method sections of the papers
 and of his dissertation (2 Nov 2026 text) on 25 Nov 2026. The page `/research/experiments/`
-shows them; each row's source is in the last column.
+shows them. The first table's last column gives each row's source; the co-authored rows have no
+Source column and rest on the same check by Jimmy.
 
 - Count: **six** controlled experiments as first author (the first table below, without the
   dissertation's Study 1, a secondary analysis of a colleague's experiment) and **three** more
@@ -472,6 +479,11 @@ shows them; each row's source is in the last column.
   field evaluation of a whole program, retention, transfer, IRT, or a pooled meta-analysis.
 - The older studies show their design only; results appear only where this file already has
   them.
+- The IEEE VR 2020 row shows its analysis method only. Its results (quiz 52.9 vs. 38.9,
+  t(24) = 5.06; 17 of 25 preferred the object-triggered app) stay off the site: it is an older
+  study, and read in the table's order the quiz scores contradict §5.4, which says the
+  speech-triggered display produced better learning. `TODO(jimmy)`: which app scored 52.9 on the
+  quiz, and which 38.9?
 - Working with AI in research (Jimmy's wording): "When I use AI in research, every reported
   number is re-derived from the data, every claim traces to a source, and every decision is
   logged."

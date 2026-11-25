@@ -70,7 +70,7 @@ const COPY = [
     row.participants,
     row.comparison,
     row.analysis,
-    row.scenes?.label ?? '',
+    ...experiments.scenesFor(row.paper).map((scene) => scene.label),
   ]),
   ...experiments.NOTES.flatMap((note) => [note.title, ...note.text]),
   experiments.SUMMARY_LINE,
@@ -91,9 +91,11 @@ describe('the Experiments page (D74)', () => {
         expect(plain(row.comparison), where).toBe(fact['Comparison']);
         // The AR glasses row shows its analysis without the quiz scores until Jimmy says which
         // condition each belongs to (facts.md §5.4 reads the other way; TODO(jimmy)).
-        if (row.paper === 'ieeevr-2020-ar-smart-glasses')
+        if (row.paper === 'ieeevr-2020-ar-smart-glasses') {
+          // The analysis method only: none of the row's results reaches the page.
+          expect(row.analysis, where).toBe('Paired t-tests');
           expect(fact['Analysis']!.startsWith(`${row.analysis};`), where).toBe(true);
-        else expect(plain(row.analysis), where).toBe(fact['Analysis']);
+        } else expect(plain(row.analysis), where).toBe(fact['Analysis']);
         if (fact['My position']) expect(row.role, where).toBe(fact['My position']);
       });
     };
@@ -147,6 +149,10 @@ describe('the Experiments page (D74)', () => {
     expect(experiments.SUMMARY_LINE).toBe(
       'I have run six controlled experiments as first author and three more as co-author.',
     );
+    // The page's opening says the same.
+    expect(experiments.INTRO[0]).toContain(
+      'I ran six of them as first author and co-authored three more',
+    );
     expect(FACTS).toMatch(/Count: \*\*six\*\* controlled experiments as first author/);
     expect(FACTS).toMatch(/and \*\*three\*\* more\s+as co-author/);
   });
@@ -196,8 +202,62 @@ describe('the Experiments page (D74)', () => {
     expect(COPY).not.toMatch(/\b(passionate|cutting-edge|leverage|innovative)\b/i);
     expect(COPY).not.toMatch(/TODO|VERIFY|DRAFT/);
     expect(experiments.INTRO.join(' ')).toMatch(/^I /);
-    expect(experiments.INTRO.length).toBeLessThanOrEqual(3);
+    // "Two or three sentences in first person."
+    const sentences = experiments.INTRO.join(' ').split(/(?<=[.!?])\s+(?=[A-Z])/);
+    expect(sentences.length).toBeGreaterThanOrEqual(2);
+    expect(sentences.length).toBeLessThanOrEqual(3);
     // No job-specific framing.
     expect(COPY).not.toMatch(/\b(employer|position|posting|application|hiring|candidate)\b/i);
+  });
+
+  it('links each paper’s sketch scenes, and only those, so that each opens on its own', () => {
+    const links = Object.fromEntries(
+      [...experiments.FIRST_AUTHOR, ...experiments.CO_AUTHORED].map((row, i) => [
+        row.paper ?? `study-${i}`,
+        experiments.scenesFor(row.paper),
+      ]),
+    );
+    expect(links).toEqual({
+      'icalt-2026-interest-extraction': [
+        { href: '/#sk-dorm', label: 'Dorm, laptop' },
+        { href: '/#sk-dining', label: 'Dining hall, phone' },
+      ],
+      'study-1': [],
+      'hcii-2022-information-retrieval': [
+        { href: '/research/teacher-support/#sk-pris', label: 'Classroom, Kinect' },
+      ],
+      'icalt-2021-visual-efficiency': [
+        { href: '/research/teacher-support/#sk-views', label: 'Classroom, tablet' },
+      ],
+      'hcii-2021-puppet-system': [{ href: '/#sk-puppet', label: 'Classroom, puppet' }],
+      'ieeevr-2020-ar-smart-glasses': [],
+      'icids-2019-emotional-priming': [],
+      'interact-2023-everyday-inspired-movies': [],
+      'hcomp-2020-explanation-types': [],
+      'chi-2020-self-avatars': [],
+    });
+  });
+
+  it('describes the dissertation as two evaluations of AI in learning wherever it is summarized', () => {
+    const read = (...parts: string[]) => readFileSync(join(ROOT, ...parts), 'utf8');
+    const qa = (
+      parseYaml(read('content', 'qa-library.yaml')) as { items: Array<{ id: string; a: string }> }
+    ).items.find((item) => item.id === 'dissertation')!;
+    expect(qa.a).toMatch(/^It is two evaluations of AI in learning\. Study 1 asks /);
+    // The four constructs are the dissertation's, not each study's.
+    expect(qa.a).toContain('The dissertation judges identification on four constructs');
+    const word = (
+      parseYaml(read('content', 'wordcloud.yaml')) as {
+        words: Array<{ text: string; blurb?: string }>;
+      }
+    ).words.find((item) => item.text === 'asking vs. reading records')!;
+    expect(word.blurb).toMatch(/^Two evaluations of AI in learning/);
+    expect(word.blurb).not.toMatch(/compared both/i);
+    const theme = read('src', 'content', 'themes', 'interest-identification.mdx');
+    expect(theme).toMatch(/^summary: 'My dissertation’s two evaluations of AI in learning:/m);
+    expect(theme).toContain('My dissertation is two evaluations of AI in learning.');
+    expect(FACTS_LINE).toContain(
+      'two evaluations of AI in learning. Study 1 asks what an LLM tutor finds out by asking students about their interests. Study 2 asks how accurately an LLM reads those interests',
+    );
   });
 });

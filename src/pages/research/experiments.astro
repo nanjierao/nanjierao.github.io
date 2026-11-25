@@ -3,7 +3,7 @@
 // from content/facts.md §5.10. The words are in src/data/experiments.ts; the citations and
 // their DOI links come from the publication list the rest of the site uses.
 //
-// Wide screens get a table. Below 48rem each study becomes a block of labeled lines, so the
+// Wide screens get a table. Below 52rem each study becomes a block of labeled lines, so the
 // page never scrolls sideways; the ARIA roles keep it a table for screen readers there, since
 // some browsers (Safari) drop a table's semantics once its CSS display changes. The roles are
 // redundant for the linter, which is why its two rules about them are off in this file.
@@ -21,6 +21,7 @@ import {
   INTRO,
   NOTES,
   TITLE,
+  scenesFor,
   type ExperimentRow,
 } from '../../data/experiments.ts';
 
@@ -56,14 +57,12 @@ function citation(row: ExperimentRow) {
   return { ...study, url: undefined };
 }
 
-/** A link's text: its address without the scheme, "doi.org/10.1109/…". */
-const linkText = (url: string): string => url.replace(/^https?:\/\//, '');
 const [, ...labels] = COLUMNS;
 ---
 
 <BaseLayout title={TITLE} description={DESCRIPTION}>
   <p class="breadcrumb">
-    <a href="/research/">Research</a> · Methods
+    <a href="/research/">Research</a>
   </p>
   <h1>{TITLE}</h1>
   <div class="prose">
@@ -93,9 +92,12 @@ const [, ...labels] = COLUMNS;
           </tr>
           {group.rows.map((row) => {
             const cite = citation(row);
+            const scenes = scenesFor(row.paper);
             const cells = [row.role, row.design, row.participants, row.comparison, row.analysis];
             return (
               <tr role="row" class="exp__row">
+                {/* The row's header is short enough to hear on every move along the row: the
+                    citation, with its title as the DOI link, and a note. */}
                 <th role="rowheader" scope="row" class="exp__study">
                   <span class="exp__cite">
                     {authorParts(cite.authors).map(({ before, name }) => (
@@ -104,19 +106,11 @@ const [, ...labels] = COLUMNS;
                         {isSelf(name) ? <strong>{name}</strong> : name}
                       </>
                     ))}{' '}
-                    ({cite.year}). <cite>{cite.title}.</cite> {cite.venue}.
+                    ({cite.year}).{' '}
+                    <cite>{cite.url ? <a href={cite.url}>{cite.title}</a> : cite.title}.</cite>{' '}
+                    {cite.venue}.
                   </span>
                   {row.note && <span class="exp__note">{row.note}</span>}
-                  {cite.url && (
-                    <a class="exp__link" href={cite.url}>
-                      {linkText(cite.url)}
-                    </a>
-                  )}
-                  {row.scenes && (
-                    <a class="exp__link" href={row.scenes.href}>
-                      {row.scenes.label}
-                    </a>
-                  )}
                 </th>
                 {cells.map((text, index) => (
                   <td role="cell">
@@ -124,6 +118,17 @@ const [, ...labels] = COLUMNS;
                       {labels[index]}
                     </span>
                     {text}
+                    {labels[index] === 'Comparison' && scenes.length > 0 && (
+                      <span class="exp__scenes">
+                        {scenes.length > 1 ? 'Sketch scenes:' : 'Sketch scene:'}{' '}
+                        {scenes.map((scene, i) => (
+                          <>
+                            {i > 0 && ' and '}
+                            <a href={scene.href}>{scene.label}</a>
+                          </>
+                        ))}
+                      </span>
+                    )}
                   </td>
                 ))}
               </tr>
@@ -194,7 +199,7 @@ const [, ...labels] = COLUMNS;
 
   .exp__cite,
   .exp__note,
-  .exp__link {
+  .exp__scenes {
     display: block;
   }
 
@@ -207,9 +212,8 @@ const [, ...labels] = COLUMNS;
     color: var(--color-text-muted);
   }
 
-  .exp__link {
+  .exp__scenes {
     margin-top: var(--space-1);
-    overflow-wrap: anywhere;
   }
 
   /* The labels name each line where the table becomes a list of studies (below). */
@@ -221,7 +225,7 @@ const [, ...labels] = COLUMNS;
     margin-top: var(--space-6);
   }
 
-  @media (max-width: 48rem) {
+  @media (max-width: 52rem) {
     .exp__table,
     .exp__table caption,
     .exp__table tbody,
