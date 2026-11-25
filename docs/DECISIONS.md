@@ -3,11 +3,11 @@
 Newest first. Status: **proposed** (drafted for Jimmy, in effect unless he objects) ·
 **needs Jimmy** (blocked on his choice) · **accepted** · **superseded**.
 
-## 2026-11-25 — DTRUE 2026: authors verified, Mention Paper
+## 2026-11-25 — DTRUE 2026: authors verified, Best Paper Mention
 
 | ID | Decision | Why | Status |
 |---|---|---|---|
-| D72 | **DTRUE 2026's authors and title are verified, and the paper received a Mention Paper.** The certificate Jimmy sent on Nov 25, 2026 lists Nanjie (Jimmy) Rao, Jatin Verma and Ava Prator for "A design framework for gamified, LLM-assisted crowd-sourced urban digital twins" (facts.md §5.3, §6 [10], §10). Publication 10 is listed again (12 of 12), the civic page, the CS-UDT build page and the flood scene name the coauthors, and the news item, the CV honors and the Q&A say "Mention Paper", the certificate's wording. The certificate itself stays out of the repository: it carries two other people's signatures. | A conference document with the author list and the title settles the VERIFY of D46 and D55. | accepted (Jimmy sent the certificate) |
+| D72 | **DTRUE 2026's authors and title are verified, and the paper received a Best Paper Mention (Nov 20, 2026).** The certificate Jimmy sent on Nov 25, 2026 lists Nanjie (Jimmy) Rao, Jatin Verma and Ava Prator for "A design framework for gamified, LLM-assisted crowd-sourced urban digital twins"; it reads "Certificate, Mention Paper", and the site uses Jimmy's wording, "Best Paper Mention" (facts.md §5.3, §6 [10], §10). Publication 10 is listed again (12 of 12) as an extended abstract with an oral presentation on Nov 20, 2026, its proceedings in EPiC Series in Computing (no link or DOI yet), and the recognition as a badge; publications take an `award` field for this, which ICALT 2021's Best Short Paper Nomination uses too. The civic page, the CS-UDT build page and the flood scene name the coauthors; the news item, the talk entry, the CV honors and the Q&A carry the recognition and the date Nov 20, 2026. The certificate itself stays out of the repository: it carries two other people's signatures. | Jimmy sent the certificate, then (relayed, Nov 25, 2026) asked for the honor and the publication with his wording, the date Nov 20, 2026 and the series name. A conference document with the author list and the title settles the VERIFY of D46 and D55. | accepted (Jimmy's instruction) |
 
 ## 2026-11-24 — Daily notes
 

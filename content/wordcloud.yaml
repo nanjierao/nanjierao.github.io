@@ -18,7 +18,7 @@ words:
   - { text: 'Accuracy · Depth · Richness · Phase', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'The four constructs my dissertation uses to judge interest identification.' }
   - { text: 'grounded vs. inferred', weight: 4, portal: ask, link: /research/grounding/, blurb: 'Checking each claim a model makes about a person against their own material.' }
   - { text: 'privacy by design', weight: 3, portal: ask, link: /research/interest-identification/, blurb: 'Self-curation, sensitive-content filtering and non-retention, built into my study protocol.' }
-  - { text: 'urban digital twins', weight: 3, portal: ask, link: /research/civic-digital-twins/, blurb: 'A design framework and a flood prototype; oral presentation and Mention Paper at DTRUE 2026.' }
+  - { text: 'urban digital twins', weight: 3, portal: ask, link: /research/civic-digital-twins/, blurb: 'A design framework and a flood prototype; Best Paper Mention at DTRUE 2026.' }
   - { text: 'crowd-sourced sensing', weight: 2, portal: ask, link: /demos/csudt/, blurb: 'Sensors, residents and posts must agree before a flood event is confirmed.' }
   - { text: 'teacher support tools', weight: 2, portal: ask, link: /research/teacher-support/, blurb: 'Three teacher-facing papers: IEEE ICALT 2021, HCII 2022, IEEE ICALT 2023.' }
   - { text: 'recommender explanations', weight: 1, portal: ask, link: /publications/, blurb: 'How explanation types and user motivations shape recommender use (AAAI HCOMP 2020).' }

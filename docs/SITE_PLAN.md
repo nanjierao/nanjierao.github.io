@@ -40,7 +40,7 @@ Headline options: `content/facts.md` §3 (Jimmy picks; option 4 matches the fina
 Research overview: one umbrella line (Jimmy picks; default from his research statement) over three
 contexts: **Personal · Embodied · Civic** (D27, D45). Proof points, each linked to evidence: ICALT
 2026 and ICIDS 2026 first-author full papers; the DTRUE 2026 framework and working prototype (with
-Jatin Verma and Ava Prator; Mention Paper, D72); the grounded-vs-inferred check (505 of 1,130 units inferred);
+Jatin Verma and Ava Prator; Best Paper Mention, D72); the grounded-vs-inferred check (505 of 1,130 units inferred);
 builds across software and hardware (NSF puppet system, AR glasses, XPRIZE semifinal robot);
 teaching (COP 3530 discussion sections for ~150 students in total; co-taught graduate HCI).
 

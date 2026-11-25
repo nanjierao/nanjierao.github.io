@@ -10,7 +10,7 @@ datasheet:
   - { label: Engagement, value: 'When two channels agree, nearby residents get a one-tap verification quest' }
   - { label: Replay, value: 'Simulated replay modeled on Hurricane Irma (Sep 10–12, 2017): first three-channel confirmation 10.8 hours into a 30-hour replay; four confirmed cells and three open quests at the peak' }
   - { label: Data, value: 'Simulated replay and synthetic community content' }
-  - { label: Paper, value: 'Extended abstract with Jatin Verma and Ava Prator, DTRUE 2026 (oral presentation; Mention Paper)' }
+  - { label: Paper, value: 'Extended abstract with Jatin Verma and Ava Prator, DTRUE 2026 (oral presentation, Nov 20, 2026; Best Paper Mention)' }
 tags: [LLM pipeline, digital twin, web]
 areas: [ai, web]
 links:

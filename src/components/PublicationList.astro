@@ -31,6 +31,12 @@ const { publications, compact = false } = Astro.props;
           {pub.details && `, ${pub.details}`}.
         </span>
         {pub.notes.length > 0 && <span class="pub__notes"> {pub.notes.join('. ')}.</span>}
+        {pub.award && (
+          <>
+            {' '}
+            <span class="pub__award">{pub.award}</span>
+          </>
+        )}
         {pub.url && (
           <>
             {' '}
@@ -70,6 +76,17 @@ const { publications, compact = false } = Astro.props;
 
   .pub__notes {
     color: var(--color-text-muted);
+  }
+
+  /* A recognition (facts.md §10): a small outlined label, readable as plain text. */
+  .pub__award {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--color-series-a);
+    border-radius: 999px;
+    background: var(--color-surface);
+    font-size: var(--text-sm);
+    font-weight: 600;
   }
 
   .pub__tldr {

@@ -77,7 +77,7 @@
   title: 'Enhancing the Visual Efficiency for Communicating Students’ Personal Relevant Information'
   venue: 'IEEE ICALT 2021'
   venueShort: 'ICALT'
-  notes: ['Best Short Paper Nomination']
+  award: 'Best Short Paper Nomination'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [5]).
   themes: [teacher-support]
@@ -140,7 +140,13 @@
   title: 'A Design Framework for Gamified, LLM-Assisted Crowd-Sourced Urban Digital Twins'
   venue: 'DTRUE 2026, UF Jacksonville Campus'
   venueShort: 'DTRUE'
-  notes: ['Oral presentation', 'Mention Paper', 'Full paper to appear in EPiC Series in Technology']
+  notes:
+    [
+      'Extended abstract',
+      'Oral presentation, Nov 20, 2026',
+      'Proceedings: EPiC Series in Computing',
+    ]
+  award: 'Best Paper Mention'
   firstAuthor: true
   tldr:
     text: 'A design framework for crowd-sourced urban digital twins, and a flood prototype that confirms an event only when a sensor, a resident, and a social post agree.'

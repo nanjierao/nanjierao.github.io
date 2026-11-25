@@ -10,15 +10,14 @@
 - { id: ieeevr-2020, event: IEEE VR, year: 2020, kind: first-author-presentation }
 - { id: icids-2019, event: ICIDS, year: 2019, kind: first-author-presentation }
 
-# DTRUE 2026 (facts.md §5.3, §11; D26, D46). The paper's authors and title are verified (facts.md
-# §6 [10], Nov 25, 2026); the talk entry keeps its short wording.
+# DTRUE 2026 (facts.md §5.3, §11; D26, D46, D72): Jimmy presented on Nov 20, 2026, the second day of
+# the conference (Nov 19–20). The paper's authors and title are verified (facts.md §6 [10]).
 - id: dtrue-2026
   event: DTRUE 2026
   year: 2026
   kind: oral-presentation
   location: UF Jacksonville campus
-  startDate: '2026-11-19'
-  endDate: '2026-11-20'
+  startDate: '2026-11-20'
   timeZone: America/New_York
   wording:
     upcoming: Upcoming oral presentation at DTRUE 2026

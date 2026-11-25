@@ -127,7 +127,7 @@ items:
     a: >-
       Sense–Engage–Govern is a design framework for gamified, LLM-assisted crowd-sourced urban
       digital twins, coauthored with Jatin Verma and Ava Prator and presented orally at DTRUE 2026,
-      where it received a Mention Paper. The CS-UDT prototype for
+      where it received a Best Paper Mention. The CS-UDT prototype for
       Jacksonville flooding confirms an event only when an official sensor anomaly, a resident's
       report, and a social post agree in the same map cell. In a simulated Hurricane Irma replay,
       the first three-channel confirmation came 10.8 hours into a 30-hour window.
@@ -293,7 +293,7 @@ items:
   - id: honors
     q: "Any awards?"
     a: >-
-      A Mention Paper at DTRUE 2026, the CISE Gartner Group Graduate Fellowship four times
+      A Best Paper Mention at DTRUE 2026, the CISE Gartner Group Graduate Fellowship four times
       (2021–2024), a best short paper nomination
       at IEEE ICALT 2021, ANA Avatar XPRIZE semifinalist (2021), and the Outstanding Thesis Award
       (top 1%) at Huazhong University of Science and Technology.
@@ -303,8 +303,9 @@ items:
   - id: talk-dtrue
     q: "Is he giving any talks soon?"
     a: >-
-      An oral presentation of the Sense–Engage–Govern framework at DTRUE 2026 on UF's Jacksonville
-      campus, November 19–20, 2026. The flood demo from the talk is live on this site.
+      He presented the Sense–Engage–Govern framework orally at DTRUE 2026 on UF's Jacksonville
+      campus on November 20, 2026, where it received a Best Paper Mention. The flood demo from the
+      talk is live on this site.
     sources: [/talks/dtrue-2026/, /demos/csudt/]
     audience: [general]
     status: ready

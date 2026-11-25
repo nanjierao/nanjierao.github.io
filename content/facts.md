@@ -175,7 +175,8 @@ they supersede the CVs and the research statement wherever they differ.
   Source: the DTRUE 2026 certificate, which Jimmy sent on Nov 25, 2026; it settles the earlier
   VERIFY (author order, spelling and title). Jimmy had added his teammate Jatin Verma as
   coauthor after confirming with the organizers. Don't call this work sole-authored anywhere.
-- Recognition: "Mention Paper" at DTRUE 2026 (the certificate's wording; the same certificate).
+- Recognition: Best Paper Mention, DTRUE 2026, Nov 20, 2026. "Best Paper Mention" is Jimmy's
+  wording (Nov 25, 2026); the certificate reads "Certificate, Mention Paper".
 - *Sense–Engage–Govern*: design framework for gamified, LLM-assisted crowd-sourced urban digital
   twins — three tiers, six dimensions, each a spectrum with a named tension (contribution mode,
   twin coupling, incentive substrate, verification locus, temporal regime, access threshold),
@@ -188,8 +189,11 @@ they supersede the CVs and the research statement wherever they differ.
 - Simulated replay modeled on Hurricane Irma (Sep 10–12, 2017): first three-channel
   confirmation **10.8 hours** into a 30-hour replay; at the storm's peak, four confirmed cells
   and three open quests. Everything in the demo is labeled SIMULATED.
-- Extended abstract accepted for an oral presentation at DTRUE 2026 (UF Jacksonville campus,
-  **Nov 19–20, 2026**); full paper to appear in EPiC Series in Technology.
+- Extended abstract, oral presentation at DTRUE 2026 (UF Jacksonville campus; the conference ran
+  **Nov 19–20, 2026**, and Jimmy presented on **Nov 20, 2026**, the date the site shows; Jimmy,
+  Nov 25, 2026). Proceedings: EPiC Series in Computing (Jimmy, Nov 25, 2026; the EasyChair call
+  for papers says the same; this file said "EPiC Series in Technology" before). No link or DOI
+  yet.
 - Live demo files: `public/demos/csudt/csudt_dashboard.html` (planner view) and
   `csudt_mobile.html` (citizen client). Background: `source/csudt/README.md`.
 
@@ -439,9 +443,9 @@ Refereed conference papers
 
 Extended abstracts, posters, workshop papers
 10. *Rao, N., Verma, J., & Prator, A. (2026). A Design Framework for Gamified, LLM-Assisted
-    Crowd-Sourced Urban Digital Twins. DTRUE 2026, UF Jacksonville Campus. Oral presentation;
-    Mention Paper; full paper to appear in EPiC Series in Technology. Authors, order and title
-    as the DTRUE 2026 certificate gives them (Jimmy, Nov 25, 2026).
+    Crowd-Sourced Urban Digital Twins. DTRUE 2026, UF Jacksonville Campus. Extended abstract;
+    oral presentation, Nov 20, 2026; proceedings: EPiC Series in Computing. Best Paper Mention.
+    Authors, order and title as the DTRUE 2026 certificate gives them (Jimmy, Nov 25, 2026).
 11. *Rao, N., Chu, S. L., Jing, Z., Kuang, H., Tang, Y., & Dong, Z. (2022). Exploring Information
     Retrieval for Personalized Teaching Support. HCI International 2022, Late Breaking Posters,
     Springer, pp. 191–197.
@@ -529,7 +533,9 @@ Other videos from the old site (ask Jimmy what they are before using):
 
 ## 10. Honors
 
-- Mention Paper, DTRUE 2026 (Digital Twins for Resilient Urban Environments), for §6 [10]
+- Best Paper Mention, Digital Twins for Resilient Urban Environments (DTRUE) 2026, Nov 20, 2026,
+  for §6 [10], with Jatin Verma and Ava Prator (Jimmy's wording; the certificate reads
+  "Mention Paper")
 - CISE Gartner Group Graduate Fellowship, four times (2021–2024)
 - Best Short Paper Nomination, IEEE ICALT 2021
 - Semifinalist, ANA Avatar XPRIZE (2021)
@@ -539,7 +545,8 @@ Other videos from the old site (ask Jimmy what they are before using):
 
 - First-author presentations: IEEE ICALT (2021, 2023, 2026), ICIDS (2019), HCI International
   (2021, 2022), IEEE VR (2020).
-- Upcoming: DTRUE 2026 oral presentation, UF Jacksonville campus, Nov 19–20, 2026;
+- DTRUE 2026 oral presentation, UF Jacksonville campus, Nov 20, 2026 (the conference ran
+  Nov 19–20). Upcoming:
   ICIDS 2026 (`TODO` date and location).
 
 ## 12. Skills (for CV page and the assistant's knowledge pack)

@@ -130,7 +130,11 @@ describe('publications (facts.md §6)', () => {
     // facts.md §6 [10] and §5.3: the authors and the title from the DTRUE 2026 certificate.
     expect(dtrue.verify).toBe(false);
     expect(dtrue.authors).toEqual(['Rao, N.', 'Verma, J.', 'Prator, A.']);
-    expect(dtrue.notes).toContain('Mention Paper');
+    // Jimmy's wording for the certificate's "Mention Paper" (facts.md §10), shown as a badge.
+    expect(dtrue.award).toBe('Best Paper Mention');
+    expect(publications.find((pub) => pub.factsNumber === 5)!.award).toBe(
+      'Best Short Paper Nomination',
+    );
     expect(published.filter(isListedPublication)).toHaveLength(12);
   });
 
@@ -452,13 +456,15 @@ describe('builds (facts.md §7, D29)', () => {
 });
 
 describe('talks and news (D26)', () => {
-  it('dates DTRUE 2026 as Nov 19–20, 2026 with both wordings', () => {
+  it('dates the DTRUE 2026 talk on Nov 20, 2026, the day Jimmy presented, with both wordings', () => {
     const dtrue = talks.find((talk) => talk.id === 'dtrue-2026')!;
-    expect(dtrue).toMatchObject({ startDate: '2026-11-19', endDate: '2026-11-20' });
+    expect(dtrue).toMatchObject({ startDate: '2026-11-20' });
+    expect(dtrue.endDate).toBeUndefined();
     expect(dtrue.wording?.upcoming).toMatch(/^Upcoming oral presentation/);
     expect(dtrue.wording?.past).toBe('Presented at DTRUE 2026');
     const item = news.find((n) => n.id === 'dtrue-2026')!;
-    expect(item.event).toMatchObject({ start: '2026-11-19', end: '2026-11-20' });
+    expect(item.date).toBe('2026-11-20');
+    expect(item.event).toMatchObject({ start: '2026-11-20' });
   });
 
   it('never hard-codes tense in fixed news text', () => {
