@@ -953,7 +953,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
     const teachers = page.getByRole('group', { name: 'Teachers', exact: true });
     await expect(teachers.getByRole('button')).toHaveCount(0);
     await expect(
-      teachers.getByRole('link', { name: 'Three scenes on their own page', exact: true }),
+      teachers.getByRole('link', { name: 'Four scenes on their own page', exact: true }),
     ).toHaveAttribute('href', '/research/teacher-support/#scenes');
     // The open scene's button is filled in; the others look like buttons waiting to be pressed.
     const fill = (id: string) =>
@@ -1653,7 +1653,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
 test.describe('teacher scenes on the teacher support page (D73)', () => {
   const PATH = '/research/teacher-support/';
   const SK = '#scenes .sk';
-  const SCENES = ['views', 'pris', 'context'];
+  const SCENES = ['views', 'pris', 'zoom', 'context'];
   const scene = (page: Page, id: string) => page.locator(`${SK} [data-scene="${id}"]`);
   const tab = (page: Page, id: string) => page.locator(`${SK} [data-scene-button="${id}"]`);
   const shown = (scope: Locator) => scope.locator('.sk__when:visible');
@@ -1700,7 +1700,10 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     page,
   }) => {
     await openStill(page);
-    await expect(page.locator('main h2')).toHaveText(['One scene per paper', 'Publications']);
+    await expect(page.locator('main h2')).toHaveText([
+      'One scene per paper, and a pilot',
+      'Publications',
+    ]);
     expect(
       await page.evaluate(() => {
         const text = document.querySelector('main .prose')!;
@@ -1711,12 +1714,13 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     await expect(page.locator(`${SK} .sk__cue`)).toHaveText(/^Pick a scene/);
     await expect(page.locator(`${SK} [data-scene-button]`)).toHaveText([
       'Classroom, tablet',
-      'Classroom, Kinect',
+      'Classroom, Kinect pilot',
+      'Zoom class, laptop',
       'Staff room, focus group',
     ]);
     await expect(
       page.getByRole('group', { name: 'Teachers', exact: true }).getByRole('button'),
-    ).toHaveCount(3);
+    ).toHaveCount(4);
     const back = page
       .getByRole('group', { name: 'Learners, hands, city', exact: true })
       .getByRole('link', { name: 'Five scenes on the home page', exact: true });
@@ -1737,7 +1741,7 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     await expect(page).toHaveURL(/\/#learners-and-teachers$/);
     await expect(page.locator('#learners-and-teachers .sk [data-scene-button]')).toHaveCount(5);
     // And from the home page's row of buttons to this page's scenes.
-    await page.getByRole('link', { name: 'Three scenes on their own page', exact: true }).click();
+    await page.getByRole('link', { name: 'Four scenes on their own page', exact: true }).click();
     await expect(page).toHaveURL(/\/research\/teacher-support\/#scenes$/);
     await expect(page.locator(SK)).toBeVisible();
   });
@@ -1748,7 +1752,7 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     await openStill(page);
     const dois: Record<string, string> = {
       views: 'https://doi.org/10.1109/ICALT52272.2021.00011',
-      pris: 'https://doi.org/10.1007/978-3-031-19682-9_25',
+      zoom: 'https://doi.org/10.1007/978-3-031-19682-9_25',
       context: 'https://doi.org/10.1109/ICALT58122.2023.00027',
     };
     for (const [id, url] of Object.entries(dois)) {
@@ -1758,6 +1762,10 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       await expect(reference.getByRole('link')).toHaveAttribute('href', url);
       await expect(scene(page, id).locator('.sk__award')).toHaveCount(0);
     }
+    // The Kinect scene is the in-person pilot, which the paper does not report (D75): no
+    // reference under it.
+    await tab(page, 'pris').click();
+    await expect(scene(page, 'pris').locator('.sk__paper')).toHaveCount(0);
     // Every scene's text, the closed ones included.
     expect((await page.locator(`${SK} .sk__scene`).allTextContents()).join(' ')).not.toMatch(
       /best paper|award|nominat/i,
@@ -1879,6 +1887,45 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       );
     expect(rings).toHaveLength(1);
     expect(rings[0]).toMatchObject({ drawn: true, shown: true });
+  });
+
+  test('PRIS in two settings: the Kinect pilot, then the Zoom study with its results (D75)', async ({
+    page,
+  }) => {
+    await openStill(page);
+    // Side by side, the pilot first.
+    const ids = await page
+      .locator(`${SK} [data-scene-button]`)
+      .evaluateAll((buttons) => buttons.map((b) => b.getAttribute('data-scene-button')));
+    expect(ids.indexOf('zoom')).toBe(ids.indexOf('pris') + 1);
+    // The Kinect scene: the in-person version, pilot-tested; no study, no participants.
+    await tab(page, 'pris').click();
+    const pilot = scene(page, 'pris');
+    await page.getByRole('button', { name: 'Show all' }).click();
+    await expect(pilot.locator('.sk__results')).toBeVisible();
+    await expect(pilot.locator('.sk__results')).toContainText('built and pilot-tested');
+    await expect(pilot.locator('.sk__results')).toContainText('COVID');
+    await expect(pilot.locator('.sk__summary dd').nth(2)).toHaveText(
+      'A pilot test, before COVID stopped the experiment',
+    );
+    expect(await pilot.innerText()).not.toMatch(
+      /notecards|usability|cognitive load|participants|\b8\b/i,
+    );
+    // The Zoom scene: the study the paper reports, with its 8 participants and its results.
+    await tab(page, 'zoom').click();
+    const study = scene(page, 'zoom');
+    await page.getByRole('button', { name: 'Show all' }).click();
+    await expect(study.locator('.sk__steps li').first()).toHaveText(
+      'Later, after an in-person pilot, PRIS on Zoom: a simulated online class, with researchers as the students.',
+    );
+    await expect(study.locator('.sk__result').first()).toContainText(
+      '8 participants each taught as the teacher in simulated online classes on Zoom, and four researchers played the students.',
+    );
+    await expect(study.locator('.sk__results')).toContainText('PRIS was compared with notecards.');
+    await expect(study.locator('.sk__summary dd').first()).toHaveText(
+      'The teacher’s speech, from the laptop’s microphone',
+    );
+    expect(await study.innerText()).not.toMatch(/Kinect/);
   });
 
   test('draws each scene without the options, then shows only the one picked', async ({ page }) => {
@@ -2019,13 +2066,13 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     }
   });
 
-  test('without JavaScript, the three scenes are there, finished, with the sample picked', async ({
+  test('without JavaScript, the four scenes are there, finished, with the sample picked', async ({
     browser,
   }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto(PATH);
-    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(3);
+    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(4);
     await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
     await expect(page.locator(`${SK} .sk__jump`)).toBeVisible();
     for (const id of SCENES) {
@@ -2038,7 +2085,9 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       await expect(shown(active.locator('.sk__status'))).toHaveText(sample.outcome);
       await expect(active.locator('.sk__sample-note')).toBeVisible();
       await expect(active.locator('.sk__after > .sk__results')).toBeVisible();
-      await expect(active.locator('.sk__paper')).toBeVisible();
+      // Every scene from a paper cites it; the Kinect pilot is in no paper (D75).
+      if (id === 'pris') await expect(active.locator('.sk__paper')).toHaveCount(0);
+      else await expect(active.locator('.sk__paper')).toBeVisible();
     }
     await context.close();
   });
@@ -2192,9 +2241,11 @@ test.describe('the Experiments page (D74)', () => {
       ['/#sk-dining', 'Dining hall, phone'],
       ['/#sk-puppet', 'Classroom, puppet'],
       ['/research/teacher-support/#sk-views', 'Classroom, tablet'],
-      ['/research/teacher-support/#sk-pris', 'Classroom, Kinect'],
+      ['/research/teacher-support/#sk-zoom', 'Zoom class, laptop'],
     ])
       await expect(table.locator(`a[href="${href}"]`)).toHaveText(name);
+    // The Kinect pilot is not in the paper (D75), so the table does not link it.
+    await expect(table.locator('a[href$="#sk-pris"]')).toHaveCount(0);
     // The notes come after the table.
     expect(
       await page.evaluate(() =>
@@ -2317,6 +2368,7 @@ test.describe('the Experiments page (D74)', () => {
       ['/#sk-puppet', 'puppet'],
       ['/#sk-dining', 'dining'],
       ['/research/teacher-support/#sk-pris', 'pris'],
+      ['/research/teacher-support/#sk-zoom', 'zoom'],
     ]) {
       await page.goto(path);
       await expect(page.locator(`[data-scene-button="${id}"]`), path).toHaveAttribute(

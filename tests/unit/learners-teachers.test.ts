@@ -160,7 +160,7 @@ describe('sketch scenes (D68)', () => {
     return FACTS.slice(start, end);
   };
 
-  it('has the title, the subtitle, the five home scenes Jimmy set, and the three teacher scenes', () => {
+  it('has the title, the subtitle, the five home scenes Jimmy set, and the four teacher scenes', () => {
     expect(page.TITLE).toBe('How AI learns about people and places');
     expect(sketch.SKETCH_SUBTITLE).toBe(
       'Each scene shows where the data comes from, what the system builds from it, and who checks it.',
@@ -173,6 +173,7 @@ describe('sketch scenes (D68)', () => {
       'city',
       'views',
       'pris',
+      'zoom',
       'context',
     ]);
     expect(sketch.SCENE_GROUPS).toEqual([
@@ -183,7 +184,7 @@ describe('sketch scenes (D68)', () => {
     // The teacher scenes are on a page of their own (D73): the home page's budget has no room
     // for them. Every scene is in one set or the other.
     expect(sketch.TEACHER_SCENE_GROUPS).toEqual([
-      { label: 'Teachers', scenes: ['views', 'pris', 'context'] },
+      { label: 'Teachers', scenes: ['views', 'pris', 'zoom', 'context'] },
     ]);
     const home = sketch.SCENE_GROUPS.flatMap((group) => group.scenes);
     const teachers = sketch.TEACHER_SCENE_GROUPS.flatMap((group) => group.scenes);
@@ -212,7 +213,7 @@ describe('sketch scenes (D68)', () => {
     expect(scene('city').note).toMatch(/^Everything in this scene is simulated/);
     expect(scene('puppet').note).toContain('illustration');
     // The teacher scenes' students, experiences, words and examples are made up (facts.md §5.8).
-    for (const id of ['views', 'pris', 'context'] as const) {
+    for (const id of ['views', 'pris', 'zoom', 'context'] as const) {
       expect(scene(id).badge, id).toBe('Synthetic sample');
       expect(scene(id).note, id).toMatch(/are made up for illustration\.$/);
     }
@@ -316,6 +317,7 @@ describe('sketch scenes (D68)', () => {
       'judge',
       'turn',
       'toggle',
+      'choose',
       'choose',
       'choose',
       'choose',
@@ -445,7 +447,9 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
       puppet: 'hcii-2021-puppet-system',
       city: 'dtrue-2026-csudt-framework',
       views: 'icalt-2021-visual-efficiency',
-      pris: 'hcii-2022-information-retrieval',
+      // The Kinect scene is PRIS's in-person pilot, which the paper does not report (D75).
+      pris: null,
+      zoom: 'hcii-2022-information-retrieval',
       context: 'icalt-2023-context-for-contextualizing',
     });
     for (const item of sketch.SCENES) {
@@ -493,7 +497,7 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     expect(FACTS_LINE).toMatch(
       /Recognition: none on the site\. ICALT 2021's award wording \("Best Short Paper Nomination"\) is VERIFY: it stays off the site until Jimmy confirms it/,
     );
-    for (const id of ['views', 'pris', 'context'] as const)
+    for (const id of ['views', 'pris', 'zoom', 'context'] as const)
       expect(words(id), id).not.toMatch(/award|best paper|nominat|mention/i);
     // Nothing the site is built from shows the wording: pages, data, content, the Q&A library.
     const sources = (dir: string): string[] =>
@@ -532,12 +536,32 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
       [
         /PRIS, a real-time system for personalized teaching support/,
         scene('pris').source,
-        /^PRIS, a real-time system for personalized teaching support \(HCI International 2022\)\.$/,
+        /^The in-person version of PRIS, a real-time system for personalized teaching support\. The paper \(HCI International 2022\) reports the later study on Zoom, not this pilot\.$/,
+      ],
+      [
+        /In person, first: a version of PRIS for the classroom, built and pilot-tested\..*COVID then stopped the experiment, and the paper does not report this version or mention a Kinect/,
+        results('pris'),
+        /^ This in-person version was built and pilot-tested\. Then COVID came, and the experiment did not go on\. The study the paper reports ran later, in simulated online classes on Zoom/,
+      ],
+      [
+        /On Zoom, later: the study the paper reports/,
+        scene('zoom').source,
+        /^PRIS in simulated online classes on Zoom: the study the paper reports \(HCI International 2022\)\.$/,
+      ],
+      [
+        /Simulated online classes on Zoom: each of the 8 participants \(university students\) taught as the teacher, and 4 researchers acted as the students/,
+        results('zoom'),
+        /^8 participants each taught as the teacher in simulated online classes on Zoom, and four researchers played the students\./,
       ],
       [
         /compared with notecards, it showed better usability, lower teacher cognitive load and more frequent personalized teaching behaviors/,
-        results('pris'),
+        results('zoom'),
         /PRIS was compared with notecards\. With PRIS, usability was better, the teacher’s cognitive load was lower, and personalized teaching happened more often/,
+      ],
+      [
+        /PRIS took the teacher's voice from the laptop's microphone; speech recognition \(Microsoft Azure\) and keyword matching showed the teacher students' personally relevant information/,
+        words('zoom'),
+        /The laptop’s microphone picks up the teacher’s voice\. .*Speech recognition turns the teacher’s words into text, in real time\. .*Keyword matching finds students’ personal information that relates to those words, and PRIS shows it to the teacher\./,
       ],
       [
         /It used a Kinect for speech and position recognition in a classroom/,
@@ -559,10 +583,105 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
       expect(FACTS_LINE, String(inFacts)).toMatch(inFacts);
       expect(copy).toMatch(inCopy);
     }
-    // No numbers of their own: the papers' numbers are not in facts.md.
+    // No numbers of their own: the papers' numbers are not in facts.md. The Zoom scene gives
+    // the study's 8 participants (facts.md §5.5 and §5.10), and no other number.
     for (const id of ['views', 'pris', 'context'] as const)
       for (const text of strings(scene(id)))
         expect(text.replace(/\b(2021|2022|2023)\b/g, ''), `${id}: ${text}`).not.toMatch(/\d/);
+    for (const text of strings(scene('zoom')))
+      expect(text.replace(/\b2022\b/g, '').replace(/\b8\b/g, ''), text).not.toMatch(/\d/);
+    expect(FACTS_LINE).toMatch(/\| 8 participants teaching simulated online classes \|/);
+  });
+
+  it('shows PRIS in two settings: the in-person Kinect pilot, then the Zoom study (D75)', () => {
+    const pilot = scene('pris');
+    const study = scene('zoom');
+    // Side by side on the teacher page, the pilot first.
+    const teachers = sketch.TEACHER_SCENE_GROUPS.flatMap((group) => group.scenes);
+    expect(teachers.indexOf('zoom')).toBe(teachers.indexOf('pris') + 1);
+    expect(pilot.label).toBe('Classroom, Kinect pilot');
+    expect(study.label).toBe('Zoom class, laptop');
+    expect(pilot.steps[0]!.line).toMatch(/^First, PRIS in person: /);
+    expect(study.steps[0]!.line).toMatch(/^Later, after an in-person pilot, PRIS on Zoom: /);
+    // The pilot carries no paper, no study and no numbers; the study and its 8 participants
+    // belong to the Zoom scene only.
+    expect(pilot.paper).toBeUndefined();
+    expect(words('pris').replace(/\b2022\b/g, '')).not.toMatch(
+      /notecards|usability|cognitive load|participants|\d/i,
+    );
+    expect(pilot.summary.checkedBy).toBe('A pilot test, before COVID stopped the experiment');
+    expect(study.paper).toBe('hcii-2022-information-retrieval');
+    expect(study.results[0]).toEqual({
+      big: '8',
+      text: 'participants each taught as the teacher in simulated online classes on Zoom, and four researchers played the students.',
+    });
+    expect(study.summary.checkedBy).toContain('8 participants');
+    // "Within-subjects" is the design facts.md §5.10 gives the HCII 2022 study.
+    expect(study.summary.checkedBy).toMatch(/^A within-subjects study /);
+    expect(FACTS_LINE).toMatch(
+      /Exploring Information Retrieval for Personalized Teaching Support\. HCII 2022 \(Late Breaking Posters\) \| Within-subjects; condition order and topics counterbalanced \| 8 participants teaching simulated online classes \|/,
+    );
+    // The Zoom study used the laptop's microphone and no Kinect.
+    expect(words('zoom')).not.toMatch(/Kinect|position/i);
+    expect(study.summary.data).toBe('The teacher’s speech, from the laptop’s microphone');
+    // Both scenes offer the same three things to say, so they read as one system in two settings.
+    const say = (item: sketch.Scene) =>
+      item.task.kind === 'choose' ? item.task.options.map((option) => option.label) : [];
+    expect(say(study)).toEqual(say(pilot));
+    // Jimmy's sentence about the pilot is the source in facts.md, in his words.
+    expect(FACTS).toContain(
+      '我们当时做完线下的也进行了pilot test,但是covid来了，就没继续跑实验了-但是我依然认为kinect的这个场景适合加在网页上，和pris后来的zoom场景互相补充',
+    );
+  });
+
+  it('draws the Zoom scene: the laptop’s microphone, the class in tiles, the students each pick matches', () => {
+    const study = scene('zoom');
+    const drawing = DRAWINGS.zoom;
+    expect(drawing.anchors.mic).toBeDefined();
+    expect(study.steps.find((step) => step.flyFrom)!.flyFrom).toBe('mic');
+    // Each pick marks, in line and in color, the tiles of as many students as its outcome names
+    // (the picture in the speech bubble is on the left, off the laptop).
+    if (study.task.kind !== 'choose') throw new Error('the Zoom scene is a choose scene');
+    const subpaths = (d: string) => d.match(/M[^M]+/g) ?? [];
+    const center = (d: string) => {
+      const numbers = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+      const xs = numbers.filter((_, index) => index % 2 === 0);
+      const ys = numbers.filter((_, index) => index % 2 === 1);
+      return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+    };
+    // The four video tiles: region 0's thin shape made of four closed rectangles.
+    const tiles = drawing.regions[0]!.shapes.filter((shape) => shape.stroke === 'thin')
+      .map((shape) => subpaths(shape.d))
+      .filter((paths) => paths.length === 4 && paths.every((p) => /^M[\d .L]+Z\s*$/.test(p)))
+      .flat()
+      .map((p) => {
+        const numbers = (p.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+        const xs = numbers.filter((_, index) => index % 2 === 0);
+        const ys = numbers.filter((_, index) => index % 2 === 1);
+        return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] as const;
+      });
+    expect(tiles).toHaveLength(4);
+    const tileOf = (p: string) => {
+      const [x, y] = center(p) as [number, number];
+      return tiles.findIndex(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
+    };
+    for (const option of study.task.options) {
+      const marked = (kind: 'stroke' | 'fill') =>
+        [
+          ...new Set(
+            drawing.regions
+              .flatMap((region) => region.shapes)
+              .filter((shape) => shape.part === `pick-${option.value}` && shape[kind])
+              .flatMap((shape) => subpaths(shape.d))
+              .filter((p) => center(p)[0]! >= 400)
+              .map(tileOf),
+          ),
+        ].sort();
+      const named = /\btwo students\b/.test(option.outcome) ? 2 : 1;
+      expect(marked('stroke'), option.value).not.toContain(-1);
+      expect(marked('stroke'), option.value).toHaveLength(named);
+      expect(marked('fill'), option.value).toEqual(marked('stroke'));
+    }
   });
 
   it('has the Kinect follow the teacher, in its words and its drawing (Jimmy, Nov 25, 2026)', () => {

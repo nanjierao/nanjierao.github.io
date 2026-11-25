@@ -230,12 +230,24 @@ they supersede the CVs and the research statement wherever they differ.
   - HCII 2022: PRIS, a real-time system for personalized teaching support, built on a
     speech-recognition-based pipeline that retrieves students' personal information; compared
     with notecards, it showed better usability, lower teacher cognitive load and more frequent
-    personalized teaching behaviors. It used a Kinect for speech and position recognition in a
-    classroom (Jimmy, relayed Nov 25, 2026). The Kinect tracked the teacher's position, because
-    where the teacher stands in the classroom matters (Jimmy, relayed Nov 25, 2026). What PRIS
-    did with the position is not recorded here; the scene says only that the Kinect follows
-    where the teacher stands. `TODO(jimmy)`: the study's 8 participants taught simulated online
-    classes (§5.10); where did those classes run, and does the scene's classroom fit them?
+    personalized teaching behaviors. PRIS has two settings (Jimmy, relayed Nov 25, 2026; D75):
+    - In person, first: a version of PRIS for the classroom, built and pilot-tested. It used a
+      Kinect for speech and position recognition in a classroom. The Kinect tracked the
+      teacher's position, because where the teacher stands in the classroom matters. What PRIS
+      did with the position is not recorded here. COVID then stopped the experiment, and the
+      paper does not report this version or mention a Kinect. Jimmy's words (Nov 25, 2026):
+      "我们当时做完线下的也进行了pilot test,但是covid来了，就没继续跑实验了-但是我依然认为kinect的这个场景适合加在网页上，和pris后来的zoom场景互相补充"
+      (we finished the in-person version and pilot-tested it too, but COVID came and the
+      experiment did not go on; I still think the Kinect scene belongs on the site, as a
+      complement to PRIS's later Zoom scene).
+    - On Zoom, later: the study the paper reports, with the comparison and results above.
+      Simulated online classes on Zoom: each of the 8 participants (university students) taught
+      as the teacher, and 4 researchers acted as the students. PRIS took the teacher's voice
+      from the laptop's microphone; speech recognition (Microsoft Azure) and keyword matching
+      showed the teacher students' personally relevant information. The paper says this
+      hardware is ordinary online-teaching equipment that most laptops or Chromebooks have.
+      Source: Section 4 and Fig. 2 of the camera-ready paper, as read in Jimmy's other session
+      and relayed with his OK on Nov 25, 2026.
   - ICALT 2023: focus groups with teachers about contextualizing; three categories of context
     (time, activity, location), tied to the lesson and to students' prior experiences; design
     implications for adaptive teacher support systems.
@@ -285,15 +297,15 @@ sketch scenes, as he asked; say if it should move below them or be rewritten to 
 
 ### 5.8 Sketch scenes (D68, D73)
 Source: Jimmy's design notes and sketch prototype of Nov 24, 2026 (not in this repository), for
-the home page's five scenes; for the three teacher scenes (D73), his review relayed on Nov 25,
-2026, and the papers' abstracts as web-search listings give them (§5.5). The
+the home page's five scenes; for the four teacher scenes (D73, D75), his review and answers
+relayed on Nov 25, 2026, and the papers as §5.5 gives them. The
 scenes use the facts of the sections named below. What comes only from the design is marked
 "design". Interests, records, reports and posts shown in the scenes are made up, and each scene
 says so.
 
 - Title: "How AI learns about people and places". Subtitle: "Each scene shows where the data
   comes from, what the system builds from it, and who checks it." Five scenes on the home page;
-  the three teacher scenes, below, are on a page of their own (D73).
+  the four teacher scenes, below, are on a page of their own (D73, D75).
 - Scene 0, Tracker Toolbox (§7; labeled a prototype; no numbers): it logs clicks, scrolls and
   searches, follows gaze with WebGazer.js, maps records to page content, and asks the learner
   once a minute. Design: the pop-up in the scene asks "Did you learn something in the last
@@ -319,17 +331,26 @@ says so.
   into a 30-hour replay; four confirmed cells and three open quests at the peak. Design: the
   visitor can switch channels off, and with one channel left the scene says neither rule applies.
 
-- Teacher scenes (D73), on /research/teacher-support/, linked from the home page's row of scene
-  buttons; one per teacher-facing paper (§5.5), in the same form, each with one choice to make.
-  Their students, experiences, words and examples are made up, and each scene says so.
+- Teacher scenes (D73, D75), on /research/teacher-support/, linked from the home page's row of
+  scene buttons; one per teacher-facing paper (§5.5), and for PRIS two, its in-person pilot and
+  the Zoom study the paper reports; in the same form, each with one choice to make. Their
+  students, experiences, words and examples are made up, and each scene says so.
   - Classroom, tablet (ICALT 2021): a student's experiences shown as plain text, a mind map or a
     story illustration; the study's result as in §5.5. Design: the classroom, the tablet and the
     three made-up experiences.
-  - Classroom, Kinect (HCII 2022): a Kinect picks up what the teacher says and where the teacher
-    stands (§5.5); PRIS looks up students' personal information that relates to the words; the
-    comparison with notecards as in §5.5. Design: the ring on the floor that marks where the
-    teacher stands, what the teacher says, the students it matches and where they sit in the
-    drawing.
+  - Classroom, Kinect pilot (PRIS in person, §5.5): a Kinect picks up what the teacher says and
+    where the teacher stands; PRIS looks up students' personal information that relates to the
+    words; the version was built and pilot-tested, and then COVID stopped the experiment. No
+    study results and no paper reference: the paper reports the Zoom study. Design: the ring on
+    the floor that marks where the teacher stands, what the teacher says, the students it
+    matches and where they sit in the drawing.
+  - Zoom class, laptop (HCII 2022, the study the paper reports, §5.5): a simulated online class
+    on Zoom with researchers as the students; the laptop's microphone picks up the teacher's
+    voice; speech recognition and keyword matching find students' personal information that
+    relates to the words, and PRIS shows it to the teacher; the 8 participants and the
+    comparison with notecards as in §5.5, and the within-subjects design as in §5.10. Design:
+    the room, the four students in their video tiles, PRIS's card on the screen, what the
+    teacher says and the students it matches.
   - Staff room, focus group (ICALT 2023): the paper identifies the three categories of context
     from the focus groups; no separate check of them is recorded here. Design: the staff room,
     the teachers, the lesson plan and the examples.
