@@ -122,6 +122,7 @@ export const MENTORING: string[] = [
 
 /** facts.md §10. */
 export const HONORS: string[] = [
+  'Mention Paper, DTRUE 2026',
   'CISE Gartner Group Graduate Fellowship, four times (2021–2024)',
   'Best Short Paper Nomination, IEEE ICALT 2021',
   'Semifinalist, ANA Avatar XPRIZE (2021)',
@@ -223,6 +224,7 @@ export const TIMELINE: Array<{ group: string; items: TimelineItem[] }> = [
     items: [
       { label: 'Outstanding Thesis Award (top 1%), HUST', start: '2016', when: '2016' },
       { label: 'Best Short Paper Nomination, IEEE ICALT', start: '2021', when: '2021' },
+      { label: 'Mention Paper, DTRUE', start: '2026', when: '2026' },
       {
         label: 'CISE Gartner Group Graduate Fellowship, four times',
         start: '2021',

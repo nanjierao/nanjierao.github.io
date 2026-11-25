@@ -124,11 +124,14 @@ describe('publications (facts.md §6)', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('keeps VERIFY items off the site (DTRUE 2026, facts.md §6 [10])', () => {
+  it('keeps VERIFY items off the site, and lists DTRUE 2026 now that it is verified', () => {
     const dtrue = publications.find((pub) => pub.factsNumber === 10)!;
-    expect(dtrue.verify).toBe(true);
-    expect(isListedPublication(dtrue)).toBe(false);
-    expect(published.filter(isListedPublication)).toHaveLength(11);
+    expect(isListedPublication({ ...dtrue, verify: true })).toBe(false);
+    // facts.md §6 [10] and §5.3: the authors and the title from the DTRUE 2026 certificate.
+    expect(dtrue.verify).toBe(false);
+    expect(dtrue.authors).toEqual(['Rao, N.', 'Verma, J.', 'Prator, A.']);
+    expect(dtrue.notes).toContain('Mention Paper');
+    expect(published.filter(isListedPublication)).toHaveLength(12);
   });
 
   it('hides TL;DRs while they are DRAFT (D28)', () => {

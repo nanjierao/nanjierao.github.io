@@ -126,7 +126,8 @@ items:
     q: "What is the crowd-sourced urban digital twin work?"
     a: >-
       Sense–Engage–Govern is a design framework for gamified, LLM-assisted crowd-sourced urban
-      digital twins, presented orally at DTRUE 2026. The CS-UDT prototype for
+      digital twins, coauthored with Jatin Verma and Ava Prator and presented orally at DTRUE 2026,
+      where it received a Mention Paper. The CS-UDT prototype for
       Jacksonville flooding confirms an event only when an official sensor anomaly, a resident's
       report, and a social post agree in the same map cell. In a simulated Hurricane Irma replay,
       the first three-channel confirmation came 10.8 hours into a 30-hour window.
@@ -292,7 +293,8 @@ items:
   - id: honors
     q: "Any awards?"
     a: >-
-      CISE Gartner Group Graduate Fellowship four times (2021–2024), a best short paper nomination
+      A Mention Paper at DTRUE 2026, the CISE Gartner Group Graduate Fellowship four times
+      (2021–2024), a best short paper nomination
       at IEEE ICALT 2021, ANA Avatar XPRIZE semifinalist (2021), and the Outstanding Thesis Award
       (top 1%) at Huazhong University of Science and Technology.
     sources: [/cv/]
