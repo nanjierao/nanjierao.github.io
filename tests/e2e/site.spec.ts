@@ -1827,6 +1827,60 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     }
   });
 
+  test('the Kinect scene follows the teacher: its words, and a ring where the teacher stands', async ({
+    page,
+  }) => {
+    // Jimmy, Nov 25, 2026: the Kinect tracked the teacher's position (facts.md §5.5).
+    await openStill(page);
+    await tab(page, 'pris').click();
+    const active = scene(page, 'pris');
+    await page.getByRole('button', { name: 'Show all' }).click();
+    await expect(active).toHaveAttribute('data-state', 'done');
+    const svg = active.locator('svg.sk__svg');
+    await expect(svg).toHaveAttribute(
+      'aria-label',
+      /follows where the teacher stands, marked by a ring on the floor/,
+    );
+    await expect(active.locator('.sk__steps li')).toContainText([
+      'A Kinect sensor picks up what the teacher says and where the teacher stands.',
+    ]);
+    await expect(active.locator('.sk__why')).toContainText([
+      'where the teacher stands in the classroom, from the Kinect',
+    ]);
+    await expect(active.locator('.sk__summary dd').first()).toHaveText(
+      'The teacher’s speech and position in the classroom, from a Kinect',
+    );
+    // The ring is drawn with the Kinect, on the floor under the teacher.
+    const teacherX = await svg.evaluate(
+      (el) =>
+        (JSON.parse((el as SVGElement).dataset.anchors!) as Record<string, number[]>).teacher![0]!,
+    );
+    const step = await active
+      .locator('.sk__steps li', { hasText: 'A Kinect sensor' })
+      .getAttribute('data-draw');
+    const rings = await active
+      .locator(`[data-region="${step}"] path.sk__ink:not([data-part])`)
+      .evaluateAll(
+        (paths, x) =>
+          paths
+            .map((path) => {
+              const box = (path as SVGPathElement).getBBox();
+              const style = getComputedStyle(path);
+              return {
+                closed: /Z\s*$/.test(path.getAttribute('d') ?? ''),
+                centerX: box.x + box.width / 2,
+                top: box.y,
+                drawn: !(parseFloat(style.strokeDashoffset) > 0),
+                shown: style.visibility !== 'hidden' && style.opacity !== '0',
+              };
+            })
+            .filter((ring) => ring.closed && Math.abs(ring.centerX - x) <= 20 && ring.top >= 365),
+        teacherX,
+      );
+    expect(rings).toHaveLength(1);
+    expect(rings[0]).toMatchObject({ drawn: true, shown: true });
+  });
+
   test('draws each scene without the options, then shows only the one picked', async ({ page }) => {
     test.slow();
     await isolate(page);

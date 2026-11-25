@@ -231,10 +231,11 @@ they supersede the CVs and the research statement wherever they differ.
     speech-recognition-based pipeline that retrieves students' personal information; compared
     with notecards, it showed better usability, lower teacher cognitive load and more frequent
     personalized teaching behaviors. It used a Kinect for speech and position recognition in a
-    classroom (Jimmy, relayed Nov 25, 2026). `TODO(jimmy)`: whose position the Kinect tracked
-    (the teacher's or the students'), and what PRIS did with it; the scene says neither. Also:
-    the study's 8 participants taught simulated online classes (§5.10); where did those classes
-    run, and does the scene's classroom fit them?
+    classroom (Jimmy, relayed Nov 25, 2026). The Kinect tracked the teacher's position, because
+    where the teacher stands in the classroom matters (Jimmy, relayed Nov 25, 2026). What PRIS
+    did with the position is not recorded here; the scene says only that the Kinect follows
+    where the teacher stands. `TODO(jimmy)`: the study's 8 participants taught simulated online
+    classes (§5.10); where did those classes run, and does the scene's classroom fit them?
   - ICALT 2023: focus groups with teachers about contextualizing; three categories of context
     (time, activity, location), tied to the lesson and to students' prior experiences; design
     implications for adaptive teacher support systems.
@@ -324,10 +325,11 @@ says so.
   - Classroom, tablet (ICALT 2021): a student's experiences shown as plain text, a mind map or a
     story illustration; the study's result as in §5.5. Design: the classroom, the tablet and the
     three made-up experiences.
-  - Classroom, Kinect (HCII 2022): a Kinect picks up speech and position in the classroom; PRIS
-    looks up students' personal information that relates to the words; the comparison with
-    notecards as in §5.5. Design: what the teacher says, the students it matches and where they
-    sit in the drawing.
+  - Classroom, Kinect (HCII 2022): a Kinect picks up what the teacher says and where the teacher
+    stands (§5.5); PRIS looks up students' personal information that relates to the words; the
+    comparison with notecards as in §5.5. Design: the ring on the floor that marks where the
+    teacher stands, what the teacher says, the students it matches and where they sit in the
+    drawing.
   - Staff room, focus group (ICALT 2023): the paper identifies the three categories of context
     from the focus groups; no separate check of them is recorded here. Design: the staff room,
     the teachers, the lesson plan and the examples.

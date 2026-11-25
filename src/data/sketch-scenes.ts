@@ -635,12 +635,12 @@ export const SCENES: Scene[] = [
     label: 'Classroom, Kinect',
     heading: 'A teacher’s words, heard by a Kinect and matched to students',
     badge: 'Synthetic sample',
-    alt: 'Line drawing: a teacher walks between tables of students in a classroom and talks. A Kinect sensor under the board picks up speech and position in the room. A speech bubble shows a picture of what the teacher talks about, and the students it matches are highlighted at their table.',
+    alt: 'Line drawing: a teacher walks between tables of students in a classroom and talks. A Kinect sensor under the board picks up what the teacher says and follows where the teacher stands, marked by a ring on the floor. A speech bubble shows a picture of what the teacher talks about, and the students it matches are highlighted at their table.',
     steps: [
       { line: 'A classroom with tables of students.', draw: 0 },
       { line: 'A teacher walks between the tables and talks.', draw: 1 },
       {
-        line: 'A Kinect sensor picks up speech and position in the classroom.',
+        line: 'A Kinect sensor picks up what the teacher says and where the teacher stands.',
         draw: 2,
       },
       {
@@ -659,7 +659,11 @@ export const SCENES: Scene[] = [
       empty: 'Nothing picked up yet.',
       entries: [
         { glyph: 'mic', name: 'Speech', why: 'the teacher’s words, recognized as text' },
-        { glyph: 'pin', name: 'Position', why: 'position in the classroom, from the Kinect' },
+        {
+          glyph: 'pin',
+          name: 'Position',
+          why: 'where the teacher stands in the classroom, from the Kinect',
+        },
         {
           glyph: 'card',
           name: 'Students',
@@ -699,7 +703,7 @@ export const SCENES: Scene[] = [
     ],
     locked: 'Pick what the teacher says to see what the study found.',
     summary: {
-      data: 'Speech and position in the classroom, from a Kinect',
+      data: 'The teacher’s speech and position in the classroom, from a Kinect',
       builds: 'In real time, students’ personal information that relates to what the teacher says',
       checkedBy: 'A study that compared PRIS with notecards',
     },
