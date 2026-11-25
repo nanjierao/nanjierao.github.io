@@ -1,5 +1,5 @@
-// The home page's "How AI learns about people and places" section (D66, D68) and the teacher
-// scenes of /research/teacher-support/ (D73): every sentence and number they show comes from two
+// The home page's "How AI learns about people and places" section (D66, D68) and its sketch
+// scenes, the teacher scenes among them since D76: every sentence and number they show comes from two
 // data modules, the sketch scenes' and the text below them, so the checks here cover both (part
 // headings and fixed labels are in the components; the end-to-end tests read the rendered
 // pages). Numbers must be in content/facts.md and stay with the study facts.md gives them to,

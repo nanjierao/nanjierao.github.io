@@ -1443,7 +1443,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
     expect([state, checked]).toEqual(state === 'done' ? ['done', 4] : ['ready', 0]);
   });
 
-  test('without JavaScript, all five scenes are there, finished, with sample answers', async ({
+  test('without JavaScript, all nine scenes are there, these five finished, with sample answers', async ({
     browser,
   }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
@@ -1566,8 +1566,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
       }
     }
     // A drawn face shows the focus ring of the input that lies over it.
-    // Tab order: the scene buttons, the link to the other scenes, Replay, Show all, then the
-    // open scene's first control.
+    // Tab order: the scene buttons, Replay, Show all, then the open scene's first control.
     await tab(page, 'dorm').click();
     await page.getByRole('button', { name: 'Show all' }).focus();
     await page.keyboard.press('Tab');
@@ -1956,10 +1955,13 @@ test.describe('teacher scenes, on the home page since D76 (D73)', () => {
     await isolate(page);
     await page.goto(PATH);
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
-    await scene(page, 'views')
+    // The page opens on its first scene, the tracker's: let it finish drawing first.
+    await scene(page, 'tracker')
       .locator('svg[data-svg]')
       .evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    await expect(scene(page, 'views')).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await expect(scene(page, 'tracker')).toHaveAttribute('data-state', 'ready', {
+      timeout: 20_000,
+    });
     for (const id of SCENES) {
       await tab(page, id).click();
       const active = scene(page, id);
@@ -2005,10 +2007,13 @@ test.describe('teacher scenes, on the home page since D76 (D73)', () => {
     await isolate(page);
     await page.goto(PATH);
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
-    await scene(page, 'views')
+    // The page opens on its first scene, the tracker's: let it finish drawing first.
+    await scene(page, 'tracker')
       .locator('svg[data-svg]')
       .evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    await expect(scene(page, 'views')).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await expect(scene(page, 'tracker')).toHaveAttribute('data-state', 'ready', {
+      timeout: 20_000,
+    });
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '8'));
     for (const id of SCENES) {
       await tab(page, id).click();
@@ -2077,7 +2082,7 @@ test.describe('teacher scenes, on the home page since D76 (D73)', () => {
     await page.keyboard.press('Shift+Tab');
     await expect(context.getByRole('radio', { name: 'Activity', exact: true })).toBeFocused();
     expect(await coveredByDrawing()).toBe(false);
-    // The same on the home page, where the dorm scene's marks sit under its drawing.
+    // The same for the dorm scene, whose marks sit under its drawing.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await page.locator('#learners-and-teachers .sk [data-scene-button="dorm"]').click();

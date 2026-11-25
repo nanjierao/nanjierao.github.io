@@ -77,7 +77,12 @@ const teacherScenes = TEACHER_SCENES.map((id) => SCENES.find((scene) => scene.id
 </BaseLayout>
 
 <style>
-  /* An old link to a teacher scene on this page (#sk-zoom) lands on its line: mark it. */
+  /* An old link to a teacher scene on this page (#sk-zoom) lands on its line: room above it,
+     and a mark. */
+  .theme-scenes__list li {
+    scroll-margin-top: var(--space-4);
+  }
+
   .theme-scenes__list li:target {
     outline: 2px solid var(--color-focus);
     outline-offset: 4px;
