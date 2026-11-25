@@ -153,7 +153,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
   step, then the learner and teacher work. The footer carries the annotation legend (D30), the
   public email address (D70) and a link to the Daily notes. In Recent, the cards after the three
-  news items start with Daily notes, which links to /notes/ and shows the newest note (D71).
+  news items start with Daily notes, which links to /notes/ and shows the newest note, an item
+  with a bold lead by its lead alone (D71).
 - Accessibility: WCAG 2.2 AA. Keyboard reachable, visible focus, semantic landmarks, skip link,
   alt text for every meaningful image, `prefers-reduced-motion` respected, color never the only
   carrier of meaning. The grounded/inferred convention always uses line style + label + color.

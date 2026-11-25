@@ -20,7 +20,7 @@ import {
   getPosts,
   getThemesByContext,
 } from '../lib/content.ts';
-import { noteLine } from '../lib/notes.ts';
+import { noteLead, noteLine } from '../lib/notes.ts';
 import { getExternalData } from '../lib/external.ts';
 import { formatDay, formatPartialDate, isoDay } from '../lib/format.ts';
 import { CV_PDF_HREF, hasCvPdf } from '../lib/cv-pdf.ts';
@@ -173,23 +173,30 @@ const cvPdf = hasCvPdf();
             <p class="muted small">
               <time datetime={latestNote.id}>{formatPartialDate(latestNote.id)}</time>
             </p>
-            <ul class="daily-note small">
+            <ol class="daily-note small">
               {latestNote.data.lines.map((line) => {
-                const { lang, runs } = noteLine(line);
+                // An item with a bold lead shows only the lead here; /notes/ has all of it.
+                const { lang, parts } = noteLine(noteLead(line) ?? line);
                 return (
                   <li lang={lang}>
-                    {runs.map((run) =>
-                      run.lang ? <span lang={run.lang}>{run.text}</span> : run.text,
-                    )}
+                    {parts.map((part) => {
+                      const words = part.runs.map((run) =>
+                        run.lang ? <span lang={run.lang}>{run.text}</span> : run.text,
+                      );
+                      return part.strong ? <strong>{words}</strong> : words;
+                    })}
                   </li>
                 );
               })}
-            </ul>
+            </ol>
+            {latestNote.data.lines.some((line) => noteLead(line)) && (
+              <p class="small daily-note__more">
+                <a href={`/notes/#${latestNote.id}`}>Read the full note</a>
+              </p>
+            )}
           </>
         ) : (
-          <p class="small">
-            A date and three short sentences a day: what I did, and what I learned.
-          </p>
+          <p class="small">A date and three short notes a day: what I did, and what I learned.</p>
         )}
       </section>
       {latestPost && (
@@ -373,6 +380,10 @@ const cvPdf = hasCvPdf();
 
   .daily-note li + li {
     margin-top: var(--space-1);
+  }
+
+  .daily-note__more {
+    margin: var(--space-3) 0 0;
   }
 
   /* A Chinese phrase inside an English line keeps the line's spacing. */

@@ -5,3 +5,4 @@ lines:
   - "A second sentence with an apostrophe, so the quoting is tested: it's kept as written."
   - '10月2日，这是一句用来检查中文排版的测试句子。'
   - 'A long name with no place to break must still wrap: Intl.DateTimeFormat.prototype.formatToParts.'
+  - '**A bold lead with a Chinese word, 中文, for a longer test item.** The rest of the item follows on the same line, as in a note whose items are a bold lead and a short paragraph. The home page card shows only the lead and links to the full note.'
