@@ -1,0 +1,7 @@
+# Synthetic daily note for the end-to-end tests and layout screenshots (NOTES_FIXTURES=1).
+# It is never part of the real site.
+lines:
+  - 'Test note: a first short sentence about protocol v2, written for the layout tests.'
+  - "A second sentence with an apostrophe, so the quoting is tested: it's kept as written."
+  - '10月2日，这是一句用来检查中文排版的测试句子。'
+  - 'A long name with no place to break must still wrap: Intl.DateTimeFormat.prototype.formatToParts.'

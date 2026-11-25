@@ -8,7 +8,10 @@ export function canonicalUrl(pathname: string): string {
   return new URL(path, SITE_URL).href;
 }
 
-/** JSON-LD `Person` (SITE_PLAN §12, D50): sameAs Google Scholar, GitHub, YouTube, Zhihu. */
+/**
+ * JSON-LD `Person` (SITE_PLAN §12, D50, D70): sameAs Google Scholar, GitHub, YouTube, Zhihu, and
+ * the public email address.
+ */
 export function personJsonLd(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
@@ -18,6 +21,7 @@ export function personJsonLd(): Record<string, unknown> {
     givenName: PERSON.givenName,
     familyName: PERSON.familyName,
     url: `${SITE_URL}/`,
+    ...(PERSON.email ? { email: `mailto:${PERSON.email}` } : {}),
     jobTitle: 'Human-computer interaction researcher',
     affiliation: {
       '@type': 'CollegeOrUniversity',

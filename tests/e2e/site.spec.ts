@@ -1,7 +1,7 @@
 // End-to-end checks against the production build (`npm run build`, then `npm run test:e2e`).
 // Network access outside the site is blocked here, so tests also prove the pages work offline
 // and fall back quietly when GitHub or YouTube can't be reached.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -34,6 +34,7 @@ const PAGES = [
   '/cv/',
   '/about/',
   '/blog/',
+  '/notes/',
   '/privacy/',
   '/credits/',
   '/hands/',
@@ -75,6 +76,14 @@ test.describe('every page', () => {
       // D30: the annotation legend on every page, with line style + label (+ color).
       await expect(page.locator('footer .legend')).toContainText(
         'Solid underline: shown in the source · Dotted: inferred',
+      );
+      // D70: the one public email address, in the footer of every page.
+      await expect(page.locator('footer a[href^="mailto:"]')).toHaveText(['raon@ufl.edu']);
+      // D71: the footer links the Daily notes on every page, a second way in beside the home card.
+      await expect(page.locator('footer a[href="/notes/"]')).toHaveText('Daily notes');
+      await expect(page.locator('footer a[href^="mailto:"]')).toHaveAttribute(
+        'href',
+        'mailto:raon@ufl.edu',
       );
       // Every image has alt text (empty only for decoration).
       for (const img of await page.locator('img').all()) {
@@ -301,15 +310,249 @@ test.describe('feeds and crawlers', () => {
     expect(robots).toContain('Sitemap: https://nanjierao.github.io/sitemap-index.xml');
   });
 
+  test('gives the public email wherever the site offers contact details (D70)', async ({
+    page,
+  }) => {
+    await isolate(page);
+    const MAILTO = 'mailto:raon@ufl.edu';
+    await page.goto('/');
+    await expect(
+      page.getByRole('list', { name: 'Quick links' }).getByRole('link', { name: 'Email' }),
+    ).toHaveAttribute('href', MAILTO);
+    await page.goto('/about/');
+    const contact = page.locator('section[aria-labelledby="about-contact"]');
+    await expect(contact.locator('h2')).toHaveText('Contact');
+    await expect(contact.locator('p')).toHaveText('Email me at raon@ufl.edu.');
+    await expect(contact.getByRole('link', { name: 'raon@ufl.edu' })).toHaveAttribute(
+      'href',
+      MAILTO,
+    );
+    await page.goto('/cv/');
+    await expect(
+      page.locator('.cv-header').getByRole('link', { name: 'raon@ufl.edu' }),
+    ).toHaveAttribute('href', MAILTO);
+    await page.goto('/privacy/');
+    await expect(page.locator('main').getByRole('link', { name: 'raon@ufl.edu' })).toHaveAttribute(
+      'href',
+      MAILTO,
+    );
+    // No page links any other address.
+    for (const path of PAGES) {
+      await page.goto(path);
+      for (const href of await page
+        .locator('a[href^="mailto:"]')
+        .evaluateAll((links) => links.map((link) => link.getAttribute('href'))))
+        expect(href, path).toBe(MAILTO);
+    }
+  });
+
   test('home and about carry a JSON-LD Person with sameAs links', async ({ page }) => {
     await isolate(page);
     await page.goto('/about/');
     const json = JSON.parse(
       (await page.locator('script[type="application/ld+json"]').textContent()) ?? '{}',
-    ) as { '@type': string; sameAs: string[] };
+    ) as { '@type': string; sameAs: string[]; email: string };
     expect(json['@type']).toBe('Person');
+    expect(json.email).toBe('mailto:raon@ufl.edu');
     expect(json.sameAs).toContain('https://github.com/JimmyRaoUF');
     expect(json.sameAs).toContain('https://www.zhihu.com/people/daozhu');
+  });
+});
+
+test.describe('daily notes (D71)', () => {
+  const CARD = 'section[aria-labelledby="daily-notes"]';
+  /** The notes a build can show: the real ones, or the synthetic ones (NOTES_FIXTURES=1). */
+  const onDisk = (dir: string) =>
+    readdirSync(new URL(`../../${dir}/`, import.meta.url))
+      .filter((name) => name.endsWith('.yaml'))
+      .map((name) => name.replace(/\.yaml$/, ''))
+      .sort()
+      .reverse();
+  /** Chinese characters must sit inside lang="zh-CN", and Latin letters outside it (WCAG 3.1.2). */
+  const misLabelled = (lists: Element[]) =>
+    lists.flatMap((list) => {
+      const found: string[] = [];
+      // A line in Chinese, without Latin letters, is marked as a whole, its numbers included.
+      for (const line of list.querySelectorAll('li')) {
+        const text = line.textContent ?? '';
+        if (
+          /\p{Script=Han}/u.test(text) &&
+          !/\p{Script=Latin}/u.test(text) &&
+          line.getAttribute('lang') !== 'zh-CN'
+        )
+          found.push(`not marked as a whole: ${text}`);
+      }
+      const walker = document.createTreeWalker(list, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const text = node.textContent ?? '';
+        const lang = node.parentElement?.closest('[lang]')?.getAttribute('lang');
+        if (/\p{Script=Han}/u.test(text) && lang !== 'zh-CN') found.push(`not Chinese: ${text}`);
+        if (/[A-Za-z]/.test(text) && lang === 'zh-CN') found.push(`marked Chinese: ${text}`);
+      }
+      return found;
+    });
+
+  test('is the first card in Recent on the home page, with a link to the page', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto('/');
+    const card = page.locator(`#recent-heading ~ .recent-grid > ${CARD}`);
+    await expect(card).toHaveCount(1);
+    await expect(page.locator('.recent-grid > .card').first()).toHaveAttribute(
+      'aria-labelledby',
+      'daily-notes',
+    );
+    await card
+      .getByRole('heading', { level: 3 })
+      .getByRole('link', { name: 'Daily notes' })
+      .click();
+    await expect(page).toHaveURL(/\/notes\/$/);
+    await expect(page.locator('h1')).toHaveText('Daily notes');
+    await expect(page.locator('main .lede')).toHaveText(
+      'Each entry is a date and three short sentences: what I did that day, and what I learned, at work or outside it.',
+    );
+  });
+
+  test('lists the notes newest first by month, or says that there are none yet', async ({
+    page,
+  }) => {
+    await isolate(page);
+    await page.goto('/notes/');
+    const notes = page.locator('article.note');
+    const ids = await notes.evaluateAll((els) => els.map((el) => el.id));
+    // Every note file the build read is on the page: nothing went missing on the way.
+    expect([onDisk('src/content/notes'), onDisk('tests/fixtures/notes')]).toContainEqual(ids);
+    await page.goto('/');
+    const card = page.locator(CARD);
+    if (ids.length === 0) {
+      await page.goto('/notes/');
+      await expect(page.locator('.notes-empty')).toHaveText('No notes yet.');
+      await expect(page.locator('main h2')).toHaveCount(0);
+      await page.goto('/');
+      await expect(card.locator('p')).toHaveText(
+        'A date and three short sentences a day: what I did, and what I learned.',
+      );
+      await expect(card.locator('li')).toHaveCount(0);
+      return;
+    }
+    // Newest first: the ids are dates, and they sort.
+    expect(ids).toEqual([...ids].sort().reverse());
+    // The home card shows the newest note, with the same lines, marked the same way.
+    await expect(card.locator('time')).toHaveAttribute('datetime', ids[0]!);
+    // Each line's lang, then its pieces: text, or a span's lang and text.
+    const markup = (lines: Element[]) =>
+      lines.map((line) => [
+        line.getAttribute('lang'),
+        ...[...line.childNodes].map((node) =>
+          node instanceof Element
+            ? `${node.getAttribute('lang')}: ${node.textContent}`
+            : node.textContent,
+        ),
+      ]);
+    const newest = await card.locator('li').evaluateAll(markup);
+    expect(await card.locator('ul').evaluateAll(misLabelled)).toEqual([]);
+    await page.goto('/notes/');
+    expect(await notes.first().locator('li').evaluateAll(markup)).toEqual(newest);
+    await expect(page.locator('.notes-empty')).toHaveCount(0);
+    // One month heading per month, newest first; each day under its own month.
+    const months = await page.locator('section.notes-month').evaluateAll((sections) =>
+      sections.map((section) => ({
+        heading: section.querySelector('h2')?.textContent ?? '',
+        days: [...section.querySelectorAll('article.note')].map((article) => article.id),
+      })),
+    );
+    expect(months.flatMap((month) => month.days)).toEqual(ids);
+    expect(new Set(months.map((month) => month.heading)).size).toBe(months.length);
+    expect(months.every((month) => month.days.length > 0)).toBe(true);
+    for (const month of months)
+      for (const day of month.days) {
+        const label = new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'UTC',
+        });
+        expect(month.heading).toBe(label);
+      }
+    // Each day: a heading with its date, and one to five lines.
+    for (const id of ids) {
+      const note = page.locator(`article.note[id="${id}"]`);
+      await expect(note.locator('h3 time')).toHaveAttribute('datetime', id);
+      const count = await note.locator('li').count();
+      expect(count).toBeGreaterThanOrEqual(1);
+      expect(count).toBeLessThanOrEqual(5);
+    }
+    // Chinese text is marked as Chinese, and nothing else is.
+    expect(await page.locator('.note__lines').evaluateAll(misLabelled)).toEqual([]);
+  });
+
+  test('keeps the words of a note exactly, and gives each day an address', async ({ page }) => {
+    await isolate(page);
+    const response = await page.goto('/notes/');
+    expect(response?.status()).toBe(200);
+    test.skip(
+      (await page.locator('article.note[id="2026-10-01"]').count()) === 0,
+      'Build with NOTES_FIXTURES=1 to test the notes layout',
+    );
+    const note = page.locator('article.note[id="2026-10-01"]');
+    await expect(note.locator('h3')).toHaveText('Thursday, October 1');
+    await expect(note.locator('li').first()).toHaveText(
+      'Test note: issue #12 keeps its hash sign, because every line is quoted.',
+    );
+    await expect(page.locator('article.note[id="2026-10-02"] li').nth(1)).toHaveText(
+      "A second sentence with an apostrophe, so the quoting is tested: it's kept as written.",
+    );
+    // A backslash stays as written (single quotes in the YAML read no escapes).
+    await expect(note.locator('li').nth(3)).toHaveText(
+      'A backslash stays as written in single quotes: \\textbf{bold} and C:\\temp.',
+    );
+    // A line in Chinese, without Latin letters, is marked as a whole; in a mixed line, each run
+    // of Chinese is.
+    const lines = (id: string) => page.locator(`article.note[id="${id}"] li`);
+    await expect(lines('2026-10-02').nth(2)).toHaveAttribute('lang', 'zh-CN');
+    await expect(lines('2026-10-02').nth(2).locator('span')).toHaveCount(0);
+    expect(await lines('2026-10-01').nth(1).getAttribute('lang')).toBeNull();
+    await expect(lines('2026-10-01').nth(1).locator('span[lang="zh-CN"]')).toHaveText([
+      '测试句子里也可以有一个英文词',
+      '。',
+    ]);
+    await expect(lines('2026-10-01').nth(4).locator('span[lang="zh-CN"]')).toHaveText(['测试短语']);
+    // The home card shows the newest test note, with its Chinese line marked.
+    await page.goto('/');
+    await expect(page.locator(`${CARD} li`)).toHaveCount(4);
+    await expect(page.locator(`${CARD} li[lang="zh-CN"]`)).toHaveText([
+      '10月2日，这是一句用来检查中文排版的测试句子。',
+    ]);
+    await page.goto('/notes/');
+    // /notes/#<date> brings that day into view: to the top, with a margin above its heading,
+    // when the page is long enough below it, and at least fully on screen when it is the last.
+    await page.setViewportSize({ width: 390, height: 700 });
+    const heading = (id: string) =>
+      page
+        .locator(`article.note[id="${id}"] h3`)
+        .evaluate((el) => [el.getBoundingClientRect().top, el.getBoundingClientRect().bottom]);
+    await page.goto('/notes/#2026-10-01');
+    const [top] = await heading('2026-10-01');
+    expect(top).toBeGreaterThan(0);
+    expect(top).toBeLessThan(80);
+    await page.goto('/notes/#2026-09-30');
+    const [lastTop, lastBottom] = await heading('2026-09-30');
+    expect(lastTop).toBeGreaterThan(0);
+    expect(lastBottom).toBeLessThanOrEqual(700);
+  });
+
+  test('fits the page at every width', async ({ page }) => {
+    await isolate(page);
+    for (const width of [320, 390, 1024]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const path of ['/notes/', '/']) {
+        await page.goto(path);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+          `${path} at ${width}px`,
+        ).toBeLessThanOrEqual(width);
+      }
+    }
   });
 });
 
@@ -1339,6 +1582,7 @@ test.describe('the ongoing class study (D69)', () => {
       'How this connects to my other work',
       'How AI is used in this research',
       'Team',
+      'Contact',
     ]);
     // Every reference links to its DOI or its arXiv page.
     const references = page.locator('main .prose a[href^="https://"]');
@@ -1353,6 +1597,11 @@ test.describe('the ongoing class study (D69)', () => {
     await isolate(page);
     for (const path of [PATH, '/', '/research/', '/cv/']) {
       await page.goto(path);
+      // The Daily notes card repeats Jimmy's newest note: notes.test.ts checks each of its lines,
+      // and a line he cleared there (CLEARED_LINES) must not fail here (D71).
+      await page
+        .locator('section[aria-labelledby="daily-notes"]')
+        .evaluateAll((cards) => cards.forEach((card) => card.remove()));
       const text = await page.locator('main').innerText();
       if (path === PATH) {
         // Three letters and four digits, however written, are a course number; a venue with

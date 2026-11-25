@@ -22,6 +22,7 @@ import {
 import { isSelf } from '../../src/lib/format.ts';
 import { FLAGS, PERSON } from '../../src/data/site.ts';
 import { STATUS } from '../../src/data/cv.ts';
+import { CLASS_STUDY_FORBIDDEN, VENUE_YEAR } from './class-study-patterns.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const CONTENT = join(ROOT, 'src', 'content');
@@ -65,6 +66,11 @@ describe('identity in the intro strip (facts.md §1, §2; D64)', () => {
 
   it('shows the Chinese name exactly as facts.md §1 gives it', () => {
     expect(section(1).match(/^- Chinese name: (\S+)/m)?.[1]).toBe(PERSON.chineseName);
+  });
+
+  it('shows the public email exactly as facts.md §1 gives it (D70)', () => {
+    expect(section(1).match(/^- Public contact: (\S+@\S+?) /m)?.[1]).toBe(PERSON.email);
+    expect(PERSON.email).toBe('raon@ufl.edu');
   });
 
   it('builds the role line only from facts.md §2', () => {
@@ -221,7 +227,9 @@ describe('the ongoing class study (facts.md §5.9, D69)', () => {
       sitePlan.indexOf('no names and no course number.'),
     ),
   ].join('\n');
-  const rule = /^12\. The ongoing class study[\s\S]*?(?=\n\n)/m.exec(read('CLAUDE.md'))![0];
+  const rule = /^12\. The ongoing class study[\s\S]*?(?=\n\d+\. |\n\n)/m.exec(
+    read('CLAUDE.md'),
+  )![0];
   const qa = (
     parseYaml(read('content', 'qa-library.yaml')) as {
       items: Array<{ id: string; q: string; a: string; sources: string[] }>;
@@ -293,12 +301,16 @@ describe('the ongoing class study (facts.md §5.9, D69)', () => {
     );
   });
 
-  it('holds back the Contact section until the site shows a contact address', () => {
-    // His text closes with "My contact details are on this site." That is only true once
-    // facts.md §1 names the public address, so the section returns together with it.
+  it('closes with his Contact section only while the site shows a contact address', () => {
+    // His text closes with "My contact details are on this site." That is true only while
+    // facts.md §1 names the public address (D70), so the two go together.
     expect(page.body.includes('My contact details are on this site.')).toBe(PERSON.email !== null);
-    expect(source).toContain('# TODO(jimmy): his text closes with one more section, "## Contact"');
-    expect(record).toContain('`TODO(jimmy)`: pick the\n  public address');
+    if (PERSON.email) {
+      expect(page.body.trimEnd()).toMatch(
+        /\n## Contact\n\nQuestions about the project are welcome\. My contact details are on this site\.$/,
+      );
+      expect(record).toContain('the\n  public email address in §1.');
+    }
   });
 
   it('gives each position a row header in its table, with his words', () => {
@@ -317,30 +329,7 @@ describe('the ongoing class study (facts.md §5.9, D69)', () => {
     expect(source.match(/<td>/g)).toHaveLength(12);
   });
 
-  // The rules of facts.md §5.9 are held without a list of the names, which would publish them.
-  /** Venue and year, as the lists of works write them: not a course number. */
-  const VENUE_YEAR = /\b(?:CHI|ICER) 20\d{2}\b/g;
-  const FORBIDDEN: Array<[what: string, pattern: RegExp]> = [
-    // Three letters and four digits, however written: "ABC 1234", "abc-1234", "ABC1234C".
-    [
-      'a course number',
-      /(?<![A-Za-z])[A-Za-z]{3}[\s-]*(?!(?:19|20)\d{2}(?!\d))\d{4}[A-Za-z]?(?![A-Za-z\d])/,
-    ],
-    ['a course number', /(?<![A-Za-z])[A-Z]{3}[\s-]*\d{4}[A-Za-z]?(?![A-Za-z\d])/],
-    ['a person with a title', /\b(?:Dr|Prof|Professor|Mr|Mrs|Ms|Mx)\.?\s+\p{Lu}/u],
-    ['an email address', /[\w.+-]+@[\w-]+\.[\w.]+/],
-    ['a review-board or protocol number', /\bIRB|\b[A-Z]{2,4}\s?#?\s?\d{5,}\b|\bprotocol\s+\S*\d/],
-    ['an ID number', /(?<!\d)\d{4}-?\d{4}(?!\d)/],
-    [
-      'a head count',
-      /\b(?:\d+|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:students?|co-authors?|authors?|participants?|people|classmates?)\b/i,
-    ],
-    [
-      'who has joined',
-      /\b(?:has|have|had)\s+(?:signed\s+up|joined|enrolled|agreed|declined|withdrawn)\b|\bsigned\s+up\b|\benrolled\b|\bwithdrew\b/i,
-    ],
-  ];
-
+  // The rules of facts.md §5.9 are held without a list of the names (class-study-patterns.ts).
   it('names no participant and no course, and says nothing about who takes part', () => {
     const texts: Array<[string, string]> = [
       ...everywhere,
@@ -348,7 +337,7 @@ describe('the ongoing class study (facts.md §5.9, D69)', () => {
       ['the works in facts.md', worksInRecord],
     ];
     for (const [where, text] of texts) {
-      for (const [what, pattern] of FORBIDDEN)
+      for (const [what, pattern] of CLASS_STUDY_FORBIDDEN)
         expect(text.replace(VENUE_YEAR, ''), `${what} in ${where}`).not.toMatch(pattern);
     }
     // People appear by role only.
@@ -376,7 +365,7 @@ describe('the ongoing class study (facts.md §5.9, D69)', () => {
   // course title is taken out of the text instead (facts.md §5.9).
   const KNOWN_CAPITALS = new Set(
     (
-      'A After AI Ammari An Analysis Analyzing Change Co-authors Connection Contact CV D45 D69 ' +
+      'A After AI Ammari An Analysis Analyzing Change Co-authors Connection Contact CV D45 D69 D70 ' +
       'December Designer Does Each Every Everyone Facts Fall Florida For Former Four Here His How HTML ' +
       'I In It Its January Jimmy Kang Knowing Last Limits March Meetings Method Much My Never No ' +
       'Notes Nov November One Ongoing Only PhD Position Protection Q Questions Records Research ' +

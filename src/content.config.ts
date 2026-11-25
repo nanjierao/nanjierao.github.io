@@ -5,11 +5,13 @@ import {
   blogSchema,
   buildSchema,
   newsSchema,
+  noteSchema,
   publicationSchema,
   talkSchema,
   themeSchema,
   wordSchema,
 } from './content/schemas.ts';
+import { isNoteDate, notesDir } from './lib/notes.ts';
 
 const themes = defineCollection({
   loader: glob({ base: './src/content/themes', pattern: '*.{md,mdx}' }),
@@ -48,6 +50,23 @@ const blog = defineCollection({
   schema: blogSchema,
 });
 
+// Daily notes (D71): one YAML file per day, src/content/notes/<YYYY-MM-DD>.yaml; the file name is
+// the date. NOTES_FIXTURES=1 reads synthetic notes from tests/fixtures/notes instead, for
+// end-to-end tests and layout screenshots; it is never set for the real site.
+const notes = defineCollection({
+  loader: glob({
+    base: `./${notesDir()}`,
+    pattern: '*.yaml',
+    generateId: ({ entry }) => {
+      const id = entry.replace(/\.yaml$/, '');
+      if (!isNoteDate(id))
+        throw new Error(`A daily note's file name is its date, YYYY-MM-DD.yaml: ${entry}`);
+      return id;
+    },
+  }),
+  schema: noteSchema,
+});
+
 // The homepage word cloud lives with the other editable drafts in content/.
 const words = defineCollection({
   loader: file('content/wordcloud.yaml', {
@@ -60,4 +79,4 @@ const words = defineCollection({
   schema: wordSchema,
 });
 
-export const collections = { themes, builds, publications, talks, news, blog, words };
+export const collections = { themes, builds, publications, talks, news, blog, notes, words };

@@ -1,0 +1,8 @@
+# Synthetic daily note for the end-to-end tests and layout screenshots (NOTES_FIXTURES=1).
+# It is never part of the real site.
+lines:
+  - 'Test note: issue #12 keeps its hash sign, because every line is quoted.'
+  - '测试句子里也可以有一个英文词 layout。'
+  - 'A third sentence that is a little longer than the others, so that the line wraps on a phone and the spacing between lines can be checked.'
+  - 'A backslash stays as written in single quotes: \textbf{bold} and C:\temp.'
+  - 'An English test line with a Chinese phrase (测试短语) in the middle.'

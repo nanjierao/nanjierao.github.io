@@ -356,10 +356,12 @@ items:
     status: needs-jimmy
   - id: contact
     q: "How can I contact him?"
-    a: "TODO(jimmy): the public email you pick in facts.md §1."
+    a: >-
+      By email at raon@ufl.edu. The About page also links his profiles on Google Scholar, GitHub,
+      YouTube and Zhihu.
     sources: [/about/]
     audience: [general]
-    status: needs-jimmy
+    status: ready
   - id: elsewhere
     q: "Where else can I find him online?"
     a: >-

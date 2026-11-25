@@ -1,0 +1,4 @@
+# Synthetic daily note for the end-to-end tests and layout screenshots (NOTES_FIXTURES=1).
+# It is never part of the real site. One line only, to test the shortest note.
+lines:
+  - 'Test note from the previous month, so the page shows two month headings.'

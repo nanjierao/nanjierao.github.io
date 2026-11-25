@@ -10,8 +10,16 @@ import ElsewhereLinks from './ElsewhereLinks.astro';
       <span class="mark mark--grounded">Solid underline</span>: shown in the source ·{' '}
       <span class="mark mark--inferred">Dotted</span>: inferred
     </p>
+    {PERSON.email && (
+      <p class="site-footer__contact">
+        Email: <a href={`mailto:${PERSON.email}`}>{PERSON.email}</a>
+      </p>
+    )}
     <ElsewhereLinks label="Elsewhere" />
     <ul class="site-footer__links" aria-label="Site">
+      <li>
+        <a href="/notes/">Daily notes</a>
+      </li>
       <li>
         <a href="/privacy/">Privacy</a>
       </li>
@@ -39,6 +47,15 @@ import ElsewhereLinks from './ElsewhereLinks.astro';
 
   .legend {
     margin-bottom: var(--space-3);
+  }
+
+  .site-footer__contact {
+    margin: 0 0 var(--space-2);
+  }
+
+  .site-footer__contact a {
+    display: inline-block;
+    padding-block: var(--space-2);
   }
 
   .legend__title {

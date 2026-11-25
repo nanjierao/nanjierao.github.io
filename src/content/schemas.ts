@@ -181,6 +181,36 @@ export const newsSchema = z
     error: 'A news item has either fixed text or time-aware event wording, not both',
   });
 
+/** Longest line of a daily note: a short sentence, with room to spare. */
+export const NOTE_LINE_MAX = 300;
+
+/**
+ * Daily notes (D71): one file per day, src/content/notes/<YYYY-MM-DD>.yaml, in Jimmy's words.
+ * The file name is the date.
+ */
+export const noteSchema = z.object({
+  /** About three short sentences, one per line: what he did that day and what he learned. */
+  lines: z
+    .array(
+      z
+        .string()
+        .min(1)
+        .max(NOTE_LINE_MAX)
+        .refine((line) => line === line.trim(), {
+          error: 'No space at the start or end of a line',
+        })
+        .refine((line) => !/[\r\n\u2028\u2029]/.test(line), {
+          error: 'One sentence per line, without line breaks inside it',
+        })
+        .refine((line) => !/\p{Cc}/u.test(line), {
+          // "\t" in double quotes becomes a tab: such a line belongs in single quotes.
+          error: 'No tabs or other control characters (a backslash escape inside double quotes?)',
+        }),
+    )
+    .min(1)
+    .max(5),
+});
+
 /** Blog posts (D41): Jimmy's Zhihu answers in Chinese, with English title and summary. */
 export const blogSchema = z.object({
   title: z.string().min(1),

@@ -22,7 +22,8 @@ Every prompt assumes the session reads CLAUDE.md first, including **Open source 
 compare, adapt, credit — don't rebuild what already exists.
 
 Checklist for every pull request:
-- [ ] Screenshots look right on phone and desktop, light and dark
+- [ ] Screenshots look right on phone and desktop, light and dark (a daily note's pull request
+  quotes the note instead)
 - [ ] Facts match content/facts.md; nothing in the facts.md §15 categories
 - [ ] New third-party code is in docs/THIRD_PARTY.md with its license
 - [ ] TODO(jimmy) list answered or carried forward

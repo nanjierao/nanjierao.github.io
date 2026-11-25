@@ -49,6 +49,11 @@ const cvPdf = hasCvPdf();
       <br />
       {STATUS.defense}
     </p>
+    {PERSON.email && (
+      <p>
+        Email: <a href={`mailto:${PERSON.email}`}>{PERSON.email}</a>
+      </p>
+    )}
     {cvPdf && (
       <p>
         <a class="button button--primary" href={CV_PDF_HREF}>

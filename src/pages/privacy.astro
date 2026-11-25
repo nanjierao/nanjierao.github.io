@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { PERSON } from '../data/site.ts';
 // Placeholder (S1). It describes what the site does today; S5–S8 extend it as the portals and
 // the optional live assistant arrive (SITE_PLAN §11).
 ---
@@ -58,5 +59,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       The source of this site is public: you can check all of the above in{' '}
       <a href="https://github.com/nanjierao/nanjierao.github.io">its repository</a>.
     </p>
+    {PERSON.email && (
+      <p>
+        For anything else, email me at <a href={`mailto:${PERSON.email}`}>{PERSON.email}</a>.
+      </p>
+    )}
   </div>
 </BaseLayout>
