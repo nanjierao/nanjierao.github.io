@@ -933,28 +933,30 @@ test.describe('sketch scenes on the home page (D68)', () => {
       'Dining hall, phone',
       'Classroom, puppet',
       'Street, flood',
+      'Classroom, tablet',
+      'Classroom, Kinect pilot',
+      'Zoom class, laptop',
+      'Staff room, focus group',
     ]);
-    // Grouped by what is observed, and the groups are named for a screen reader too.
+    // Grouped by what is observed, and the groups are named for a screen reader too. The teacher
+    // scenes are here too (D76).
     for (const [group, count] of [
       ['Learners', 3],
       ['Hands', 1],
       ['City', 1],
+      ['Teachers', 4],
     ] as const)
       await expect(
         page.getByRole('group', { name: group, exact: true }).getByRole('button'),
       ).toHaveCount(count);
     await expect(page.getByRole('button', { name: 'Replay' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Show all' })).toBeVisible();
-    // A cue over the buttons names them, and the teacher scenes are a link away (D73).
+    // A cue over the buttons names them; no scene is a link away any more (D76).
     await expect(page.locator(`${SK} .sk__cue`)).toHaveText(/^Pick a scene/);
     await expect(
       page.getByRole('group', { name: 'Pick a scene', exact: true }).getByRole('button'),
-    ).toHaveCount(5);
-    const teachers = page.getByRole('group', { name: 'Teachers', exact: true });
-    await expect(teachers.getByRole('button')).toHaveCount(0);
-    await expect(
-      teachers.getByRole('link', { name: 'Four scenes on their own page', exact: true }),
-    ).toHaveAttribute('href', '/research/teacher-support/#scenes');
+    ).toHaveCount(9);
+    await expect(page.locator(`${SK} .sk__bar a`)).toHaveCount(0);
     // The open scene's button is filled in; the others look like buttons waiting to be pressed.
     const fill = (id: string) =>
       tab(page, id).evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -1441,25 +1443,28 @@ test.describe('sketch scenes on the home page (D68)', () => {
     expect([state, checked]).toEqual(state === 'done' ? ['done', 4] : ['ready', 0]);
   });
 
-  test('without JavaScript, all five scenes are there, finished, with sample answers', async ({
+  test('without JavaScript, all nine scenes are there, these five finished, with sample answers', async ({
     browser,
   }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto('/');
-    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(5);
+    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(9);
     await expect(page.locator(`${SK} .sk__heading`)).toHaveText([
       'Clicks, scrolls, searches and gaze in a browser',
       'Browsing history on a dorm laptop',
       'Social-media posts on a phone',
       'A puppet tracked by a camera and a motion sensor',
       'A flooded street, seen through three channels',
+      /^A student’s experiences/,
+      'A teacher’s words, heard by a Kinect and matched to students',
+      'A teacher’s words on Zoom, heard by the laptop and matched to students',
+      /^What teachers draw on/,
     ]);
-    // The scene buttons could do nothing: only the link to the teacher scenes stays.
+    // The scene buttons could do nothing, so none is shown.
     await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
     await expect(page.locator(`${SK} .sk__cue`)).toBeHidden();
     await expect(page.locator(`${SK} .sk__ctl`)).toBeHidden();
-    await expect(page.locator(`${SK} .sk__jump`)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Turn the puppet' })).toBeHidden();
     await expect(page.locator(`${SK} .sk__locked:visible`)).toHaveCount(0);
     for (const id of SCENES) {
@@ -1509,10 +1514,9 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await page.route(/SketchScenes.*\.js$/, (route) => route.abort());
     await page.goto('/');
     await expect(page.locator(SK)).toHaveAttribute('data-failed', '', { timeout: 8_000 });
-    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(5);
+    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(9);
     await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
     await expect(page.locator(`${SK} .sk__ctl`)).toBeHidden();
-    await expect(page.locator(`${SK} .sk__jump`)).toBeVisible();
     await expect(scene(page, 'dining').locator('.sk__after > .sk__results')).toBeVisible();
     await expect(scene(page, 'dining').locator('.sk__results')).toContainText('56.3%');
   });
@@ -1562,8 +1566,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
       }
     }
     // A drawn face shows the focus ring of the input that lies over it.
-    // Tab order: the scene buttons, the link to the other scenes, Replay, Show all, then the
-    // open scene's first control.
+    // Tab order: the scene buttons, Replay, Show all, then the open scene's first control.
     await tab(page, 'dorm').click();
     await page.getByRole('button', { name: 'Show all' }).focus();
     await page.keyboard.press('Tab');
@@ -1650,9 +1653,10 @@ test.describe('sketch scenes on the home page (D68)', () => {
   });
 });
 
-test.describe('teacher scenes on the teacher support page (D73)', () => {
-  const PATH = '/research/teacher-support/';
-  const SK = '#scenes .sk';
+test.describe('teacher scenes, on the home page since D76 (D73)', () => {
+  const PATH = '/';
+  const TEACHER_PAGE = '/research/teacher-support/';
+  const SK = '#learners-and-teachers .sk';
   const SCENES = ['views', 'pris', 'zoom', 'context'];
   const scene = (page: Page, id: string) => page.locator(`${SK} [data-scene="${id}"]`);
   const tab = (page: Page, id: string) => page.locator(`${SK} [data-scene-button="${id}"]`);
@@ -1696,35 +1700,20 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     await page.locator(SK).scrollIntoViewIfNeeded();
   }
 
-  test('sit after the page text and before its publications, and link back to the home scenes', async ({
+  test('sit on the home page in a group of their own; the teacher page lists them, and old links still land', async ({
     page,
+    browser,
   }) => {
+    // On the home page, after the learner, hand and city scenes (D76).
     await openStill(page);
-    await expect(page.locator('main h2')).toHaveText([
-      'One scene per paper, and a pilot',
-      'Publications',
-    ]);
-    expect(
-      await page.evaluate(() => {
-        const text = document.querySelector('main .prose')!;
-        const scenes = document.querySelector('#scenes')!;
-        return Boolean(text.compareDocumentPosition(scenes) & Node.DOCUMENT_POSITION_FOLLOWING);
-      }),
-    ).toBe(true);
-    await expect(page.locator(`${SK} .sk__cue`)).toHaveText(/^Pick a scene/);
-    await expect(page.locator(`${SK} [data-scene-button]`)).toHaveText([
+    await expect(
+      page.getByRole('group', { name: 'Teachers', exact: true }).getByRole('button'),
+    ).toHaveText([
       'Classroom, tablet',
       'Classroom, Kinect pilot',
       'Zoom class, laptop',
       'Staff room, focus group',
     ]);
-    await expect(
-      page.getByRole('group', { name: 'Teachers', exact: true }).getByRole('button'),
-    ).toHaveCount(4);
-    const back = page
-      .getByRole('group', { name: 'Learners, hands, city', exact: true })
-      .getByRole('link', { name: 'Five scenes on the home page', exact: true });
-    await expect(back).toHaveAttribute('href', '/#learners-and-teachers');
     for (const id of SCENES) {
       await tab(page, id).click();
       await expect(tab(page, id)).toHaveAttribute('aria-pressed', 'true');
@@ -1737,13 +1726,44 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       ]);
       await expect(scene(page, id).locator('.sk__source')).toContainText('made up');
     }
-    await back.click();
-    await expect(page).toHaveURL(/\/#learners-and-teachers$/);
-    await expect(page.locator('#learners-and-teachers .sk [data-scene-button]')).toHaveCount(5);
-    // And from the home page's row of buttons to this page's scenes.
-    await page.getByRole('link', { name: 'Four scenes on their own page', exact: true }).click();
-    await expect(page).toHaveURL(/\/research\/teacher-support\/#scenes$/);
-    await expect(page.locator(SK)).toBeVisible();
+    // The teacher support page keeps its section, after the text and before the publications:
+    // a line per scene, each linking to the scene on the home page, with no scenes of its own.
+    await page.goto(TEACHER_PAGE);
+    await expect(page.locator('main h2')).toHaveText([
+      'One scene per paper, and a pilot',
+      'Publications',
+    ]);
+    expect(
+      await page.evaluate(() => {
+        const text = document.querySelector('main .prose')!;
+        const scenes = document.querySelector('#scenes')!;
+        return Boolean(text.compareDocumentPosition(scenes) & Node.DOCUMENT_POSITION_FOLLOWING);
+      }),
+    ).toBe(true);
+    await expect(page.locator('#scenes .sk')).toHaveCount(0);
+    await expect(page.locator('#scenes p')).toContainText('on the home page');
+    const lines = page.locator('#scenes li');
+    await expect(lines).toHaveCount(4);
+    for (const [index, id] of SCENES.entries()) {
+      await expect(lines.nth(index)).toHaveAttribute('id', `sk-${id}`);
+      await expect(lines.nth(index).getByRole('link')).toHaveAttribute('href', `/#sk-${id}`);
+    }
+    await lines.first().getByRole('link').click();
+    await expect(page).toHaveURL(/\/#sk-views$/);
+    await expect(tab(page, 'views')).toHaveAttribute('aria-pressed', 'true');
+    // An old link to a scene on the teacher page opens that scene on the home page.
+    await page.goto(`${TEACHER_PAGE}#sk-zoom`);
+    await expect(page).toHaveURL(/\/#sk-zoom$/);
+    await expect(tab(page, 'zoom')).toHaveAttribute('aria-pressed', 'true');
+    await expect(scene(page, 'zoom')).toBeVisible();
+    // Without JavaScript it lands on the scene's line, which links to it.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const still = await context.newPage();
+    await still.goto(`${TEACHER_PAGE}#sk-zoom`);
+    await expect(still).toHaveURL(/\/research\/teacher-support\/#sk-zoom$/);
+    await expect(still.locator('#sk-zoom')).toBeInViewport();
+    await expect(still.locator('#sk-zoom a')).toHaveAttribute('href', '/#sk-zoom');
+    await context.close();
   });
 
   test('cites each scene’s paper with its DOI, and names no award for the teacher papers', async ({
@@ -1766,12 +1786,14 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     // reference under it.
     await tab(page, 'pris').click();
     await expect(scene(page, 'pris').locator('.sk__paper')).toHaveCount(0);
-    // Every scene's text, the closed ones included.
-    expect((await page.locator(`${SK} .sk__scene`).allTextContents()).join(' ')).not.toMatch(
-      /best paper|award|nominat/i,
-    );
+    // Every teacher scene's text, the closed ones included. (The city scene beside them on the
+    // home page shows DTRUE 2026's Best Paper Mention, D72.)
+    for (const id of SCENES)
+      expect((await scene(page, id).allTextContents()).join(' '), id).not.toMatch(
+        /best paper|award|nominat/i,
+      );
     // ICALT 2021's award wording is VERIFY (facts.md §10): on no page that lists the paper.
-    for (const path of ['/', PATH, '/publications/', '/cv/']) {
+    for (const path of ['/', TEACHER_PAGE, '/publications/', '/cv/']) {
       await page.goto(path);
       expect(await page.locator('body').innerText(), path).not.toMatch(/short paper nomination/i);
     }
@@ -1933,10 +1955,13 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     await isolate(page);
     await page.goto(PATH);
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
-    await scene(page, 'views')
+    // The page opens on its first scene, the tracker's: let it finish drawing first.
+    await scene(page, 'tracker')
       .locator('svg[data-svg]')
       .evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    await expect(scene(page, 'views')).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await expect(scene(page, 'tracker')).toHaveAttribute('data-state', 'ready', {
+      timeout: 20_000,
+    });
     for (const id of SCENES) {
       await tab(page, id).click();
       const active = scene(page, id);
@@ -1982,10 +2007,13 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     await isolate(page);
     await page.goto(PATH);
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
-    await scene(page, 'views')
+    // The page opens on its first scene, the tracker's: let it finish drawing first.
+    await scene(page, 'tracker')
       .locator('svg[data-svg]')
       .evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    await expect(scene(page, 'views')).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+    await expect(scene(page, 'tracker')).toHaveAttribute('data-state', 'ready', {
+      timeout: 20_000,
+    });
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '8'));
     for (const id of SCENES) {
       await tab(page, id).click();
@@ -2054,7 +2082,7 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     await page.keyboard.press('Shift+Tab');
     await expect(context.getByRole('radio', { name: 'Activity', exact: true })).toBeFocused();
     expect(await coveredByDrawing()).toBe(false);
-    // The same on the home page, where the dorm scene's marks sit under its drawing.
+    // The same for the dorm scene, whose marks sit under its drawing.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await page.locator('#learners-and-teachers .sk [data-scene-button="dorm"]').click();
@@ -2072,9 +2100,9 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto(PATH);
-    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(4);
+    // All nine scenes of the home page, the four teacher scenes among them (D76).
+    await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(9);
     await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
-    await expect(page.locator(`${SK} .sk__jump`)).toBeVisible();
     for (const id of SCENES) {
       const active = scene(page, id);
       expect(await undrawn(active), id).toBe(0);
@@ -2148,27 +2176,35 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
 
   test('loads under 50 KB of JavaScript, and no framework runtime', async ({ page }) => {
     await isolate(page);
-    await page.goto(PATH);
-    const sources = await page
-      .locator('script[src]')
-      .evaluateAll((scripts) => scripts.map((script) => script.getAttribute('src')!));
-    expect(sources.length).toBeGreaterThan(0);
-    let total = 0;
-    for (const src of sources) {
-      const file = readFileSync(new URL(`../../dist${src}`, import.meta.url));
-      total += gzipSync(file).length;
-      for (const [, name] of file.toString().matchAll(/from\s*"\.\/([^"]+\.js)"/g))
-        total += gzipSync(
-          readFileSync(new URL(`../../dist/_astro/${name}`, import.meta.url)),
-        ).length;
+    // The home page, now with all nine scenes, and the teacher page, whose only script of its own
+    // forwards an old link to a scene (D76).
+    for (const path of [PATH, TEACHER_PAGE]) {
+      await page.goto(path);
+      const sources = await page
+        .locator('script[src]')
+        .evaluateAll((scripts) => scripts.map((script) => script.getAttribute('src')!));
+      let total = 0;
+      for (const src of sources) {
+        const file = readFileSync(new URL(`../../dist${src}`, import.meta.url));
+        total += gzipSync(file).length;
+        for (const [, name] of file.toString().matchAll(/from\s*"\.\/([^"]+\.js)"/g))
+          total += gzipSync(
+            readFileSync(new URL(`../../dist/_astro/${name}`, import.meta.url)),
+          ).length;
+      }
+      // Scripts inside the page count too.
+      for (const body of await page
+        .locator('script:not([src]):not([type="application/ld+json"])')
+        .allTextContents())
+        total += gzipSync(body).length;
+      // Something was counted: the home page's scene script, the teacher page's inline lines.
+      expect(total, path).toBeGreaterThan(0);
+      expect(total, path).toBeLessThan(50_000);
+      expect(sources.join(' '), path).not.toMatch(/client\.[\w-]+\.js/);
     }
-    // Scripts inside the page count too.
-    for (const body of await page
-      .locator('script:not([src]):not([type="application/ld+json"])')
-      .allTextContents())
-      total += gzipSync(body).length;
-    expect(total).toBeLessThan(50_000);
-    expect(sources.join(' ')).not.toMatch(/client\.[\w-]+\.js/);
+    // The home page loads its scenes' script from a file.
+    await page.goto(PATH);
+    await expect(page.locator('script[src*="SketchScenes"]')).toHaveCount(1);
   });
 });
 
@@ -2240,8 +2276,8 @@ test.describe('the Experiments page (D74)', () => {
       ['/#sk-dorm', 'Dorm, laptop'],
       ['/#sk-dining', 'Dining hall, phone'],
       ['/#sk-puppet', 'Classroom, puppet'],
-      ['/research/teacher-support/#sk-views', 'Classroom, tablet'],
-      ['/research/teacher-support/#sk-zoom', 'Zoom class, laptop'],
+      ['/#sk-views', 'Classroom, tablet'],
+      ['/#sk-zoom', 'Zoom class, laptop'],
     ])
       await expect(table.locator(`a[href="${href}"]`)).toHaveText(name);
     // The Kinect pilot is not in the paper (D75), so the table does not link it.
@@ -2367,10 +2403,14 @@ test.describe('the Experiments page (D74)', () => {
     for (const [path, id] of [
       ['/#sk-puppet', 'puppet'],
       ['/#sk-dining', 'dining'],
+      ['/#sk-zoom', 'zoom'],
+      // Links from before D76, when the teacher scenes had a page of their own, open them on
+      // the home page.
       ['/research/teacher-support/#sk-pris', 'pris'],
       ['/research/teacher-support/#sk-zoom', 'zoom'],
     ]) {
       await page.goto(path);
+      await expect(page, path).toHaveURL(new RegExp(`/#sk-${id}$`));
       await expect(page.locator(`[data-scene-button="${id}"]`), path).toHaveAttribute(
         'aria-pressed',
         'true',

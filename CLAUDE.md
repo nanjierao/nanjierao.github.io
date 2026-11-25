@@ -151,10 +151,11 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Follow `docs/DESIGN.md`. Until it exists, use the neutral baseline in SITE_PLAN §8.
 - Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
   one line, CV / Publications / Email) first, then the word cloud and portals, then the section
-  "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
+  "How AI learns about people and places" (D66, D68): nine sketch scenes, the five on learners,
+  hands and a city and then the four teacher scenes (D73, D75, D76), each with one hands-on
   step and, when it comes from a paper, that paper's reference with, where facts.md §6 has one,
-  its DOI link, then the learner and teacher work. Its row of scene buttons links to the four
-  teacher scenes on /research/teacher-support/ (D73, D75), which link back. The Research section then
+  its DOI link, then the learner and teacher work. /research/teacher-support/ lists the teacher
+  scenes and links each to the home page. The Research section then
   has an Experiments heading and a line on the controlled experiments, linking
   /research/experiments/ (D74), before its Research overview link. The footer
   carries the annotation legend (D30), the public email address (D70) and a link to the Daily
@@ -166,7 +167,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Light and dark themes from the same tokens: respect `prefers-color-scheme` and offer a toggle.
 - Performance budgets on content pages (mobile Lighthouse): Performance ≥ 95,
   Accessibility 100, Best Practices ≥ 95, SEO 100; ≤ 50 KB gzipped JS; LCP < 2.0 s; CLS < 0.05.
-  Demo pages may exceed the JS budget but must lazy-load it.
+  Demo pages may exceed the JS budget but must lazy-load it. The home page carries all nine
+  sketch scenes and may go over the LCP budget (D76: Jimmy accepted a slower home page).
 - Videos as click-to-load YouTube facades on youtube-nocookie.com, never autoplaying iframes.
 - Prefer a figure or a table to a paragraph of numbers (D59). Figures are build-time HTML/CSS
   components in `src/components/figures/` (no JavaScript); research pages are MDX so figures

@@ -4,8 +4,7 @@ import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BuildCard from '../../components/BuildCard.astro';
 import PublicationList from '../../components/PublicationList.astro';
-import SketchScenes from '../../components/SketchScenes.astro';
-import { HOME_SCENES_LINK, TEACHER_SCENE_GROUPS } from '../../data/sketch-scenes.ts';
+import { SCENES, TEACHER_SCENES, TEACHER_SCENES_NOTE } from '../../data/sketch-scenes.ts';
 import { CONTEXT_LABELS, ONGOING_LABEL } from '../../content/schemas.ts';
 import { getBuildsByIds, getPublicationsByIds, getThemes, type Theme } from '../../lib/content.ts';
 
@@ -22,6 +21,8 @@ const { theme } = Astro.props;
 const { Content } = await render(theme);
 const publications = await getPublicationsByIds(theme.data.publications);
 const builds = await getBuildsByIds(theme.data.builds);
+/** The teacher scenes, which live on the home page (D76); this page lists them. */
+const teacherScenes = TEACHER_SCENES.map((id) => SCENES.find((scene) => scene.id === id)!);
 ---
 
 <BaseLayout title={theme.data.title} description={theme.data.summary}>
@@ -38,7 +39,19 @@ const builds = await getBuildsByIds(theme.data.builds);
   {theme.data.scenes === 'teachers' && (
     <section class="theme-scenes" id="scenes" aria-labelledby="theme-scenes">
       <h2 id="theme-scenes">One scene per paper, and a pilot</h2>
-      <SketchScenes groups={TEACHER_SCENE_GROUPS} link={HOME_SCENES_LINK} />
+      {/* The scenes moved to the home page (D76). An old link to one of them here, such as
+          #sk-zoom, still lands on its line below, and with JavaScript it opens the scene. */}
+      <script is:inline>
+        if (/^#sk-[a-z]+$/.test(location.hash)) location.replace('/' + location.hash);
+      </script>
+      <p>{TEACHER_SCENES_NOTE}</p>
+      <ul class="theme-scenes__list">
+        {teacherScenes.map((scene) => (
+          <li id={`sk-${scene.id}`}>
+            <a href={`/#sk-${scene.id}`}>{scene.label}</a>: {scene.heading}
+          </li>
+        ))}
+      </ul>
     </section>
   )}
 
@@ -62,3 +75,17 @@ const builds = await getBuildsByIds(theme.data.builds);
     </section>
   )}
 </BaseLayout>
+
+<style>
+  /* An old link to a teacher scene on this page (#sk-zoom) lands on its line: room above it,
+     and a mark. */
+  .theme-scenes__list li {
+    scroll-margin-top: var(--space-4);
+  }
+
+  .theme-scenes__list li:target {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 4px;
+    border-radius: var(--radius);
+  }
+</style>

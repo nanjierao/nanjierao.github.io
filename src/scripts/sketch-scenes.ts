@@ -1,4 +1,4 @@
-// Behavior of the sketch scenes (D68, D73), on the home page and on the teacher support page.
+// Behavior of the sketch scenes (D68, D73, D76), on the home page.
 // The page already holds every scene finished (see SketchScenes.astro); this script shows one
 // scene at a time, draws it stroke by stroke, and runs each scene's hands-on step. All words
 // stay in the HTML: the script only moves attributes and classes, so it never needs the copy.
@@ -14,7 +14,7 @@ type Kind = 'answer' | 'judge' | 'turn' | 'toggle' | 'choose';
 
 function init(root: HTMLElement): void {
   // The page has already fallen back to its finished scenes (the script came very late). Taking
-  // over now would fold four of them away under a visitor who may be reading one.
+  // over now would fold all but one of them away under a visitor who may be reading one.
   if (root.hasAttribute('data-failed')) return;
 
   const scenes = [...root.querySelectorAll<HTMLElement>('[data-scene]')];
@@ -651,9 +651,8 @@ function init(root: HTMLElement): void {
     if (reduce.matches && current.dataset.state === 'playing') finish(current);
   });
 
-  // An address that names a scene by its heading, such as /#sk-puppet or
-  // /research/teacher-support/#sk-zoom (the Experiments page links them, D74, D75), opens that scene
-  // and brings it into view. Without JavaScript every scene is shown, so the anchor just works.
+  // An address that names a scene by its heading, such as /#sk-puppet or /#sk-zoom (the
+  // Experiments page links them, D74, D76), opens that scene and brings it into view. Without JavaScript every scene is shown, so the anchor just works.
   function openFromHash(): void {
     const id = /^#sk-([a-z]+)$/.exec(window.location.hash)?.[1];
     const scene = id ? sceneOf(id) : undefined;

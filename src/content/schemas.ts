@@ -46,7 +46,7 @@ export const themeSchema = z
     /** Publication ids (see publications.yaml) to list at the end of the page. */
     publications: z.array(z.string()).default([]),
     builds: z.array(z.string()).default([]),
-    /** Sketch scenes shown after the text (D73): the teacher scenes, on the teacher support page. */
+    /** After the text, a list of this work's sketch scenes, which are on the home page (D73, D76). */
     scenes: z.enum(['teachers']).optional(),
   })
   .refine((theme) => Boolean(theme.context) !== (theme.status === 'ongoing'), {

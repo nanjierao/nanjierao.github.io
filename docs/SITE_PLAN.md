@@ -86,16 +86,19 @@ Top to bottom (D21):
   Life & You (spark glyph). Each has one line of copy and a clear action. Desktop: left, middle,
   right. Mobile: stacked in the same order.
 - **How AI learns about people and places** (D66, D68; right after the word cloud until the
-  portals arrive; the section's id stays `learners-and-teachers`). First, five sketch scenes:
+  portals arrive; the section's id stays `learners-and-teachers`). First, nine sketch scenes:
   a browser tracker (prototype), a dorm laptop and a dining-hall phone (synthetic student), a
-  classroom puppet, and a flooded street (simulated). Each is a line drawing with a caption per
+  classroom puppet, a flooded street (simulated), and the four teacher scenes (D73, D75: a
+  classroom tablet, the Kinect pilot, the Zoom study and a staff room), back on the home page
+  since D76. Each is a line drawing with a caption per
   region, a panel showing what the system builds, one hands-on step, the result it leads to and,
   when it comes from a paper, the paper's reference with, where facts.md §6 has one, its DOI link
   (D73). The scene buttons sit
-  under a "Pick a scene" cue; the row ends with a link to the four teacher scenes on
-  /research/teacher-support/ (D73, D75), kept off the home page for its LCP budget.
+  under a "Pick a scene" cue, in four groups: learners, hands, city and teachers. Jimmy accepted
+  that the home page loads slower with all nine (D76: LCP 2.11–2.26 s, over the 2.0 s budget; its
+  JavaScript is unchanged).
   Words in `src/data/sketch-scenes.ts`, drawings in `src/data/sketch-drawings.ts`, behavior in
-  `src/scripts/sketch-scenes.ts` (under 4 KB gzipped, no library). Without JavaScript all five
+  `src/scripts/sketch-scenes.ts` (under 4 KB gzipped, no library). Without JavaScript all nine
   show finished. Then the learner and teacher work: one line of work as a diagram, four study
   cards, the Study 2 figure with the grounding check, the teacher-facing papers and the
   supporting papers (`src/data/learners-teachers.ts`).
@@ -186,9 +189,10 @@ Full spec and copy: `content/life-portal.md`. Five acts:
   The Experiments page (D74) lists the controlled experiments across the contexts: one table,
   first-author studies first, then co-authored ones, and what the designs support. The home
   page's Research section and the overview link it with the counts (six and three).
-  The teacher support page ends its text with four sketch scenes, one per teacher-facing paper
-  and, for PRIS, its in-person pilot beside the Zoom study (D75), where the visitor picks an
-  option (D73). A study that is still running gets its own page,
+  The teacher support page ends its text with a list of its four sketch scenes, one per
+  teacher-facing paper and, for PRIS, its in-person pilot beside the Zoom study (D73, D75); each
+  links to its scene on the home page (D76), and an old link to a scene on this page still lands
+  on its line or, with JavaScript, opens the scene. A study that is still running gets its own page,
   listed after the contexts under "Ongoing" on the overview, the home page and the CV page (D69). The first one is the class study
   (facts.md §5.9): Jimmy's words, design only, no names and no course number.
 - **Publications**: from facts.md §6, a TL;DR under first-author papers once approved (D28),

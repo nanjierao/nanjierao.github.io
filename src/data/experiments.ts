@@ -2,7 +2,7 @@
 // work, one row per study. Every cell is content/facts.md §5.10 (Jimmy, Nov 25, 2026), word for
 // word apart from typographic apostrophes; tests/unit/experiments.test.ts holds the rows to
 // that table. The citations and their links come from src/content/publications.yaml.
-import { HOME_SCENES_LINK, SCENES, SCENE_GROUPS, TEACHER_SCENES_LINK } from './sketch-scenes.ts';
+import { SCENES } from './sketch-scenes.ts';
 
 export interface ExperimentRow {
   /** The study's paper in publications.yaml: its citation and DOI link. */
@@ -18,15 +18,14 @@ export interface ExperimentRow {
   analysis: string;
 }
 
-const HOME_PAGE = HOME_SCENES_LINK.href.split('#')[0]!;
-const TEACHER_PAGE = TEACHER_SCENES_LINK.href.split('#')[0]!;
-const HOME_SCENE_IDS = new Set(SCENE_GROUPS.flatMap((group) => group.scenes));
-
-/** The sketch scenes drawn from a paper (D68, D73), each linked so that it opens on its own. */
+/**
+ * The sketch scenes drawn from a paper (D68, D73), each linked so that it opens on its own. All
+ * of them are on the home page (D76).
+ */
 export function scenesFor(paper: string | undefined): Array<{ href: string; label: string }> {
   if (!paper) return [];
   return SCENES.filter((scene) => scene.paper === paper).map((scene) => ({
-    href: `${HOME_SCENE_IDS.has(scene.id) ? HOME_PAGE : TEACHER_PAGE}#sk-${scene.id}`,
+    href: `/#sk-${scene.id}`,
     label: scene.label,
   }));
 }

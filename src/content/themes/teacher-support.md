@@ -6,8 +6,8 @@ summary: Teacher-facing work on bringing students’ personally relevant informa
 facts: ['5.5', '6']
 publications:
   [icalt-2023-context-for-contextualizing, hcii-2022-information-retrieval, icalt-2021-visual-efficiency]
-# One sketch scene per paper (D73), and for PRIS its in-person pilot too (D75), after the text;
-# the home page's row of scenes links here.
+# After the text, a list of the teacher scenes (D73, D75: one per paper, and the PRIS pilot),
+# each linking to its scene on the home page (D76).
 scenes: teachers
 # The survey of 81 studies (update in preparation for IEEE TLT) is a working paper: listed only if
 # Jimmy approves working papers (D28). TODO(jimmy): decide.

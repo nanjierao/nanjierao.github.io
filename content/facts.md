@@ -295,17 +295,18 @@ sketch scenes, as he asked; say if it should move below them or be rewritten to 
   vs. speech-triggered"; read in that order it contradicts the speech-triggered result above.
   `TODO(jimmy)`: which app scored 52.9?
 
-### 5.8 Sketch scenes (D68, D73)
+### 5.8 Sketch scenes (D68, D73, D76)
 Source: Jimmy's design notes and sketch prototype of Nov 24, 2026 (not in this repository), for
-the home page's five scenes; for the four teacher scenes (D73, D75), his review and answers
-relayed on Nov 25, 2026, and the papers as §5.5 gives them. The
+the first five scenes; for the four teacher scenes (D73, D75), his review and answers relayed on
+Nov 25, 2026, and the papers as §5.5 gives them. The
 scenes use the facts of the sections named below. What comes only from the design is marked
 "design". Interests, records, reports and posts shown in the scenes are made up, and each scene
 says so.
 
 - Title: "How AI learns about people and places". Subtitle: "Each scene shows where the data
-  comes from, what the system builds from it, and who checks it." Five scenes on the home page;
-  the four teacher scenes, below, are on a page of their own (D73, D75).
+  comes from, what the system builds from it, and who checks it." All nine scenes are on the
+  home page: the five below, then the four teacher scenes (Jimmy's decision of Nov 25, 2026,
+  D76); /research/teacher-support/ lists the teacher scenes and links each to the home page.
 - Scene 0, Tracker Toolbox (§7; labeled a prototype; no numbers): it logs clicks, scrolls and
   searches, follows gaze with WebGazer.js, maps records to page content, and asks the learner
   once a minute. Design: the pop-up in the scene asks "Did you learn something in the last
@@ -331,9 +332,10 @@ says so.
   into a 30-hour replay; four confirmed cells and three open quests at the peak. Design: the
   visitor can switch channels off, and with one channel left the scene says neither rule applies.
 
-- Teacher scenes (D73, D75), on /research/teacher-support/, linked from the home page's row of
-  scene buttons; one per teacher-facing paper (§5.5), and for PRIS two, its in-person pilot and
-  the Zoom study the paper reports; in the same form, each with one choice to make. Their
+- Teacher scenes (D73, D75, D76), on the home page in a group of their own, listed on
+  /research/teacher-support/; one per teacher-facing paper (§5.5), and for PRIS two, its
+  in-person pilot and the Zoom study the paper reports; in the same form, each with one choice to
+  make. Their
   students, experiences, words and examples are made up, and each scene says so.
   - Classroom, tablet (ICALT 2021): a student's experiences shown as plain text, a mind map or a
     story illustration; the study's result as in §5.5. Design: the classroom, the tablet and the
