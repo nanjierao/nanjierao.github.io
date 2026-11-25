@@ -132,9 +132,8 @@ describe('publications (facts.md §6)', () => {
     expect(dtrue.authors).toEqual(['Rao, N.', 'Verma, J.', 'Prator, A.']);
     // Jimmy's wording for the certificate's "Mention Paper" (facts.md §10), shown as a badge.
     expect(dtrue.award).toBe('Best Paper Mention');
-    expect(publications.find((pub) => pub.factsNumber === 5)!.award).toBe(
-      'Best Short Paper Nomination',
-    );
+    // ICALT 2021's award wording is VERIFY again (facts.md §6 [5], §10; D73): no badge.
+    expect(publications.find((pub) => pub.factsNumber === 5)!.award).toBeUndefined();
     expect(published.filter(isListedPublication)).toHaveLength(12);
   });
 

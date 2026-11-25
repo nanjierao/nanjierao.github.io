@@ -21,5 +21,10 @@ export default defineConfig({
       filter: (page) => !NOT_IN_SITEMAP.some((path) => new URL(page).pathname === path),
     }),
   ],
+  // Every page carries its CSS inside its HTML (D73). Two pages now share the sketch scenes'
+  // stylesheet, which made it a render-blocking file of its own: it slowed the home page and,
+  // on the teacher support page, let the web fonts arrive after the first paint (CLS 0.059
+  // against the 0.05 budget). Inline, both pages measure as before and no page waits for CSS.
+  build: { inlineStylesheets: 'always' },
   devToolbar: { enabled: false },
 });

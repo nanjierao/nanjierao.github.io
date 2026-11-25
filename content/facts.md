@@ -214,7 +214,7 @@ they supersede the CVs and the research statement wherever they differ.
 - Survey of **81** studies on teacher autonomy vs. automation (An & Holstein's TA framework,
   automation levels, Norman's action cycle); update covering 2021–2026 generative-AI systems in
   preparation for IEEE Transactions on Learning Technologies.
-- Teacher-facing papers: ICALT 2021 (Best Short Paper Nomination), HCII 2022, ICALT 2023.
+- Teacher-facing papers: ICALT 2021, HCII 2022, ICALT 2023.
 - What they did, from their abstracts (read through web-search listings on Nov 25, 2026; the
   publisher pages are not reachable from the session; check):
   - ICALT 2021: a within-subjects study of three visualizations of students' personal relevant
@@ -230,8 +230,10 @@ they supersede the CVs and the research statement wherever they differ.
   - ICALT 2023: focus groups with teachers about contextualizing; three categories of context
     (time, activity, location), tied to the lesson and to students' prior experiences; design
     implications for adaptive teacher support systems.
-- Recognition: mention only ICALT 2021's Best Short Paper Nomination; no award for ICALT 2023
-  (Jimmy, relayed Nov 25, 2026).
+- Recognition: none on the site. ICALT 2021's award wording ("Best Short Paper Nomination") is
+  **VERIFY**: it stays off the site until Jimmy confirms it (Jimmy, Nov 25, 2026, after an earlier
+  relayed message that day had asked for it). No award for ICALT 2023 (Jimmy, relayed Nov 25,
+  2026).
 
 ### 5.6 Explanation and recommendation
 - Explanation types and user motivations in recommender systems (AAAI HCOMP 2020, co-author).
@@ -464,8 +466,9 @@ Refereed conference papers
    Implications for Adaptive Teacher Support Systems for More Relevant Instruction. IEEE ICALT
    2023, pp. 71–73. DOI 10.1109/ICALT58122.2023.00027.
 5. *Rao, N., & Chu, S. L. (2021). Enhancing the Visual Efficiency for Communicating Students'
-   Personal Relevant Information. IEEE ICALT 2021, pp. 14–16. Best Short Paper Nomination. DOI
-   10.1109/ICALT52272.2021.00011.
+   Personal Relevant Information. IEEE ICALT 2021, pp. 14–16. DOI 10.1109/ICALT52272.2021.00011.
+   **VERIFY**: the award wording "Best Short Paper Nomination", off the site until Jimmy confirms
+   it (Jimmy, Nov 25, 2026).
 6. *Rao, N., Chu, S. L., & Chenore, R. (2021). Flexible Low-Cost Digital Puppet System. HCI
    International (HCII 2021), Springer LNCS. DOI 10.1007/978-3-030-77599-5_46.
 7. Li, Q., Chu, S. L., Rao, N., & Nourani, M. (2020). Understanding the Effects of Explanation
@@ -571,7 +574,8 @@ Other videos from the old site (ask Jimmy what they are before using):
   for §6 [10], with Jatin Verma and Ava Prator (Jimmy's wording; the certificate reads
   "Mention Paper")
 - CISE Gartner Group Graduate Fellowship, four times (2021–2024)
-- Best Short Paper Nomination, IEEE ICALT 2021
+- **VERIFY** (off the site until Jimmy confirms the wording; Jimmy, Nov 25, 2026): Best Short
+  Paper Nomination, IEEE ICALT 2021
 - Semifinalist, ANA Avatar XPRIZE (2021)
 - Outstanding Thesis Award (top 1%), HUST 2016
 

@@ -16,8 +16,7 @@ Three teacher-facing papers on bringing students’ personally relevant informat
 instruction:
 
 - **Visualizing students’ information for teachers.** *Enhancing the Visual Efficiency for
-  Communicating Students’ Personal Relevant Information* (IEEE ICALT 2021), a Best Short Paper
-  Nomination.
+  Communicating Students’ Personal Relevant Information* (IEEE ICALT 2021).
 - **Information retrieval for teaching support.** *Exploring Information Retrieval for
   Personalized Teaching Support* (HCI International 2022, late-breaking poster).
 - **Design implications for adaptive teacher support.** *The Context for Contextualizing:

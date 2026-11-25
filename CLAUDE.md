@@ -58,7 +58,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   the page's JavaScript budget, so its interactive pieces (the word cloud, D60; the sketch scenes,
   D68) are small plain scripts over HTML that is complete without them.
 - Styling: plain CSS with design tokens as custom properties (`src/styles/tokens.css`).
-  No Tailwind, no CSS-in-JS, no UI kit.
+  No Tailwind, no CSS-in-JS, no UI kit. Each page carries its CSS inline
+  (`build.inlineStylesheets: 'always'`, D73), so no page waits for a stylesheet.
 - Fonts self-hosted through `@fontsource` packages for Latin text; Chinese text uses the system
   CJK fonts (PingFang SC, Noto Sans CJK SC, Microsoft YaHei). No Google Fonts CDN, no trackers,
   no cookies.

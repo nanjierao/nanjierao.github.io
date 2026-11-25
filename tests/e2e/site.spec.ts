@@ -1733,7 +1733,7 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
     await expect(page.locator(SK)).toBeVisible();
   });
 
-  test('cites each scene’s paper with its DOI, and only ICALT 2021’s recognition', async ({
+  test('cites each scene’s paper with its DOI, and names no award for the teacher papers', async ({
     page,
   }) => {
     await openStill(page);
@@ -1747,13 +1747,14 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       const reference = scene(page, id).locator('.sk__paper');
       await expect(reference).toHaveText(/^Paper: Rao, N\., .*\(20\d\d\)\. .+\./);
       await expect(reference.getByRole('link')).toHaveAttribute('href', url);
-    }
-    await expect(scene(page, 'views').locator('.sk__award')).toHaveText(
-      'Best Short Paper Nomination',
-    );
-    for (const id of ['pris', 'context'])
       await expect(scene(page, id).locator('.sk__award')).toHaveCount(0);
-    expect(await page.locator(SK).innerText()).not.toMatch(/best paper|award/i);
+    }
+    expect(await page.locator(SK).innerText()).not.toMatch(/best paper|award|nominat/i);
+    // ICALT 2021's award wording is VERIFY (facts.md §10): on no page that lists the paper.
+    for (const path of ['/', PATH, '/publications/', '/cv/']) {
+      await page.goto(path);
+      expect(await page.locator('body').innerText(), path).not.toMatch(/short paper nomination/i);
+    }
   });
 
   test('each pick changes the drawing and the outcome, and the first one opens the results', async ({

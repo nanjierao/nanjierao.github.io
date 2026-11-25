@@ -4,7 +4,7 @@
 // headings and fixed labels are in the components; the end-to-end tests read the rendered
 // pages). Numbers must be in content/facts.md and stay with the study facts.md gives them to,
 // the term is "learner model", and the copy has no em dashes.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse as parseYaml } from 'yaml';
@@ -467,15 +467,29 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     expect(listed('dtrue-2026-csudt-framework')!.url).toBeUndefined();
   });
 
-  it('gives the teacher papers only the recognition facts.md §5.5 allows', () => {
-    expect(listed('icalt-2021-visual-efficiency')!.award).toBe('Best Short Paper Nomination');
-    expect(listed('icalt-2023-context-for-contextualizing')!.award).toBeUndefined();
-    expect(listed('hcii-2022-information-retrieval')!.award).toBeUndefined();
-    expect(FACTS_LINE).toContain(
-      "Recognition: mention only ICALT 2021's Best Short Paper Nomination; no award for ICALT 2023",
+  it('names no award for the teacher papers while ICALT 2021’s wording is VERIFY', () => {
+    for (const id of [
+      'icalt-2021-visual-efficiency',
+      'icalt-2023-context-for-contextualizing',
+      'hcii-2022-information-retrieval',
+    ])
+      expect(listed(id)!.award, id).toBeUndefined();
+    expect(FACTS_LINE).toMatch(
+      /Recognition: none on the site\. ICALT 2021's award wording \("Best Short Paper Nomination"\) is VERIFY: it stays off the site until Jimmy confirms it/,
     );
     for (const id of ['views', 'pris', 'context'] as const)
       expect(words(id), id).not.toMatch(/award|best paper|nominat|mention/i);
+    // Nothing the site is built from shows the wording: pages, data, content, the Q&A library.
+    const sources = (dir: string): string[] =>
+      readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory()
+          ? sources(join(dir, entry.name))
+          : /\.(astro|ts|md|mdx|ya?ml|json)$/.test(entry.name)
+            ? [join(dir, entry.name)]
+            : [],
+      );
+    for (const file of [...sources('src'), join('content', 'qa-library.yaml')])
+      expect(readFileSync(join(ROOT, file), 'utf8'), file).not.toMatch(/short paper nomination/i);
   });
 
   it('keeps the teacher scenes to what facts.md §5.5 says the papers did and found', () => {

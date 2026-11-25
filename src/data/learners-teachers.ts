@@ -205,7 +205,7 @@ export const TEACHER_ITEMS: TeacherItem[] = [
   },
   {
     lead: 'Showing students’ information to teachers.',
-    text: 'Visual efficiency in communicating students’ personally relevant information. A Best Short Paper Nomination.',
+    text: 'Visual efficiency in communicating students’ personally relevant information.',
     where: 'IEEE ICALT 2021',
   },
   {
