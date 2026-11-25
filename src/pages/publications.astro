@@ -12,8 +12,8 @@ const conference = publications.filter((pub) => pub.type === 'conference');
 const extended = publications.filter((pub) => pub.type === 'extended-abstract');
 const workingPapers = await getWorkingPapers();
 const scholar = ELSEWHERE.find((link) => link.id === 'scholar')!;
-// Counted from the listed items and labeled that way: facts.md §6 has 12, but DTRUE 2026 [10]
-// stays hidden while it is marked VERIFY. TODO(jimmy): verify it and the counts include it.
+// Counted from the listed items and labeled that way: all 12 of facts.md §6, since DTRUE 2026
+// [10] was verified (Nov 25, 2026). An item marked VERIFY would stay hidden and out of the count.
 const published = [...conference, ...extended];
 const years = published.map((pub) => pub.year!);
 const stats = [

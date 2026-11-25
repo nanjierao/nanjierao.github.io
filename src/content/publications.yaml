@@ -77,7 +77,7 @@
   title: 'Enhancing the Visual Efficiency for Communicating Students’ Personal Relevant Information'
   venue: 'IEEE ICALT 2021'
   venueShort: 'ICALT'
-  notes: ['Best Short Paper Nomination']
+  award: 'Best Short Paper Nomination'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [5]).
   themes: [teacher-support]
@@ -135,19 +135,24 @@
 - id: dtrue-2026-csudt-framework
   factsNumber: 10
   type: extended-abstract
-  authors: ['Rao, N.', 'Verma, J.']
+  authors: ['Rao, N.', 'Verma, J.', 'Prator, A.']
   year: 2026
   title: 'A Design Framework for Gamified, LLM-Assisted Crowd-Sourced Urban Digital Twins'
   venue: 'DTRUE 2026, UF Jacksonville Campus'
   venueShort: 'DTRUE'
-  notes: ['Oral presentation', 'Full paper to appear in EPiC Series in Technology']
+  notes:
+    [
+      'Extended abstract',
+      'Oral presentation, Nov 20, 2026',
+      'Proceedings: EPiC Series in Computing',
+    ]
+  award: 'Best Paper Mention'
   firstAuthor: true
   tldr:
     text: 'A design framework for crowd-sourced urban digital twins, and a flood prototype that confirms an event only when a sensor, a resident, and a social post agree.'
     draft: true
-  # facts.md §6 [10] and §5.3: VERIFY authors, order and title against the v2 extended abstract.
-  # TODO(jimmy): confirm, then set verify to false so it appears on the site.
-  verify: true
+  # facts.md §6 [10] and §5.3: authors, order and title as the DTRUE 2026 certificate gives them
+  # (Jimmy, Nov 25, 2026).
   themes: [civic-digital-twins]
 
 - id: hcii-2022-information-retrieval

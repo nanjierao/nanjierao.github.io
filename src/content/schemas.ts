@@ -69,8 +69,10 @@ export const publicationSchema = z
     venueShort: z.string().min(1).max(10).optional(),
     /** Publisher, pages and similar, as in facts.md. */
     details: z.string().optional(),
-    /** Status notes from facts.md, e.g. "Full paper, accepted" or an award. */
+    /** Status notes from facts.md, e.g. "Full paper, accepted". */
     notes: z.array(z.string()).default([]),
+    /** A recognition from facts.md §10, shown as a badge, e.g. "Best Paper Mention". */
+    award: z.string().min(1).optional(),
     firstAuthor: z.boolean(),
     /** D28: one-sentence TL;DR; hidden while `draft` is true. */
     tldr: z.object({ text: z.string().min(1), draft: z.boolean() }).optional(),

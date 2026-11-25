@@ -124,11 +124,18 @@ describe('publications (facts.md §6)', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('keeps VERIFY items off the site (DTRUE 2026, facts.md §6 [10])', () => {
+  it('keeps VERIFY items off the site, and lists DTRUE 2026 now that it is verified', () => {
     const dtrue = publications.find((pub) => pub.factsNumber === 10)!;
-    expect(dtrue.verify).toBe(true);
-    expect(isListedPublication(dtrue)).toBe(false);
-    expect(published.filter(isListedPublication)).toHaveLength(11);
+    expect(isListedPublication({ ...dtrue, verify: true })).toBe(false);
+    // facts.md §6 [10] and §5.3: the authors and the title from the DTRUE 2026 certificate.
+    expect(dtrue.verify).toBe(false);
+    expect(dtrue.authors).toEqual(['Rao, N.', 'Verma, J.', 'Prator, A.']);
+    // Jimmy's wording for the certificate's "Mention Paper" (facts.md §10), shown as a badge.
+    expect(dtrue.award).toBe('Best Paper Mention');
+    expect(publications.find((pub) => pub.factsNumber === 5)!.award).toBe(
+      'Best Short Paper Nomination',
+    );
+    expect(published.filter(isListedPublication)).toHaveLength(12);
   });
 
   it('hides TL;DRs while they are DRAFT (D28)', () => {
@@ -449,13 +456,15 @@ describe('builds (facts.md §7, D29)', () => {
 });
 
 describe('talks and news (D26)', () => {
-  it('dates DTRUE 2026 as Nov 19–20, 2026 with both wordings', () => {
+  it('dates the DTRUE 2026 talk on Nov 20, 2026, the day Jimmy presented, with both wordings', () => {
     const dtrue = talks.find((talk) => talk.id === 'dtrue-2026')!;
-    expect(dtrue).toMatchObject({ startDate: '2026-11-19', endDate: '2026-11-20' });
+    expect(dtrue).toMatchObject({ startDate: '2026-11-20' });
+    expect(dtrue.endDate).toBeUndefined();
     expect(dtrue.wording?.upcoming).toMatch(/^Upcoming oral presentation/);
     expect(dtrue.wording?.past).toBe('Presented at DTRUE 2026');
     const item = news.find((n) => n.id === 'dtrue-2026')!;
-    expect(item.event).toMatchObject({ start: '2026-11-19', end: '2026-11-20' });
+    expect(item.date).toBe('2026-11-20');
+    expect(item.event).toMatchObject({ start: '2026-11-20' });
   });
 
   it('never hard-codes tense in fixed news text', () => {

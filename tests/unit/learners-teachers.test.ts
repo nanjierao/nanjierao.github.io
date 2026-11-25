@@ -267,8 +267,8 @@ describe('sketch scenes (D68)', () => {
       for (const number of numbersIn(text))
         expect(inText(number, civic), `"${number}" in "${text}" is not in §5.3`).toBe(true);
     // The author list waits on Jimmy's check of the extended abstract (facts.md §5.3, VERIFY).
-    expect(words('city')).toContain('coauthored');
-    expect(words('city')).not.toMatch(/Verma/);
+    // The authors as facts.md §5.3 gives them since Nov 25, 2026 (D46).
+    expect(words('city')).toContain('with Jatin Verma and Ava Prator');
   });
 
   it('describes the puppet system and the tracker as facts.md §7 does', () => {

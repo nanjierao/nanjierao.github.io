@@ -10,13 +10,13 @@ datasheet:
   - { label: Engagement, value: 'When two channels agree, nearby residents get a one-tap verification quest' }
   - { label: Replay, value: 'Simulated replay modeled on Hurricane Irma (Sep 10–12, 2017): first three-channel confirmation 10.8 hours into a 30-hour replay; four confirmed cells and three open quests at the peak' }
   - { label: Data, value: 'Simulated replay and synthetic community content' }
-  - { label: Paper, value: 'Coauthored extended abstract, DTRUE 2026 (oral presentation)' }
+  - { label: Paper, value: 'Extended abstract with Jatin Verma and Ava Prator, DTRUE 2026 (oral presentation, Nov 20, 2026; Best Paper Mention)' }
 tags: [LLM pipeline, digital twin, web]
 areas: [ai, web]
 links:
   - { label: Open the demo, href: /demos/csudt/ }
 themes: [civic-digital-twins]
 facts: ['5.3', '7']
-# Coauthored (D46): name the coauthor here once facts.md §6 [10] is verified. TODO(jimmy)
+# Coauthored (D46): authors as the DTRUE 2026 certificate gives them (facts.md §6 [10]).
 # TODO(jimmy): screenshots of the demo (facts.md §7 media); S4 adds the explainer and preview image.
 ---

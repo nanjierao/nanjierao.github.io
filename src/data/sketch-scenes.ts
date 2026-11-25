@@ -495,7 +495,8 @@ export const SCENES: Scene[] = [
       builds: 'A cell of the city’s digital twin, confirmed when three channels agree',
       checkedBy: 'Nearby residents, through a one-tap verification quest',
     },
-    source: 'CS-UDT flood prototype for Jacksonville (DTRUE 2026, coauthored).',
+    source:
+      'CS-UDT flood prototype for Jacksonville (DTRUE 2026, with Jatin Verma and Ava Prator).',
     note: 'Everything in this scene is simulated: the replay is modeled on a past hurricane, and the reports and posts are synthetic.',
   },
 ];

@@ -40,7 +40,7 @@ Headline options: `content/facts.md` §3 (Jimmy picks; option 4 matches the fina
 Research overview: one umbrella line (Jimmy picks; default from his research statement) over three
 contexts: **Personal · Embodied · Civic** (D27, D45). Proof points, each linked to evidence: ICALT
 2026 and ICIDS 2026 first-author full papers; the DTRUE 2026 framework and working prototype (with
-Jatin Verma; author list VERIFY); the grounded-vs-inferred check (505 of 1,130 units inferred);
+Jatin Verma and Ava Prator; Best Paper Mention, D72); the grounded-vs-inferred check (505 of 1,130 units inferred);
 builds across software and hardware (NSF puppet system, AR glasses, XPRIZE semifinal robot);
 teaching (COP 3530 discussion sections for ~150 students in total; co-taught graduate HCI).
 
@@ -308,7 +308,7 @@ While S1 is open
 5. Make a public CV PDF (no phone number or home address; Study 1's name-only figure as 29%) and
    upload it to `inbox/`.
 6. Pick the headline (facts.md §3), the status line (§2), and whether to link LinkedIn and
-   ORCID (§13). Check the DTRUE author list (§5.3, VERIFY). (The public email is set:
+   ORCID (§13). (The DTRUE author list is verified, D72. The public email is set:
    raon@ufl.edu, §1, D70.)
 
 Later
