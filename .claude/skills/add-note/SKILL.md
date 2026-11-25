@@ -19,11 +19,13 @@ note is not in the repository at all (step 3).
    step 5 and ship. The note is `src/content/notes/<YYYY-MM-DD>.yaml`. If that file already
    exists, ask Jimmy whether the new text replaces the note or is added to it, and wait for his
    answer.
-2. **His words.** One sentence per line, exactly as written: keep his wording, spelling,
-   punctuation and language. Don't correct, translate, shorten, reorder or add anything. If he
-   sends one paragraph, split it only at sentence ends; if he sends separate lines, keep them.
-   Leave out only words addressed to the session ("today's note:"). The schema takes one to five
-   lines of at most 300 characters each; if the note doesn't fit, ask.
+2. **His words.** Keep his structure and his words exactly. Each item he numbers or bullets, or
+   each line he sends, is one line of the note; running text without a list is split only at
+   sentence ends. Keep his wording, spelling, punctuation, language and bold (`**like this**`,
+   the only formatting the page shows). Don't correct, translate, shorten, reorder or add
+   anything. Leave out only words addressed to the session ("today's note:") and his list
+   numbers, which the page draws itself. The schema takes one to five items of at most 1,000
+   characters each, with bold in pairs; if the note doesn't fit, ask.
 3. **Hold back and ask** before writing anything, when a line
    - touches anything in facts.md §15. Read all of §15 for each note; this list gives examples
      and doesn't replace it: job search (applications and application materials, interviews,
@@ -56,7 +58,7 @@ note is not in the repository at all (step 3).
    ```yaml
    lines:
      - 'First sentence.'
-     - 'Second sentence, with Jimmy''s apostrophe.'
+     - '**A bold lead.** And the rest of the item, with Jimmy''s apostrophe.'
      - 'Third sentence.'
    ```
 5. **Checks.** `npm run format`, then `npm run build` (the real build, without the fixture

@@ -2,7 +2,7 @@
 
 One file per day, added with the `add-note` skill (`.claude/skills/add-note/`; D71). The page is
 `/notes/`. The footer links it on every page, and on the home page the first card in Recent shows
-the newest note.
+the newest note (an item with a bold lead by its lead alone, with a link to the full note).
 
 ```
 src/content/notes/<YYYY-MM-DD>.yaml   the file name is the note's date
@@ -11,18 +11,21 @@ src/content/notes/<YYYY-MM-DD>.yaml   the file name is the note's date
 ```yaml
 lines:
   - 'What I did today, in one short sentence.'
-  - 'Something I learned, at work or outside it, with Jimmy''s apostrophe written twice.'
-  - 'A third short sentence.'
+  - '**Or a bold lead.** And a short paragraph after it, with Jimmy''s apostrophe written twice.'
+  - 'A third short note.'
 ```
 
-- The sentences are Jimmy's words, as he sent them, one per line. No edits, translations or
-  additions.
+- The items are Jimmy's words, as he sent them, one per line: each item he numbers is one line,
+  and the page numbers them again. No edits, translations or additions.
 - Write every line in single quotes, with each apostrophe written twice (`'it''s'`), and copy
   everything else exactly, backslashes included. Single quotes read no escapes, so a `#`, a `: `
   or a `\` stays as he wrote it. `npm run format` switches a line to double quotes only where that
   keeps the text. A unit test fails on an unquoted line, on a double-quoted line with a backslash
   (where `\t` would turn into a tab), and on a line whose quote ended early.
-- One to five lines of at most 300 characters each (`noteSchema` in `src/content/schemas.ts`).
+- One to five items of at most 1,000 characters each (`noteSchema` in `src/content/schemas.ts`): a
+  short sentence, or a bold lead written `**like this**` and a short paragraph. Bold is the only
+  formatting and shows as bold on /notes/; a `**` without its partner fails the schema, so no
+  asterisks reach the page.
 - Chinese text is marked `lang="zh-CN"` on the page by itself (`noteLine` in
   `src/lib/notes.ts`): a whole line when it has Chinese characters and no Latin letters, its
   numbers and punctuation included; otherwise each run of Chinese characters, and the rest of

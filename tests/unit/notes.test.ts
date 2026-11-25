@@ -12,8 +12,11 @@ import {
   formatNoteDay,
   formatNoteMonth,
   groupNotesByMonth,
+  hasLoneBoldMarker,
   isNoteDate,
+  noteLead,
   noteLine,
+  noteText,
 } from '../../src/lib/notes.ts';
 import { CLASS_STUDY_FORBIDDEN, COURSE_NUMBER, VENUE_YEAR } from './class-study-patterns.ts';
 
@@ -274,6 +277,9 @@ describe('daily notes on the site (D71)', () => {
     expect(newest?.lines.some((line) => /\p{Script=Han}/u.test(line))).toBe(true);
     expect(newest?.lines.some((line) => /\S{40,}/.test(line))).toBe(true);
     expect(newest?.lines.some((line) => /\bprotocol\s+\S*\d/.test(line))).toBe(true);
+    // An item with a bold lead, which the card shows by its lead, and items without one.
+    expect(newest?.lines.some((line) => noteLead(line))).toBe(true);
+    expect(newest?.lines.some((line) => !noteLead(line) && /\bprotocol\s/.test(line))).toBe(true);
   });
 });
 
@@ -398,6 +404,16 @@ describe('daily notes: the schema', () => {
     expect(lines({ Learned: 'a key, not a sentence' })).toBe(false);
     expect(noteSchema.safeParse({}).success).toBe(false);
   });
+
+  it('takes bold in pairs only, so no asterisks show', () => {
+    expect(lines('**A bold lead.** And the rest of the item.')).toBe(true);
+    expect(lines('A sentence with **one bold phrase** and **another**.')).toBe(true);
+    expect(lines('A lone ** marker.')).toBe(false);
+    expect(lines('**A lead that never closes. And the rest.')).toBe(false);
+    expect(lines('Empty bold: ****.')).toBe(false);
+    expect(lines('** Spaced inside **.')).toBe(false);
+    expect(lines('One * star, as in 5 * 3, stays as written.')).toBe(true);
+  });
 });
 
 describe('daily notes: helpers', () => {
@@ -435,7 +451,7 @@ describe('daily notes: helpers', () => {
   it('marks Chinese text as Chinese, by runs, and keeps every character', () => {
     const marked = (line: string) => {
       const { lang, runs } = noteLine(line);
-      expect(runs.map((run) => run.text).join('')).toBe(line);
+      expect(runs.map((run) => run.text).join('')).toBe(noteText(line));
       return [lang ?? null, runs.filter((run) => run.lang).map((run) => run.text)];
     };
     // Chinese without Latin letters: the whole line, its numbers and punctuation included.
@@ -468,5 +484,42 @@ describe('daily notes: helpers', () => {
     // No Chinese at all.
     expect(marked('Finished the notes page today.')).toEqual([null, []]);
     expect(marked('2026: 12 of 12.')).toEqual([null, []]);
+  });
+
+  it("marks bold parts as bold, keeps the words, and finds an item's lead", () => {
+    const shown = (line: string) => {
+      const { lang, runs } = noteLine(line);
+      expect(runs.map((run) => run.text).join('')).toBe(noteText(line));
+      return [
+        lang ?? null,
+        runs.map((run) => [run.text, run.strong ? 'bold' : '', run.lang ?? ''].join('|')),
+      ];
+    };
+    expect(shown('**A bold lead.** And the rest of the item.')).toEqual([
+      null,
+      ['A bold lead.|bold|', ' And the rest of the item.||'],
+    ]);
+    expect(shown('Plain, then **bold** in the middle.')).toEqual([
+      null,
+      ['Plain, then ||', 'bold|bold|', ' in the middle.||'],
+    ]);
+    // A Chinese item with a bold lead: the whole line is Chinese, the lead is bold.
+    expect(shown('**今天学到的一件事。** 写下来才记得住。')).toEqual([
+      'zh-CN',
+      ['今天学到的一件事。|bold|', ' 写下来才记得住。||'],
+    ]);
+    // Bold with a Chinese phrase inside an English item.
+    expect(shown('**Cooked 红烧肉.** It took two hours.')).toEqual([
+      null,
+      ['Cooked |bold|', '红烧肉|bold|zh-CN', '.|bold|', ' It took two hours.||'],
+    ]);
+    expect(noteText('**A** and **B**, then C.')).toBe('A and B, then C.');
+    expect(noteText('No bold, 5 * 3.')).toBe('No bold, 5 * 3.');
+    expect(noteLead('**A bold lead.** And the rest.')).toBe('A bold lead.');
+    expect(noteLead('**All of it bold.**')).toBe(undefined);
+    expect(noteLead('A sentence with **bold** later.')).toBe(undefined);
+    expect(noteLead('**Lead.**and no space')).toBe(undefined);
+    expect(hasLoneBoldMarker('**A** and ** B')).toBe(true);
+    expect(hasLoneBoldMarker('**A** and **B**')).toBe(false);
   });
 });

@@ -410,7 +410,7 @@ test.describe('daily notes (D71)', () => {
     await expect(page).toHaveURL(/\/notes\/$/);
     await expect(page.locator('h1')).toHaveText('Daily notes');
     await expect(page.locator('main .lede')).toHaveText(
-      'Each entry is a date and three short sentences: what I did that day, and what I learned, at work or outside it.',
+      'Each entry is a date and three short notes: what I did that day, and what I learned, at work or outside it.',
     );
   });
 
@@ -431,29 +431,42 @@ test.describe('daily notes (D71)', () => {
       await expect(page.locator('main h2')).toHaveCount(0);
       await page.goto('/');
       await expect(card.locator('p')).toHaveText(
-        'A date and three short sentences a day: what I did, and what I learned.',
+        'A date and three short notes a day: what I did, and what I learned.',
       );
       await expect(card.locator('li')).toHaveCount(0);
       return;
     }
     // Newest first: the ids are dates, and they sort.
     expect(ids).toEqual([...ids].sort().reverse());
-    // The home card shows the newest note, with the same lines, marked the same way.
+    // The home card shows the newest note: each item, or only its bold lead when it has one,
+    // then a link to the full note. Chinese is marked there as on the page, and no ** shows.
     await expect(card.locator('time')).toHaveAttribute('datetime', ids[0]!);
-    // Each line's lang, then its pieces: text, or a span's lang and text.
-    const markup = (lines: Element[]) =>
-      lines.map((line) => [
-        line.getAttribute('lang'),
-        ...[...line.childNodes].map((node) =>
-          node instanceof Element
-            ? `${node.getAttribute('lang')}: ${node.textContent}`
-            : node.textContent,
-        ),
-      ]);
-    const newest = await card.locator('li').evaluateAll(markup);
-    expect(await card.locator('ul').evaluateAll(misLabelled)).toEqual([]);
+    const shown = await card.locator('li').allTextContents();
+    expect(await card.locator('ol').evaluateAll(misLabelled)).toEqual([]);
+    const fullNote = await card
+      .getByRole('link', { name: 'Read the full note' })
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+    expect(await page.locator('main').innerText()).not.toContain('**');
     await page.goto('/notes/');
-    expect(await notes.first().locator('li').evaluateAll(markup)).toEqual(newest);
+    const items = await notes
+      .first()
+      .locator('li')
+      .evaluateAll((lines) =>
+        lines.map((line) => {
+          const text = line.textContent ?? '';
+          const first = line.firstChild;
+          const lead =
+            first instanceof HTMLElement &&
+            first.tagName === 'STRONG' &&
+            /^\s+\S/.test(text.slice(first.textContent?.length ?? 0))
+              ? first.textContent
+              : null;
+          return { text, lead };
+        }),
+      );
+    expect(shown).toEqual(items.map((item) => item.lead ?? item.text));
+    expect(fullNote).toEqual(items.some((item) => item.lead) ? [`/notes/#${ids[0]}`] : []);
+    expect(await page.locator('main').innerText()).not.toContain('**');
     await expect(page.locator('.notes-empty')).toHaveCount(0);
     // One month heading per month, newest first; each day under its own month.
     const months = await page.locator('section.notes-month').evaluateAll((sections) =>
@@ -517,9 +530,22 @@ test.describe('daily notes (D71)', () => {
       '。',
     ]);
     await expect(lines('2026-10-01').nth(4).locator('span[lang="zh-CN"]')).toHaveText(['测试短语']);
-    // The home card shows the newest test note, with its Chinese line marked.
+    // An item's bold lead is bold, and its words are kept without the asterisks.
+    const led = lines('2026-10-02').nth(4);
+    await expect(led.locator('strong')).toHaveText('A bold lead for a longer test item.');
+    await expect(led).toHaveText(
+      'A bold lead for a longer test item. The rest of the item follows on the same line, as in a note whose items are a bold lead and a short paragraph. The home page card shows only the lead and links to the full note.',
+    );
+    // The home card shows the newest test note, with its Chinese line marked, the bold item by
+    // its lead alone, and a link to the full note.
     await page.goto('/');
-    await expect(page.locator(`${CARD} li`)).toHaveCount(4);
+    await expect(page.locator(`${CARD} li`)).toHaveCount(5);
+    await expect(page.locator(`${CARD} li`).nth(4)).toHaveText(
+      'A bold lead for a longer test item.',
+    );
+    await expect(
+      page.locator(CARD).getByRole('link', { name: 'Read the full note' }),
+    ).toHaveAttribute('href', '/notes/#2026-10-02');
     await expect(page.locator(`${CARD} li[lang="zh-CN"]`)).toHaveText([
       '10月2日，这是一句用来检查中文排版的测试句子。',
     ]);

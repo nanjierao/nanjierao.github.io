@@ -10,12 +10,12 @@ const months = groupNotesByMonth(await getNotes());
 
 <BaseLayout
   title="Daily notes"
-  description="Nanjie (Jimmy) Rao’s daily notes: a date and three short sentences on what he did that day and what he learned."
+  description="Nanjie (Jimmy) Rao’s daily notes: a date and three short notes on what he did that day and what he learned."
 >
   <h1>Daily notes</h1>
   <p class="lede">
-    Each entry is a date and three short sentences: what I did that day, and what I learned, at work
-    or outside it.
+    Each entry is a date and three short notes: what I did that day, and what I learned, at work or
+    outside it.
   </p>
 
   {months.length === 0 ? (
@@ -29,18 +29,19 @@ const months = groupNotesByMonth(await getNotes());
             <h3 id={`day-${note.id}`} class="note__day">
               <time datetime={note.id}>{formatNoteDay(note.id)}</time>
             </h3>
-            <ul class="note__lines">
+            <ol class="note__lines">
               {note.data.lines.map((line) => {
                 const { lang, runs } = noteLine(line);
                 return (
                   <li lang={lang}>
-                    {runs.map((run) =>
-                      run.lang ? <span lang={run.lang}>{run.text}</span> : run.text,
-                    )}
+                    {runs.map((run) => {
+                      const words = run.lang ? <span lang={run.lang}>{run.text}</span> : run.text;
+                      return run.strong ? <strong>{words}</strong> : words;
+                    })}
                   </li>
                 );
               })}
-            </ul>
+            </ol>
           </article>
         ))}
       </section>
@@ -76,8 +77,9 @@ const months = groupNotesByMonth(await getNotes());
     overflow-wrap: anywhere;
   }
 
+  /* Space between items, which can be a bold lead and a short paragraph. */
   .note__lines li + li {
-    margin-top: var(--space-1);
+    margin-top: var(--space-3);
   }
 
   /* A Chinese phrase inside an English line keeps the line's spacing. */

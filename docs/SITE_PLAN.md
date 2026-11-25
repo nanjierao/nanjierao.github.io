@@ -58,7 +58,7 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 /publications          Filterable list, TL;DRs, links, BibTeX
 /builds, /builds/[slug] Datasheet cards + "On GitHub" (JimmyRaoUF's public repositories)
 /blog, /blog/[slug]    Zhihu answers in Chinese, each with an English title and summary; RSS
-/notes                 Daily notes (D71): a date and three short sentences a day, in Jimmy's words
+/notes                 Daily notes (D71): a date and three short notes a day, in Jimmy's words
 /demos/csudt           CS-UDT flood digital twin (existing demo files)
 /talks/dtrue-2026      Talk page + QR target
 /teaching · /cv (HTML + PDF) · /about · /privacy · /credits · /404
@@ -95,7 +95,7 @@ Top to bottom (D21):
   cards, the Study 2 figure with the grounding check, the teacher-facing papers and the
   supporting papers (`src/data/learners-teachers.ts`).
 - **Recent**: three dated news items with time-aware wording (D26), then cards: Daily notes
-  (D71: links to /notes/ and shows the newest note), the latest blog post, the latest YouTube
+  (D71: links to /notes/ and shows the newest note, bold leads alone), the latest blog post, the latest YouTube
   video (D50), and recent public GitHub activity (D40).
 - **Easter egg**: a small luopan glyph fixed at the bottom-right, low contrast until hovered or
   focused, hint "未完待续 / to be continued". It opens a side panel, "Things I want to try / 想尝试的事",
