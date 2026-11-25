@@ -76,7 +76,7 @@ Compared and not used:
 - **Sketch scenes (D68, 24 Nov 2026).** Jimmy's design notes looked at Rough.js (MIT;
   hand-drawn rendering on canvas or SVG), Vivus (MIT; SVG line-drawing animation),
   perfect-freehand (MIT), Excalidraw (MIT) and lottie-web (MIT), and used none of them: a
-  handful of drawings (five on the home page, three on the teacher support page, D73) don't need
+  handful of drawings (five on the home page, four on the teacher support page, D73, D75) don't need
   a renderer. The scenes are hand-written SVG paths, revealed with
   `stroke-dashoffset` and roughened by an SVG turbulence filter, with one script of under 4 KB
   gzipped (`src/scripts/sketch-scenes.ts`). A React island was ruled out for the home page:

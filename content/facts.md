@@ -348,8 +348,9 @@ says so.
     on Zoom with researchers as the students; the laptop's microphone picks up the teacher's
     voice; speech recognition and keyword matching find students' personal information that
     relates to the words, and PRIS shows it to the teacher; the 8 participants and the
-    comparison with notecards as in §5.5. Design: the room, the four students in their video
-    tiles, PRIS's card on the screen, what the teacher says and the students it matches.
+    comparison with notecards as in §5.5, and the within-subjects design as in §5.10. Design:
+    the room, the four students in their video tiles, PRIS's card on the screen, what the
+    teacher says and the students it matches.
   - Staff room, focus group (ICALT 2023): the paper identifies the three categories of context
     from the focus groups; no separate check of them is recorded here. Design: the staff room,
     the teachers, the lesson plan and the examples.

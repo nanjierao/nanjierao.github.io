@@ -1919,7 +1919,7 @@ test.describe('teacher scenes on the teacher support page (D73)', () => {
       'Later, PRIS on Zoom: a simulated online class, with researchers as the students.',
     );
     await expect(study.locator('.sk__result').first()).toContainText(
-      '8 participants each taught a simulated online class on Zoom, and four researchers played the students.',
+      '8 participants each taught as the teacher in simulated online classes on Zoom, and four researchers played the students.',
     );
     await expect(study.locator('.sk__results')).toContainText('PRIS was compared with notecards.');
     await expect(study.locator('.sk__summary dd').first()).toHaveText(

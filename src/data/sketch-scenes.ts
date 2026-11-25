@@ -788,7 +788,7 @@ export const SCENES: Scene[] = [
     results: [
       {
         big: '8',
-        text: 'participants each taught a simulated online class on Zoom, and four researchers played the students.',
+        text: 'participants each taught as the teacher in simulated online classes on Zoom, and four researchers played the students.',
       },
       {
         text: 'PRIS was compared with notecards. With PRIS, usability was better, the teacher’s cognitive load was lower, and personalized teaching happened more often.',

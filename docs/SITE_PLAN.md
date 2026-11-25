@@ -186,8 +186,9 @@ Full spec and copy: `content/life-portal.md`. Five acts:
   The Experiments page (D74) lists the controlled experiments across the contexts: one table,
   first-author studies first, then co-authored ones, and what the designs support. The home
   page's Research section and the overview link it with the counts (six and three).
-  The teacher support page ends its text with three sketch scenes, one per teacher-facing paper,
-  where the visitor picks an option (D73). A study that is still running gets its own page,
+  The teacher support page ends its text with four sketch scenes, one per teacher-facing paper
+  and, for PRIS, its in-person pilot beside the Zoom study (D75), where the visitor picks an
+  option (D73). A study that is still running gets its own page,
   listed after the contexts under "Ongoing" on the overview, the home page and the CV page (D69). The first one is the class study
   (facts.md §5.9): Jimmy's words, design only, no names and no course number.
 - **Publications**: from facts.md §6, a TL;DR under first-author papers once approved (D28),

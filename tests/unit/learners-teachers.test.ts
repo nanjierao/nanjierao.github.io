@@ -551,7 +551,7 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
       [
         /Simulated online classes on Zoom: each of the 8 participants \(university students\) taught as the teacher, and 4 researchers acted as the students/,
         results('zoom'),
-        /^8 participants each taught a simulated online class on Zoom, and four researchers played the students\./,
+        /^8 participants each taught as the teacher in simulated online classes on Zoom, and four researchers played the students\./,
       ],
       [
         /compared with notecards, it showed better usability, lower teacher cognitive load and more frequent personalized teaching behaviors/,
@@ -613,9 +613,14 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     expect(study.paper).toBe('hcii-2022-information-retrieval');
     expect(study.results[0]).toEqual({
       big: '8',
-      text: 'participants each taught a simulated online class on Zoom, and four researchers played the students.',
+      text: 'participants each taught as the teacher in simulated online classes on Zoom, and four researchers played the students.',
     });
     expect(study.summary.checkedBy).toContain('8 participants');
+    // "Within-subjects" is the design facts.md §5.10 gives the HCII 2022 study.
+    expect(study.summary.checkedBy).toMatch(/^A within-subjects study /);
+    expect(FACTS_LINE).toMatch(
+      /Exploring Information Retrieval for Personalized Teaching Support\. HCII 2022 \(Late Breaking Posters\) \| Within-subjects; condition order and topics counterbalanced \| 8 participants teaching simulated online classes \|/,
+    );
     // The Zoom study used the laptop's microphone and no Kinect.
     expect(words('zoom')).not.toMatch(/Kinect|position/i);
     expect(study.summary.data).toBe('The teacher’s speech, from the laptop’s microphone');
