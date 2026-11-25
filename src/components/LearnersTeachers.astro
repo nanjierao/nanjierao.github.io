@@ -9,6 +9,7 @@ import Flow from './figures/Flow.astro';
 import PairedBars from './figures/PairedBars.astro';
 import PublicationList from './PublicationList.astro';
 import SketchScenes from './SketchScenes.astro';
+import { TEACHER_SCENES_LINK } from '../data/sketch-scenes.ts';
 import { STUDY2_SOURCES } from '../data/figures.ts';
 import {
   BREADTH_INTRO,
@@ -35,7 +36,7 @@ const breadthPapers = await getPublicationsByIds(BREADTH_PUBLICATIONS);
   <h2 id="lt-heading">{TITLE}</h2>
   <p class="lede">{LEDE}</p>
 
-  <SketchScenes />
+  <SketchScenes link={TEACHER_SCENES_LINK} />
 
   <div class="prose">
     {INTRO.map((paragraph) => (
@@ -110,7 +111,8 @@ const breadthPapers = await getPublicationsByIds(BREADTH_PUBLICATIONS);
     <h4 id="teacher-papers-heading">The three papers</h4>
     <PublicationList publications={teacherPapers} compact />
     <p>
-      <a href="/research/teacher-support/">Teacher support technologies</a>
+      <a href="/research/teacher-support/">Teacher support technologies</a>, with a sketch scene for
+      each paper.
     </p>
   </div>
 

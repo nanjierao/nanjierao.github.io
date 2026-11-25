@@ -1,10 +1,10 @@
-// The home page's "How AI learns about people and places" section (D66, D68): every sentence and
-// number it shows comes from two data modules, the sketch scenes' and the text below them, so
-// the checks here cover both (part headings and fixed labels are in the components; the
-// end-to-end test reads the rendered section). Numbers must be in content/facts.md and stay
-// with the study facts.md gives them to, the term is "learner model", and the copy has no em
-// dashes.
-import { existsSync, readFileSync } from 'node:fs';
+// The home page's "How AI learns about people and places" section (D66, D68) and the teacher
+// scenes of /research/teacher-support/ (D73): every sentence and number they show comes from two
+// data modules, the sketch scenes' and the text below them, so the checks here cover both (part
+// headings and fixed labels are in the components; the end-to-end tests read the rendered
+// pages). Numbers must be in content/facts.md and stay with the study facts.md gives them to,
+// the term is "learner model", and the copy has no em dashes.
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse as parseYaml } from 'yaml';
@@ -160,7 +160,7 @@ describe('sketch scenes (D68)', () => {
     return FACTS.slice(start, end);
   };
 
-  it('has the title, the subtitle and the five scenes Jimmy set, in order, and no teacher scene', () => {
+  it('has the title, the subtitle, the five home scenes Jimmy set, and the three teacher scenes', () => {
     expect(page.TITLE).toBe('How AI learns about people and places');
     expect(sketch.SKETCH_SUBTITLE).toBe(
       'Each scene shows where the data comes from, what the system builds from it, and who checks it.',
@@ -171,13 +171,32 @@ describe('sketch scenes (D68)', () => {
       'dining',
       'puppet',
       'city',
+      'views',
+      'pris',
+      'context',
     ]);
     expect(sketch.SCENE_GROUPS).toEqual([
       { label: 'Learners', scenes: ['tracker', 'dorm', 'dining'] },
       { label: 'Hands', scenes: ['puppet'] },
       { label: 'City', scenes: ['city'] },
     ]);
-    expect(strings(sketch).join(' ')).not.toMatch(/teacher/i);
+    // The teacher scenes are on a page of their own (D73): the home page's budget has no room
+    // for them. Every scene is in one set or the other.
+    expect(sketch.TEACHER_SCENE_GROUPS).toEqual([
+      { label: 'Teachers', scenes: ['views', 'pris', 'context'] },
+    ]);
+    const home = sketch.SCENE_GROUPS.flatMap((group) => group.scenes);
+    const teachers = sketch.TEACHER_SCENE_GROUPS.flatMap((group) => group.scenes);
+    expect([...home, ...teachers]).toEqual(sketch.SCENES.map((item) => item.id));
+    // Each set links to the other, and the teacher support page is the one that shows them.
+    expect(sketch.TEACHER_SCENES_LINK.href).toBe('/research/teacher-support/#scenes');
+    expect(sketch.HOME_SCENES_LINK.href).toBe('/#learners-and-teachers');
+    const theme = readFileSync(
+      join(ROOT, 'src', 'content', 'themes', 'teacher-support.md'),
+      'utf8',
+    );
+    expect(theme).toMatch(/^scenes: teachers$/m);
+    expect(sketch.CONTROLS.pick).toBe('Pick a scene');
   });
 
   it('marks the prototype, the made-up student and the simulation on screen', () => {
@@ -192,6 +211,11 @@ describe('sketch scenes (D68)', () => {
     expect(scene('tracker').note).toContain('the pop-up’s question is an example');
     expect(scene('city').note).toMatch(/^Everything in this scene is simulated/);
     expect(scene('puppet').note).toContain('illustration');
+    // The teacher scenes' students, experiences, words and examples are made up (facts.md §5.8).
+    for (const id of ['views', 'pris', 'context'] as const) {
+      expect(scene(id).badge, id).toBe('Synthetic sample');
+      expect(scene(id).note, id).toMatch(/are made up for illustration\.$/);
+    }
   });
 
   it('shows no numbers in the prototype scene', () => {
@@ -292,7 +316,25 @@ describe('sketch scenes (D68)', () => {
       'judge',
       'turn',
       'toggle',
+      'choose',
+      'choose',
+      'choose',
     ]);
+    // A pick: a few options with their own outcomes, one of them the sample. The values name
+    // parts of the drawing and lines of the page, so they are single lowercase words.
+    for (const item of sketch.SCENES) {
+      const { task } = item;
+      if (task.kind !== 'choose') continue;
+      const values = task.options.map((option) => option.value);
+      expect(values.length, item.id).toBeGreaterThanOrEqual(2);
+      expect(new Set(values).size, item.id).toBe(values.length);
+      for (const value of values) expect(value, item.id).toMatch(/^[a-z]+$/);
+      expect(values, item.id).toContain(task.sample);
+      const labels = task.options.map((option) => option.label);
+      const outcomes = task.options.map((option) => option.outcome);
+      expect(new Set(labels).size, item.id).toBe(labels.length);
+      expect(new Set(outcomes).size, item.id).toBe(outcomes.length);
+    }
     for (const id of ['dorm', 'dining'] as const)
       for (const entry of scene(id).panel.entries)
         expect(entry.sample, `${id}: ${entry.name}`).toMatch(/^(yes|no)$/);
@@ -338,6 +380,24 @@ describe('sketch scenes (D68)', () => {
       expect(parts('city').has(channel.part), channel.part).toBe(true);
     for (const part of ['cell', 'cell-tick', 'cell-hatch'])
       expect(parts('city').has(part), part).toBe(true);
+    // A pick shows the option picked in the drawing: each option has parts of its own, and no
+    // other scene has such parts.
+    for (const item of sketch.SCENES) {
+      const picks = [...parts(item.id)].filter((part) => part.startsWith('pick-')).sort();
+      const options =
+        item.task.kind === 'choose'
+          ? item.task.options.map((option) => `pick-${option.value}`)
+          : [];
+      expect(picks, item.id).toEqual(options.sort());
+      // Each option is drawn in line as well as color: fills disappear in forced colors.
+      for (const part of picks)
+        expect(
+          DRAWINGS[item.id].regions.some((region) =>
+            region.shapes.some((shape) => shape.part === part && shape.stroke),
+          ),
+          `${item.id}: ${part}`,
+        ).toBe(true);
+    }
     for (const [id, drawing] of Object.entries(DRAWINGS)) {
       for (const region of drawing.regions) {
         expect(region.ms, id).toBeGreaterThan(0);
@@ -356,6 +416,148 @@ describe('sketch scenes (D68)', () => {
         }
       }
     }
+  });
+});
+
+describe('the papers the scenes come from, and the teacher scenes (D73)', () => {
+  const scene = (id: sketch.SceneId) => sketch.SCENES.find((item) => item.id === id)!;
+  const words = (id: sketch.SceneId) => strings(scene(id)).join(' ');
+  const publications = parseYaml(
+    readFileSync(join(ROOT, 'src', 'content', 'publications.yaml'), 'utf8'),
+  ) as Array<{
+    id: string;
+    type: string;
+    verify?: boolean;
+    year?: number;
+    venue: string;
+    url?: string;
+    award?: string;
+    factsNumber?: number;
+  }>;
+  const listed = (id: string) =>
+    publications.find((pub) => pub.id === id && pub.type !== 'in-preparation' && !pub.verify);
+
+  it('names the paper of every scene that comes from one, and it is listed on the site', () => {
+    expect(Object.fromEntries(sketch.SCENES.map((item) => [item.id, item.paper ?? null]))).toEqual({
+      tracker: null,
+      dorm: 'icalt-2026-interest-extraction',
+      dining: 'icalt-2026-interest-extraction',
+      puppet: 'hcii-2021-puppet-system',
+      city: 'dtrue-2026-csudt-framework',
+      views: 'icalt-2021-visual-efficiency',
+      pris: 'hcii-2022-information-retrieval',
+      context: 'icalt-2023-context-for-contextualizing',
+    });
+    for (const item of sketch.SCENES) {
+      if (!item.paper) continue;
+      const paper = listed(item.paper);
+      expect(paper, item.id).toBeDefined();
+      // The scene's source line names the same work: its year, at least.
+      expect(item.source, item.id).toContain(String(paper!.year));
+    }
+  });
+
+  it('links each paper to its DOI as facts.md §6 gives it, and DTRUE 2026 to nothing yet', () => {
+    for (const pub of publications) {
+      if (!pub.url) continue;
+      const doi = /^https:\/\/doi\.org\/(10\.\d{4,}\/\S+)$/.exec(pub.url);
+      expect(doi, pub.id).not.toBeNull();
+      // In the paper's own entry of facts.md §6, whole (not a prefix of a longer DOI).
+      const section = FACTS.slice(FACTS.indexOf('## 6. Publications'), FACTS.indexOf('## 7. '));
+      const n = (pub as { factsNumber?: number }).factsNumber;
+      const entry =
+        new RegExp(`\\n${n}\\. \\*?[\\s\\S]*?(?=\\n\\d+\\. |\\n\\n)`).exec(section)?.[0] ?? '';
+      expect(entry.replace(/\s+/g, ' '), pub.id).toMatch(
+        new RegExp(`DOI ${doi![1]!.replace(/[.()]/g, '\\$&')}(?=[.\\s(]|$)`),
+      );
+    }
+    for (const id of [
+      'icalt-2026-interest-extraction',
+      'hcii-2021-puppet-system',
+      'icalt-2021-visual-efficiency',
+      'hcii-2022-information-retrieval',
+      'icalt-2023-context-for-contextualizing',
+    ])
+      expect(listed(id)!.url, id).toMatch(/^https:\/\/doi\.org\//);
+    // No link was found for the DTRUE 2026 extended abstract; it is cited without one.
+    expect(listed('dtrue-2026-csudt-framework')!.url).toBeUndefined();
+  });
+
+  it('names no award for the teacher papers while ICALT 2021’s wording is VERIFY', () => {
+    for (const id of [
+      'icalt-2021-visual-efficiency',
+      'icalt-2023-context-for-contextualizing',
+      'hcii-2022-information-retrieval',
+    ])
+      expect(listed(id)!.award, id).toBeUndefined();
+    expect(FACTS_LINE).toMatch(
+      /Recognition: none on the site\. ICALT 2021's award wording \("Best Short Paper Nomination"\) is VERIFY: it stays off the site until Jimmy confirms it/,
+    );
+    for (const id of ['views', 'pris', 'context'] as const)
+      expect(words(id), id).not.toMatch(/award|best paper|nominat|mention/i);
+    // Nothing the site is built from shows the wording: pages, data, content, the Q&A library.
+    const sources = (dir: string): string[] =>
+      readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory()
+          ? sources(join(dir, entry.name))
+          : /\.(astro|ts|md|mdx|ya?ml|json)$/.test(entry.name)
+            ? [join(dir, entry.name)]
+            : [],
+      );
+    for (const file of [...sources('src'), join('content', 'qa-library.yaml')])
+      expect(readFileSync(join(ROOT, file), 'utf8'), file).not.toMatch(/short paper nomination/i);
+  });
+
+  it('keeps the teacher scenes to what facts.md §5.5 says the papers did and found', () => {
+    const results = (id: sketch.SceneId) =>
+      scene(id)
+        .results.map((result) => `${result.big ?? ''} ${result.text}`)
+        .join(' ');
+    const pinned: Array<[inFacts: RegExp, copy: string, inCopy: RegExp]> = [
+      [
+        /three visualizations of students' personal relevant information \(plain text, a graphical mind map, a story illustration\) in a hypothetical teaching scenario/,
+        `${words('views')}`,
+        /plain text, as a mind map or as a story illustration/,
+      ],
+      [
+        /visual efficiency measured as response accuracy, response time and mental effort/,
+        scene('views').summary.checkedBy,
+        /^A within-subjects study of response accuracy, response time and mental effort$/,
+      ],
+      [
+        /the story illustration and, to a lesser extent, the mind map lowered mental effort and the time needed to take in the information/,
+        results('views'),
+        /the story illustration, and to a lesser extent the mind map, lowered the mental effort and the time needed to take in the information/,
+      ],
+      [
+        /PRIS, a real-time system for personalized teaching support/,
+        scene('pris').source,
+        /^PRIS, a real-time system for personalized teaching support \(HCI International 2022\)\.$/,
+      ],
+      [
+        /compared with notecards, it showed better usability, lower teacher cognitive load and more frequent personalized teaching behaviors/,
+        results('pris'),
+        /PRIS was compared with notecards\. With PRIS, usability was better, the teacher’s cognitive load was lower, and personalized teaching happened more often/,
+      ],
+      [
+        /It used a Kinect for speech and position recognition in a classroom/,
+        words('pris'),
+        /A Kinect sensor picks up speech and position in the classroom/,
+      ],
+      [
+        /focus groups with teachers about contextualizing; three categories of context \(time, activity, location\), tied to the lesson and to students' prior experiences; design implications for adaptive teacher support systems/,
+        results('context'),
+        /^ From the focus groups, the paper identifies three categories of context, time, activity and location, each tied to the lesson and to students’ prior experiences\..*design implications for adaptive teacher support systems/,
+      ],
+    ];
+    for (const [inFacts, copy, inCopy] of pinned) {
+      expect(FACTS_LINE, String(inFacts)).toMatch(inFacts);
+      expect(copy).toMatch(inCopy);
+    }
+    // No numbers of their own: the papers' numbers are not in facts.md.
+    for (const id of ['views', 'pris', 'context'] as const)
+      for (const text of strings(scene(id)))
+        expect(text.replace(/\b(2021|2022|2023)\b/g, ''), `${id}: ${text}`).not.toMatch(/\d/);
   });
 });
 
@@ -423,8 +625,11 @@ describe('publications and links in the learners-and-teachers section', () => {
     );
     // The scenes sit after the lede and before the "Observe, model, check" figure (D68).
     const part = readFileSync(join(ROOT, 'src', 'components', 'LearnersTeachers.astro'), 'utf8');
-    expect(part.indexOf('{LEDE}')).toBeLessThan(part.indexOf('<SketchScenes />'));
-    expect(part.indexOf('<SketchScenes />')).toBeLessThan(
+    // With a link to the teacher scenes at the end of its row of scene buttons (D73).
+    const scenes = '<SketchScenes link={TEACHER_SCENES_LINK} />';
+    expect(part.indexOf('{LEDE}')).toBeGreaterThan(-1);
+    expect(part.indexOf('{LEDE}')).toBeLessThan(part.indexOf(scenes));
+    expect(part.indexOf(scenes)).toBeLessThan(
       part.indexOf('<Figure title="Observe, model, check"'),
     );
     expect(part).toContain('id="learners-and-teachers"');

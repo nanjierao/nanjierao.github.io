@@ -159,8 +159,8 @@ items:
     a: >-
       Yes. He surveyed 81 studies of teacher-support technologies, coded on teacher autonomy versus
       automation, and published three teacher-facing papers on retrieving and visualizing students'
-      experiences (IEEE ICALT 2021 — best short paper nomination; HCI International 2022; IEEE
-      ICALT 2023). An update covering generative-AI systems is in preparation.
+      experiences (IEEE ICALT 2021, HCI International 2022 and IEEE ICALT 2023). An update
+      covering generative-AI systems is in preparation.
     sources: [/research/teacher-support/]
     audience: [faculty]
     status: ready
@@ -294,8 +294,7 @@ items:
     q: "Any awards?"
     a: >-
       A Best Paper Mention at DTRUE 2026, the CISE Gartner Group Graduate Fellowship four times
-      (2021–2024), a best short paper nomination
-      at IEEE ICALT 2021, ANA Avatar XPRIZE semifinalist (2021), and the Outstanding Thesis Award
+      (2021–2024), ANA Avatar XPRIZE semifinalist (2021), and the Outstanding Thesis Award
       (top 1%) at Huazhong University of Science and Technology.
     sources: [/cv/]
     audience: [faculty, industry]

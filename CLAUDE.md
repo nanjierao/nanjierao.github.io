@@ -58,7 +58,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   the page's JavaScript budget, so its interactive pieces (the word cloud, D60; the sketch scenes,
   D68) are small plain scripts over HTML that is complete without them.
 - Styling: plain CSS with design tokens as custom properties (`src/styles/tokens.css`).
-  No Tailwind, no CSS-in-JS, no UI kit.
+  No Tailwind, no CSS-in-JS, no UI kit. Each page carries its CSS inline
+  (`build.inlineStylesheets: 'always'`, D73), so no page waits for a stylesheet.
 - Fonts self-hosted through `@fontsource` packages for Latin text; Chinese text uses the system
   CJK fonts (PingFang SC, Noto Sans CJK SC, Microsoft YaHei). No Google Fonts CDN, no trackers,
   no cookies.
@@ -151,7 +152,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 - Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
   one line, CV / Publications / Email) first, then the word cloud and portals, then the section
   "How AI learns about people and places" (D66, D68): five sketch scenes, each with one hands-on
-  step, then the learner and teacher work. The footer carries the annotation legend (D30), the
+  step and, when it comes from a paper, that paper's reference with, where facts.md §6 has one,
+  its DOI link, then the learner and teacher work. Its row of scene buttons links to the three teacher scenes on
+  /research/teacher-support/ (D73), which link back. The footer carries the annotation legend (D30), the
   public email address (D70) and a link to the Daily notes. In Recent, the cards after the three
   news items start with Daily notes, which links to /notes/ and shows the newest note, an item
   with a bold lead by its lead alone (D71).

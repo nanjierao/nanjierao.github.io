@@ -1,6 +1,8 @@
 # Publications — transcribed from content/facts.md §6 (12 peer-reviewed; firstAuthor = "*").
 # No citation metrics here (facts.md §6, §15): the site links to Google Scholar instead.
-# TODO(jimmy): DOIs/URLs from a Google Scholar BibTeX export (facts.md §6), then fill `url`.
+# `url`: a DOI link where facts.md §6 has the DOI. Five were found by web search on Nov 25, 2026
+# (D73), with ICALT 2021's page range. TODO(jimmy): check them, and send the rest from a Google
+# Scholar BibTeX export.
 # TL;DRs (D28) stay hidden while `draft: true`; Jimmy approves each by setting it to false.
 # `verify: true` mirrors a VERIFY mark in facts.md: hidden from the site until Jimmy confirms.
 
@@ -39,6 +41,7 @@
   venue: 'IEEE ICALT 2026'
   venueShort: 'ICALT'
   notes: ['Full paper']
+  url: 'https://doi.org/10.1109/ICALT68022.2026.00023'
   firstAuthor: true
   tldr:
     text: 'Browsing history found the right interests more often (69.8% vs. 56.3% confirmed); social-media posts said more about each one.'
@@ -65,6 +68,7 @@
   venue: 'IEEE ICALT 2023'
   venueShort: 'ICALT'
   details: 'pp. 71–73'
+  url: 'https://doi.org/10.1109/ICALT58122.2023.00027'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [4]).
   themes: [teacher-support]
@@ -77,7 +81,9 @@
   title: 'Enhancing the Visual Efficiency for Communicating Students’ Personal Relevant Information'
   venue: 'IEEE ICALT 2021'
   venueShort: 'ICALT'
-  award: 'Best Short Paper Nomination'
+  details: 'pp. 14–16'
+  # No `award` while its wording is VERIFY (facts.md §6 [5], §10; Jimmy, Nov 25, 2026).
+  url: 'https://doi.org/10.1109/ICALT52272.2021.00011'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [5]).
   themes: [teacher-support]
@@ -91,6 +97,7 @@
   venue: 'HCI International (HCII 2021)'
   venueShort: 'HCII'
   details: 'Springer LNCS'
+  url: 'https://doi.org/10.1007/978-3-030-77599-5_46'
   firstAuthor: true
   tldr:
     text: 'A low-cost puppet storytelling system: 3D-printed puppets tracked by a YOLO detector and IMUs, animated live in Unity.'
@@ -164,6 +171,7 @@
   venue: 'HCI International 2022, Late Breaking Posters'
   venueShort: 'HCII'
   details: 'Springer, pp. 191–197'
+  url: 'https://doi.org/10.1007/978-3-031-19682-9_25'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [11]).
   themes: [teacher-support]
