@@ -627,7 +627,7 @@ export const SCENES: Scene[] = [
       checkedBy: 'A within-subjects study of response accuracy, response time and mental effort',
     },
     source: 'Three visualizations compared in a hypothetical teaching scenario (IEEE ICALT 2021).',
-    note: 'The classroom, the student and the experiences in this scene are made up for illustration.',
+    note: 'The classroom, the tablet, the student and the experiences in this scene are made up for illustration.',
     paper: 'icalt-2021-visual-efficiency',
   },
   {
@@ -635,12 +635,12 @@ export const SCENES: Scene[] = [
     label: 'Classroom, Kinect',
     heading: 'A teacher’s words, heard by a Kinect and matched to students',
     badge: 'Synthetic sample',
-    alt: 'Line drawing: a teacher walks between tables of students in a classroom and talks. A Kinect sensor sits under the board, and a ring on the floor marks where the teacher stands. A speech bubble shows a picture of what the teacher talks about, and the table of the students it matches is highlighted.',
+    alt: 'Line drawing: a teacher walks between tables of students in a classroom and talks. A Kinect sensor under the board picks up speech and position in the room. A speech bubble shows a picture of what the teacher talks about, and the students it matches are highlighted at their table.',
     steps: [
       { line: 'A classroom with tables of students.', draw: 0 },
       { line: 'A teacher walks between the tables and talks.', draw: 1 },
       {
-        line: 'A Kinect sensor picks up what the teacher says and where the teacher stands.',
+        line: 'A Kinect sensor picks up speech and position in the classroom.',
         draw: 2,
       },
       {
@@ -659,7 +659,7 @@ export const SCENES: Scene[] = [
       empty: 'Nothing picked up yet.',
       entries: [
         { glyph: 'mic', name: 'Speech', why: 'the teacher’s words, recognized as text' },
-        { glyph: 'pin', name: 'Position', why: 'where the teacher stands, from the Kinect' },
+        { glyph: 'pin', name: 'Position', why: 'position in the classroom, from the Kinect' },
         {
           glyph: 'card',
           name: 'Students',
@@ -676,18 +676,17 @@ export const SCENES: Scene[] = [
           value: 'volcano',
           label: '“Today: volcanoes.”',
           outcome:
-            'PRIS finds two students at the table on the left: one hiked up a volcano on a family trip, one built a model volcano.',
+            'PRIS finds two students: one hiked up a volcano on a family trip, one built a model volcano.',
         },
         {
           value: 'pizza',
           label: '“Let’s cut a pizza into eighths.”',
-          outcome:
-            'PRIS finds a student at the middle table who helps at a family pizza shop on weekends.',
+          outcome: 'PRIS finds a student who helps at a family pizza shop on weekends.',
         },
         {
           value: 'bees',
           label: '“Who has seen a beehive?”',
-          outcome: 'PRIS finds a student at the table on the right whose family keeps bees.',
+          outcome: 'PRIS finds a student whose family keeps bees.',
         },
       ],
       sample: 'volcano',
@@ -700,7 +699,7 @@ export const SCENES: Scene[] = [
     ],
     locked: 'Pick what the teacher says to see what the study found.',
     summary: {
-      data: 'The teacher’s speech and position, from a Kinect',
+      data: 'Speech and position in the classroom, from a Kinect',
       builds: 'In real time, students’ personal information that relates to what the teacher says',
       checkedBy: 'A study that compared PRIS with notecards',
     },
@@ -713,13 +712,13 @@ export const SCENES: Scene[] = [
     label: 'Staff room, focus group',
     heading: 'What teachers draw on to make a lesson relevant',
     badge: 'Synthetic sample',
-    alt: 'Line drawing: four teachers sit around a table in a staff room and talk, with a lesson plan in the middle. Three speech bubbles above them hold a clock, a running figure and a map pin; the bubble of the kind of context picked is highlighted.',
+    alt: 'Line drawing: teachers sit around a table in a staff room and talk, with a lesson plan in the middle. Three speech bubbles above them hold a clock, a running figure and a map pin; the bubble of the kind of context picked is highlighted.',
     steps: [
       { line: 'A staff room after school.', draw: 0 },
       { line: 'Teachers meet in a focus group, with a lesson plan on the table.', draw: 1 },
       { line: 'They describe how they link a lesson to their students’ lives.', draw: 2 },
       {
-        line: 'Three kinds of context come up: time, activity and location.',
+        line: 'Three kinds of context stand out: time, activity and location.',
         flyFrom: 'bubbles',
         reveal: [0, 1, 2],
       },
@@ -763,7 +762,7 @@ export const SCENES: Scene[] = [
     },
     results: [
       {
-        text: 'The focus groups named three categories of context, time, activity and location, each tied to the lesson and to students’ prior experiences.',
+        text: 'From the focus groups, the paper identifies three categories of context, time, activity and location, each tied to the lesson and to students’ prior experiences.',
       },
       {
         text: 'The paper turns them into design implications for adaptive teacher support systems.',
@@ -774,10 +773,10 @@ export const SCENES: Scene[] = [
       data: 'Focus groups with teachers',
       builds:
         'Three categories of context, and design implications for adaptive teacher support systems',
-      checkedBy: 'Teachers, describing their own experience of contextualizing',
+      checkedBy: 'No separate check reported: the categories come from what the teachers described',
     },
     source: 'Focus groups with teachers on making instruction relevant (IEEE ICALT 2023).',
-    note: 'The examples in this scene are made up for illustration.',
+    note: 'The staff room, the teachers and the examples in this scene are made up for illustration.',
     paper: 'icalt-2023-context-for-contextualizing',
   },
 ];

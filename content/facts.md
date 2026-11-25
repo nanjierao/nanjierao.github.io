@@ -226,7 +226,8 @@ they supersede the CVs and the research statement wherever they differ.
     speech-recognition-based pipeline that retrieves students' personal information; compared
     with notecards, it showed better usability, lower teacher cognitive load and more frequent
     personalized teaching behaviors. It used a Kinect for speech and position recognition in a
-    classroom (Jimmy, relayed Nov 25, 2026).
+    classroom (Jimmy, relayed Nov 25, 2026). `TODO(jimmy)`: whose position the Kinect tracked
+    (the teacher's or the students'), and what PRIS did with it; the scene says neither.
   - ICALT 2023: focus groups with teachers about contextualizing; three categories of context
     (time, activity, location), tied to the lesson and to students' prior experiences; design
     implications for adaptive teacher support systems.
@@ -309,11 +310,15 @@ says so.
   buttons; one per teacher-facing paper (§5.5), in the same form, each with one choice to make.
   Their students, experiences, words and examples are made up, and each scene says so.
   - Classroom, tablet (ICALT 2021): a student's experiences shown as plain text, a mind map or a
-    story illustration; the study's result as in §5.5. Design: the three made-up experiences.
-  - Classroom, Kinect (HCII 2022): a Kinect picks up the teacher's speech and position; PRIS
+    story illustration; the study's result as in §5.5. Design: the classroom, the tablet and the
+    three made-up experiences.
+  - Classroom, Kinect (HCII 2022): a Kinect picks up speech and position in the classroom; PRIS
     looks up students' personal information that relates to the words; the comparison with
-    notecards as in §5.5. Design: what the teacher says and the students it matches.
-  - Staff room, focus group (ICALT 2023): the three categories of context; design: the examples.
+    notecards as in §5.5. Design: what the teacher says, the students it matches and where they
+    sit in the drawing.
+  - Staff room, focus group (ICALT 2023): the paper identifies the three categories of context
+    from the focus groups; no separate check of them is recorded here. Design: the staff room,
+    the teachers, the lesson plan and the examples.
 - Every scene that comes from a published paper ends with the paper's full reference, linked to
   its DOI where §6 has one (Jimmy, relayed Nov 25, 2026). The scene buttons sit under a "Pick a
   scene" cue and look like tabs, with the picked one filled in.

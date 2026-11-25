@@ -534,12 +534,12 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
       [
         /It used a Kinect for speech and position recognition in a classroom/,
         words('pris'),
-        /A Kinect sensor picks up what the teacher says and where the teacher stands/,
+        /A Kinect sensor picks up speech and position in the classroom/,
       ],
       [
         /focus groups with teachers about contextualizing; three categories of context \(time, activity, location\), tied to the lesson and to students' prior experiences; design implications for adaptive teacher support systems/,
         results('context'),
-        /^ The focus groups named three categories of context, time, activity and location, each tied to the lesson and to students’ prior experiences\..*design implications for adaptive teacher support systems/,
+        /^ From the focus groups, the paper identifies three categories of context, time, activity and location, each tied to the lesson and to students’ prior experiences\..*design implications for adaptive teacher support systems/,
       ],
     ];
     for (const [inFacts, copy, inCopy] of pinned) {
