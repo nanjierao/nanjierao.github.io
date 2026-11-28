@@ -218,6 +218,8 @@ describe('sketch scenes (D68)', () => {
     );
     expect(theme).toMatch(/^scenes: teachers$/m);
     expect(sketch.CONTROLS.pick).toBe('Pick a scene');
+    // Each button shows its label on two lines, split at the comma (D79): a place, then a thing.
+    for (const item of sketch.SCENES) expect(item.label.split(', '), item.id).toHaveLength(2);
   });
 
   it('marks the prototype, the made-up student and the simulation on screen', () => {
@@ -850,17 +852,23 @@ describe('publications and links in the learners-and-teachers section', () => {
     ]);
     expect(existsSync(join(ROOT, 'src', 'pages', 'learners-and-teachers.astro'))).toBe(false);
     const home = readFileSync(join(ROOT, 'src', 'pages', 'index.astro'), 'utf8');
+    // D79: the intro strip, the scenes, the word cloud, then the studies and Research.
+    expect(home.indexOf('<SceneSection />')).toBeGreaterThan(home.indexOf('class="intro"'));
+    expect(home.indexOf('<SceneSection />')).toBeLessThan(home.indexOf('<WordCloud />'));
     expect(home.indexOf('<WordCloud />')).toBeLessThan(home.indexOf('<LearnersTeachers />'));
     expect(home.indexOf('<LearnersTeachers />')).toBeLessThan(
       home.indexOf('id="research-heading"'),
     );
-    // The scenes sit after the lede and before the "Observe, model, check" figure (D68).
+    // The scenes have a section of their own, under the title; the studies keep the lede.
+    const scenes = readFileSync(join(ROOT, 'src', 'components', 'SceneSection.astro'), 'utf8');
+    expect(scenes).toContain('<SketchScenes');
+    expect(scenes).toContain('{TITLE}');
     const part = readFileSync(join(ROOT, 'src', 'components', 'LearnersTeachers.astro'), 'utf8');
-    // All nine scenes, the teacher scenes among them (D76).
-    const scenes = '<SketchScenes />';
+    expect(part).not.toContain('SketchScenes');
+    expect(part).toContain('{STUDIES_TITLE}');
+    expect(page.STUDIES_TITLE).toBe('Modeling learners and teachers');
     expect(part.indexOf('{LEDE}')).toBeGreaterThan(-1);
-    expect(part.indexOf('{LEDE}')).toBeLessThan(part.indexOf(scenes));
-    expect(part.indexOf(scenes)).toBeLessThan(
+    expect(part.indexOf('{LEDE}')).toBeLessThan(
       part.indexOf('<Figure title="Observe, model, check"'),
     );
     expect(part).toContain('id="learners-and-teachers"');

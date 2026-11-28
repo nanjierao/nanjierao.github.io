@@ -161,13 +161,14 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 ## Design rules
 
 - Follow `docs/DESIGN.md`. Until it exists, use the neutral baseline in SITE_PLAN §8.
-- Homepage order (D21, D64): intro strip (name with 饶楠杰, headshot, role line from facts.md §2,
-  one line, CV / Publications / Email) first, then the word cloud and portals, then the section
-  "How AI learns about people and places" (D66, D68): nine sketch scenes, the five on learners,
-  hands and a city and then the four teacher scenes (D73, D75, D76), each with one hands-on
-  step and, when it comes from a paper, that paper's reference with, where facts.md §6 has one,
-  its DOI link, then the learner and teacher work. /research/teacher-support/ lists the teacher
-  scenes and links each to the home page. The Research section then
+- Homepage order (D21, D64, D79): intro strip (name with 饶楠杰, headshot, role line from
+  facts.md §2, one line, CV / Publications / Email) first, then the section "How AI learns
+  about people and places" (D68, D79): nine sketch scenes, the five on learners, hands and a
+  city and then the four teacher scenes (D73, D75, D76), each with one hands-on step and, when
+  it comes from a paper, that paper's reference with, where facts.md §6 has one, its DOI link.
+  Then the word cloud and portals, then the learner and teacher studies (D66, under their
+  original title "Modeling learners and teachers"). /research/teacher-support/ lists
+  the teacher scenes and links each to the home page. The Research section then
   has an Experiments heading and a line on the controlled experiments, linking
   /research/experiments/ (D74), before its Research overview link. The footer
   carries the annotation legend (D30), the public email address (D70) and a link to the Daily

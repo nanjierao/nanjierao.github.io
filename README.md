@@ -8,7 +8,7 @@ Jimmy with Claude Code cloud sessions. This repository is public.
 `/post-zhihu` in a Claude Code session.
 
 - `CLAUDE.md` — standing instructions for Claude Code (stack, content/image/AI rules, open-source-first, pull-request workflow)
-- `docs/SITE_PLAN.md` — the plan (v5): intro strip + word cloud + three portals + blog + easter egg, architecture, timeline, Jimmy-only tasks
+- `docs/SITE_PLAN.md` — the plan (v5): intro strip + sketch scenes + word cloud + three portals + blog + easter egg, architecture, timeline, Jimmy-only tasks
 - `docs/SESSION_PROMPTS.md` — browser setup, then copy-paste prompts for sessions S1–S10, in order
 - `docs/DECISIONS.md` — decision log (what was decided, why, status)
 - `docs/THIRD_PARTY.md` — vetted open-source projects to adapt, with licenses

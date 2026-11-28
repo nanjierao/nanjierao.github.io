@@ -1,14 +1,14 @@
 ---
-// The home page's section "How AI learns about people and places" (D66, D68): the sketch
-// scenes first, then the learner and teacher work they come from (observing learners, the
-// teacher's side, and the checks). The sentences and numbers live in
+// The home page's section on the studies the sketch scenes come from (D66, D79): the learner
+// and teacher work (observing learners, the teacher's side, and the checks). The scenes have a
+// section of their own, first on the page (SceneSection.astro); this one follows the word
+// cloud. The sentences and numbers live in
 // src/data/learners-teachers.ts so a test can read them; headings and fixed labels are here.
 // The citations come from the publication list the rest of the site uses.
 import Figure from './figures/Figure.astro';
 import Flow from './figures/Flow.astro';
 import PairedBars from './figures/PairedBars.astro';
 import PublicationList from './PublicationList.astro';
-import SketchScenes from './SketchScenes.astro';
 import { STUDY2_SOURCES } from '../data/figures.ts';
 import {
   BREADTH_INTRO,
@@ -23,7 +23,7 @@ import {
   TEACHER_INTRO,
   TEACHER_ITEMS,
   TEACHER_PUBLICATIONS,
-  TITLE,
+  STUDIES_TITLE,
 } from '../data/learners-teachers.ts';
 import { getPublicationsByIds } from '../lib/content.ts';
 
@@ -32,10 +32,8 @@ const breadthPapers = await getPublicationsByIds(BREADTH_PUBLICATIONS);
 ---
 
 <section class="lt" id="learners-and-teachers" aria-labelledby="lt-heading">
-  <h2 id="lt-heading">{TITLE}</h2>
+  <h2 id="lt-heading">{STUDIES_TITLE}</h2>
   <p class="lede">{LEDE}</p>
-
-  <SketchScenes />
 
   <div class="prose">
     {INTRO.map((paragraph) => (

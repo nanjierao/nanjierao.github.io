@@ -1,0 +1,30 @@
+---
+// The sketch scenes, first on the home page after the intro strip (D79). The studies they come
+// from follow the word cloud (LearnersTeachers.astro).
+import SketchScenes from './SketchScenes.astro';
+import { TITLE } from '../data/learners-teachers.ts';
+---
+
+<section class="scenes" id="scenes" aria-labelledby="scenes-heading">
+  <h2 id="scenes-heading">{TITLE}</h2>
+  <SketchScenes skipTo="#topics-heading" />
+</section>
+
+<style>
+  /* Close to the intro strip above, and closed by a rule like it, so the word cloud that
+     follows reads as its own block. */
+  .scenes {
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .scenes h2 {
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-2);
+  }
+
+  .scenes :global(.sk) {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+</style>

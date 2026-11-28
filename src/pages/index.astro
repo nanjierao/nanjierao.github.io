@@ -1,6 +1,7 @@
 ---
-// Homepage until S3 (D21: intro strip first, then the word cloud). The portals and the easter
-// egg arrive with the chosen design (S2, S3).
+// Homepage until S3 (D21, D79: the intro strip, the sketch scenes, the word cloud, then the
+// learner and teacher studies). The portals and the easter egg arrive with the chosen design
+// (S2, S3).
 import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ChineseName from '../components/ChineseName.astro';
@@ -8,6 +9,7 @@ import ElsewhereLinks from '../components/ElsewhereLinks.astro';
 import GitHubActivity from '../components/GitHubActivity.astro';
 import LatestVideo from '../components/LatestVideo.astro';
 import LearnersTeachers from '../components/LearnersTeachers.astro';
+import SceneSection from '../components/SceneSection.astro';
 import TimeAware from '../components/TimeAware.astro';
 import WordCloud from '../components/WordCloud.astro';
 import { HEADSHOT_ALT, PERSON, POSITIONING, UMBRELLA } from '../data/site.ts';
@@ -88,6 +90,8 @@ const cvPdf = hasCvPdf();
       <ElsewhereLinks label="Elsewhere" />
     </div>
   </section>
+
+  <SceneSection />
 
   <section aria-labelledby="topics-heading">
     <h2 id="topics-heading" class="visually-hidden">
@@ -333,6 +337,26 @@ const cvPdf = hasCvPdf();
 
   .intro__actions li {
     margin: 0;
+  }
+
+  /* On a wide screen the Elsewhere links sit on the buttons' row, so the scenes start higher. */
+  @media (min-width: 62rem) {
+    .intro {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        'name name photo'
+        'role role photo'
+        'line line photo'
+        'actions links photo';
+    }
+
+    .intro__actions {
+      margin-bottom: 0;
+    }
+
+    .intro__links {
+      align-self: center;
+    }
   }
 
   .contexts {
