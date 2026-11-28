@@ -9,7 +9,8 @@
 // file, an image stream it cannot walk or whose length does not add up, a picture followed by
 // more data, JPEG data outside the image streams it found, a stream it cannot decode, an image
 // that keeps XMP in a stream of its own, camera fields in a metadata stream, a display's details
-// in a color profile it cannot blank, a file attachment.
+// in a color profile it cannot blank, a file attachment, an application's private data, an author
+// record outside the document information (a figure's own), an included figure's file name.
 import { inflateSync } from 'node:zlib';
 
 export interface PdfJpegBlock {
@@ -47,11 +48,13 @@ const MAX_INFLATED = 128 * 1024 * 1024;
 /**
  * A display's color profile says which display it was measured on. Apple's profiles keep that in
  * two tags of their own: 'mmod' (make, model, serial number, date of manufacture) and 'ndin'
- * (the panel's native values). No color engine reads either, so their contents can be blanked
- * and the profile converts colors exactly as before. The profile's name and its calibration
- * curves ('vcgt') stay: a color engine may read them, and they identify no single display.
+ * (the panel's native values). Profiles made from a display's EDID (colord, DisplayCAL) keep its
+ * serial number and EDID hash in the standard 'meta' dictionary. No color engine reads these
+ * tags, so their contents can be blanked and the profile converts colors exactly as before. The
+ * profile's name and its calibration curves ('vcgt') stay: a color engine may read them, and
+ * they identify no single display.
  */
-const DISPLAY_TAGS = new Set(['mmod', 'ndin']);
+const DISPLAY_TAGS = new Set(['mmod', 'ndin', 'meta']);
 const DISPLAY_KIND = 'display details in a color profile';
 
 interface DisplayDetails {
@@ -67,7 +70,9 @@ function displayDetails(profile: Uint8Array): DisplayDetails {
   const u32 = (at: number) =>
     Buffer.from(profile.buffer, profile.byteOffset + at, 4).readUInt32BE(0);
   const tags: Array<{ name: string; from: number; to: number }> = [];
-  for (let i = 0, count = u32(128); i < count; i++) {
+  const count = u32(128);
+  const tableEnd = 132 + count * 12;
+  for (let i = 0; i < count; i++) {
     const at = 132 + i * 12;
     // A tag table that runs past the profile: not a profile this code can read.
     if (at + 12 > profile.length) return { ranges: [], unsure: true };
@@ -84,7 +89,9 @@ function displayDetails(profile: Uint8Array): DisplayDetails {
     const shared = tags.some(
       (other) => !DISPLAY_TAGS.has(other.name) && other.from < tag.to && tag.from < other.to,
     );
-    if (shared || tag.to > profile.length) details.unsure = true;
+    // Data inside the header or the tag table is no legal layout: blanking it would change how
+    // the profile reads.
+    if (shared || tag.to > profile.length || tag.from < tableEnd) details.unsure = true;
     else if (profile.subarray(tag.from + 8, tag.to).some((byte) => byte !== 0))
       details.ranges.push([tag.from + 8, tag.to]);
   }
@@ -123,8 +130,13 @@ function classify(marker: number, payload: Uint8Array): Classified {
   if (marker === 0xee && head.startsWith('Adobe')) return tail('data after the Adobe segment', 12);
   if (marker === 0xe2 && head.startsWith('ICC_PROFILE\0')) {
     // A large profile spans segments. Only the first one starts as a profile does, with the
-    // header and the tag table; for the others there is nothing to read here.
-    const { ranges, unsure } = displayDetails(payload.subarray(14));
+    // header and the tag table; for the others there is nothing to read here. A first segment
+    // too short for the header and the tag count, or without the profile's signature, cannot
+    // be vouched for.
+    const first = payload[12] === 1;
+    const profile = payload.subarray(14);
+    const readable = profile.length >= 132 && latin1(profile, 36, 40) === 'acsp';
+    const { ranges, unsure } = displayDetails(profile);
     return {
       blank: ranges.map(([from, to]) => ({
         kind: DISPLAY_KIND,
@@ -132,7 +144,10 @@ function classify(marker: number, payload: Uint8Array): Classified {
         to: 14 + to,
         keepMarker: true,
       })),
-      note: unsure ? 'has a color profile with display details this tool cannot place' : undefined,
+      note:
+        unsure || (first && !readable)
+          ? 'has a color profile with display details this tool cannot place'
+          : undefined,
     };
   }
   if (marker === 0xe1) {
@@ -147,6 +162,19 @@ function classify(marker: number, payload: Uint8Array): Classified {
 }
 
 const isMetadataMarker = (marker: number) => (marker >= 0xe0 && marker <= 0xef) || marker === 0xfe;
+
+/**
+ * Segments a decoder reads: the frame headers (SOF0 to SOF15, except the three codes that are
+ * not frames), Huffman and arithmetic-coding tables, quantization tables, the restart interval,
+ * the scan header, and the number of lines. Any other kind could carry anything, and a decoder
+ * skips it, so it is reported.
+ */
+const isDecoderMarker = (marker: number) =>
+  (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc8) ||
+  marker === 0xdb ||
+  marker === 0xda ||
+  marker === 0xdd ||
+  marker === 0xdc;
 
 interface JpegWalk {
   blocks: PdfJpegBlock[];
@@ -185,6 +213,11 @@ function walkJpeg(bytes: Uint8Array, start: number, limit: number): JpegWalk {
     const payloadEnd = i + 2 + length;
     if (length < 2) return stop('has a segment with an impossible length');
     if (payloadEnd > limit) return stop('has a segment that runs past the end of the stream');
+    if (!isMetadataMarker(marker) && !isDecoderMarker(marker))
+      notes.push(`has a segment of a kind this tool does not know (0x${marker.toString(16)})`);
+    // The number of lines is two bytes; a longer segment holds something else.
+    if (marker === 0xdc && length !== 4)
+      notes.push('has a number-of-lines segment with more in it');
     if (isMetadataMarker(marker)) {
       const found = classify(marker, bytes.subarray(payloadStart, payloadEnd));
       for (const range of found.blank)
@@ -239,7 +272,22 @@ function signatures(text: string): string[] {
   // A JPEG's XMP segment ends its namespace with a NUL; a PDF's own XMP packet does not.
   if (text.includes('http://ns.adobe.com/xap/1.0/\0')) found.push('XMP in an image');
   if (text.includes('Photoshop 3.0\x008BIM')) found.push('IPTC/Photoshop');
+  // The same blocks without their JPEG wrapper, as an application's private data keeps them: a
+  // TIFF header whose first directory follows it (EXIF's own layout; a multi-picture index has
+  // it too), and Photoshop's IPTC record.
+  if (unwrapped(text, ['II*\0\x08\0\0\0', 'MM\0*\0\0\0\x08'], ['Exif\0\0', 'MPF\0']))
+    found.push('TIFF/EXIF');
+  if (unwrapped(text, ['8BIM\x04\x04'], ['Photoshop 3.0\0']) && !found.includes('IPTC/Photoshop'))
+    found.push('IPTC/Photoshop');
   return found;
+}
+
+/** Whether one of `needles` occurs in `text` without one of `wrappers` right before it. */
+function unwrapped(text: string, needles: string[], wrappers: string[]): boolean {
+  for (const needle of needles)
+    for (let at = text.indexOf(needle); at >= 0; at = text.indexOf(needle, at + 1))
+      if (!wrappers.some((w) => at >= w.length && text.startsWith(w, at - w.length))) return true;
+  return false;
 }
 
 /**
@@ -252,6 +300,38 @@ const PHOTO_XMP =
 const INLINE_JPEG = /\/(?:DCT|DCTDecode)\b[^]{0,200}?\bID\s/;
 /** A file attached to the PDF: the name tree, a file specification, or the file's own stream. */
 const ATTACHMENT = /\/EmbeddedFiles?\b|\/Type\s*\/Filespec\b|\/EF\s*(?:<<|\d+\s+\d+\s+R)/;
+/** An application's private data: a drawing program's own file, its thumbnails, its settings. */
+const PRIVATE_DATA = /\/PieceInfo\b/;
+/** What pdfTeX keeps of an included PDF figure: its file name (a path) and its information. */
+const INCLUDED_FIGURE = /\/PTEX[._](?:FileName|InfoDict)\b/;
+const AUTHOR = /\/Author\b/g;
+
+/** A PDF name as it means: "#xx" escapes resolved, and a filter's short name made long. */
+const FILTER_NAMES: Record<string, string> = {
+  '/AHx': '/ASCIIHexDecode',
+  '/A85': '/ASCII85Decode',
+  '/LZW': '/LZWDecode',
+  '/Fl': '/FlateDecode',
+  '/RL': '/RunLengthDecode',
+  '/CCF': '/CCITTFaxDecode',
+  '/DCT': '/DCTDecode',
+};
+const filterName = (name: string) => {
+  const plain = name.replace(/#([0-9a-fA-F]{2})/g, (_, hex: string) =>
+    String.fromCharCode(parseInt(hex, 16)),
+  );
+  return FILTER_NAMES[plain] ?? plain;
+};
+/** The filters of a picture's pixels that hold nothing but the pixels. */
+const PIXEL_FILTERS = new Set([
+  '/FlateDecode',
+  '/LZWDecode',
+  '/RunLengthDecode',
+  '/CCITTFaxDecode',
+  '/JBIG2Decode',
+  '/ASCII85Decode',
+  '/ASCIIHexDecode',
+]);
 
 function asciiHex(text: string): Buffer {
   const digits = text.split('>')[0]!.replace(/\s+/g, '');
@@ -331,10 +411,10 @@ function pdfStreams(text: string): PdfStream[] {
       if (/^(?:\r\n|\r|\n)?endstream/.test(text.slice(stated, stated + 11))) end = stated;
       else unsure = true;
     } else if (text.slice(start, end).includes('endobj')) unsure = true;
-    const filter = /\/Filter\s*(\[[^\]]*\]|\/[A-Za-z0-9]+)/.exec(dict);
+    const filter = /\/Filter\s*(\[[^\]]*\]|\/[^\s/[\]<>(){}%]+)/.exec(dict);
     streams.push({
       dict,
-      filters: filter?.[1]!.match(/\/[A-Za-z0-9]+/g) ?? [],
+      filters: (filter?.[1]!.match(/\/[^\s/[\]<>(){}%]+/g) ?? []).map(filterName),
       start,
       end,
       unsure,
@@ -344,6 +424,55 @@ function pdfStreams(text: string): PdfStream[] {
   return streams;
 }
 
+/**
+ * Author records that are not the document's own: the document information dictionary (the one
+ * a trailer names as /Info) may say who wrote the paper, and a reader shows it. An /Author key
+ * anywhere else, such as in the record a drawing program leaves for each figure, names someone
+ * the pages may not, and no reader shows it. Counted in the file's text and, for a PDF that
+ * compresses its objects, in each object stream, by the object the key sits in.
+ */
+function authorsOutsideInfo(
+  text: string,
+  objectStreams: Array<{ dict: string; inside: string }>,
+): number {
+  const info = new Set([...text.matchAll(/\/Info\s+(\d+)\s+\d+\s+R\b/g)].map((m) => Number(m[1])));
+  const starts = [...text.matchAll(/(?<![0-9])(\d+)\s+\d+\s+obj\b/g)].map((m) => ({
+    at: m.index,
+    id: Number(m[1]),
+  }));
+  let outside = 0;
+  for (const { index } of text.matchAll(AUTHOR)) {
+    let low = 0;
+    let high = starts.length - 1;
+    let found = -1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (starts[mid]!.at < index) {
+        found = mid;
+        low = mid + 1;
+      } else high = mid - 1;
+    }
+    const object = found >= 0 ? starts[found]! : undefined;
+    const inObject = object && !text.slice(object.at, index).includes('endobj');
+    if (!inObject || !info.has(object.id)) outside++;
+  }
+  for (const { dict, inside } of objectStreams) {
+    const first = Number(/\/First\s+(\d+)/.exec(dict)?.[1] ?? NaN);
+    const header = inside
+      .slice(0, Number.isFinite(first) ? first : 0)
+      .trim()
+      .split(/\s+/);
+    const objects: Array<{ id: number; at: number }> = [];
+    for (let i = 0; i + 1 < header.length; i += 2)
+      objects.push({ id: Number(header[i]), at: first + Number(header[i + 1]) });
+    for (const { index } of inside.matchAll(AUTHOR)) {
+      const object = objects.filter((o) => o.at <= index).at(-1);
+      if (!object || !info.has(object.id)) outside++;
+    }
+  }
+  return outside;
+}
+
 /** Every image stream of a PDF that is stored as a JPEG, with its metadata segments. */
 export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
   const text = latin1(bytes);
@@ -351,6 +480,12 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
   const unhandled: string[] = [];
   const covered: Array<[number, number]> = [];
   let attachment = ATTACHMENT.test(text);
+  let privateData = PRIVATE_DATA.test(text);
+  let includedFigure = INCLUDED_FIGURE.test(text);
+  /** Decoded streams that hold objects; author records are looked for in them too. */
+  const objectStreams: Array<{ dict: string; inside: string }> = [];
+  /** Author keys in decoded streams that hold no objects (a page's inline property lists). */
+  let authorsInContent = 0;
   if (/\/Encrypt\s*(?:<<|\d+\s+\d+\s+R)/.test(text))
     unhandled.push('an encrypted file, which this scan cannot read');
   for (const { dict, filters, start, end, unsure } of pdfStreams(text)) {
@@ -384,7 +519,14 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
       unhandled.push(`a JPEG 2000 image stream ${at}`);
     } else if (/\/Filter\s+\d+\s+\d+\s+R\b/.test(dict)) {
       unhandled.push(`a stream ${at} whose filter is named in another object`);
-    } else if (!image) {
+    } else if (image) {
+      // A picture's pixels: only filters that hold nothing else.
+      const unknown = filters.filter((name) => !PIXEL_FILTERS.has(name));
+      if (unknown.length > 0)
+        unhandled.push(
+          `an image stream ${at} with a filter this scan does not know (${unknown.join(' ')})`,
+        );
+    } else {
       // Everything that is not a picture's pixels: page content, object streams, metadata,
       // fonts, color profiles, attachments. Read it after its filters, or say that it could
       // not be read. (A cross-reference stream holds only offsets.)
@@ -402,13 +544,37 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
       if (inside === null) {
         unhandled.push(`a stream ${at} that this scan cannot read (${why})`);
       } else {
-        if (filters.length > 0)
+        if (filters.length > 0) {
           for (const kind of signatures(inside))
             unhandled.push(`${kind} inside a compressed stream ${at}`);
+          // A whole picture inside, such as a drawing program's thumbnail or an original.
+          const buffer = Buffer.from(inside, 'latin1');
+          for (
+            let i = inside.indexOf('\xff\xd8\xff');
+            i >= 0;
+            i = inside.indexOf('\xff\xd8\xff', i + 1)
+          )
+            if (looksLikeJpeg(buffer, i)) {
+              unhandled.push(`JPEG data inside a compressed stream ${at}`);
+              break;
+            }
+        }
         if (INLINE_JPEG.test(inside)) unhandled.push(`an inline JPEG image inside a stream ${at}`);
-        if (/\/Type\s*\/Metadata\b/.test(dict) && PHOTO_XMP.test(inside))
-          unhandled.push(`a metadata stream ${at} with camera, location or contact fields`);
-        if (/\/Type\s*\/ObjStm\b/.test(dict) && ATTACHMENT.test(inside)) attachment = true;
+        if (PHOTO_XMP.test(inside))
+          unhandled.push(
+            /\/Type\s*\/Metadata\b/.test(dict)
+              ? `a metadata stream ${at} with camera, location or contact fields`
+              : `camera, location or contact fields in a stream ${at}`,
+          );
+        if (/\/Type\s*\/ObjStm\b/.test(dict)) {
+          objectStreams.push({ dict, inside });
+          if (ATTACHMENT.test(inside)) attachment = true;
+          if (PRIVATE_DATA.test(inside)) privateData = true;
+          if (INCLUDED_FIGURE.test(inside)) includedFigure = true;
+        } else if (filters.length > 0) {
+          // Raw streams are counted with the file's text below.
+          authorsInContent += [...inside.matchAll(AUTHOR)].length;
+        }
         // A color profile the PDF itself carries can describe one display, too.
         if (inside.startsWith('acsp', 36)) {
           const profile = displayDetails(Buffer.from(inside, 'latin1'));
@@ -417,11 +583,21 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
         }
       }
     }
-    // XMP that the PDF keeps for an image in a stream of its own.
-    if (image && /\/Metadata\b/.test(dict))
-      unhandled.push(`an image ${at} with a metadata stream of its own`);
+    // XMP that the PDF keeps for an image, or for an included figure, in a stream of its own.
+    if (/\/Metadata\s+\d+\s+\d+\s+R\b/.test(dict)) {
+      if (image) unhandled.push(`an image ${at} with a metadata stream of its own`);
+      else if (/\/Subtype\s*\/Form\b/.test(dict))
+        unhandled.push(`a figure ${at} with a metadata stream of its own`);
+    }
   }
   if (attachment) unhandled.push('a file attachment');
+  if (privateData) unhandled.push('an application’s private data (/PieceInfo)');
+  if (includedFigure) unhandled.push('an included figure’s file name or information (pdfTeX)');
+  const authors = authorsOutsideInfo(text, objectStreams) + authorsInContent;
+  if (authors > 0)
+    unhandled.push(
+      `${authors} author record${authors === 1 ? '' : 's'} outside the document information, such as a figure’s own`,
+    );
   // JPEG data anywhere else in the file: an image stream the search above did not pair with a
   // dictionary. A thumbnail inside a photo's EXIF lies within that photo's stream.
   let next = 0;

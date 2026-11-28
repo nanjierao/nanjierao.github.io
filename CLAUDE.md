@@ -111,8 +111,11 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   says about the display. The file keeps its length and every page renders as before.
   `check:privacy` fails on a PDF that still has any, and on what the scan cannot vouch for (an
   encrypted file, a stream it cannot read, an image stream whose length does not add up, a
-  picture with more data after it, an image with a metadata stream of its own, camera fields in
-  a metadata stream, a file attachment); `strip-pdf` prints where.
+  picture with more data after it, a JPEG segment or a filter it does not know, an image or a
+  figure with a metadata stream of its own, camera, location or contact fields in any stream,
+  photo metadata or a JPEG inside a compressed stream, an application's private data, author
+  records outside the document information, pdfTeX's record of an included figure, a file
+  attachment); `strip-pdf` prints where.
 
 ## Content rules (non-negotiable)
 

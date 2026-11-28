@@ -35,7 +35,11 @@ const XMP = segment(
 );
 const PHOTOSHOP = segment(0xed, 'Photoshop 3.0\x008BIM\x04\x04\0\0\0\0\0\x05sample');
 const COMMENT = segment(0xfe, 'made with a sample tool');
-const ICC = segment(0xe2, 'ICC_PROFILE\0\x01\x01' + 'profile-bytes');
+// A color profile in one segment: a header, a tag table and one tag a color engine reads.
+const ICC = segment(
+  0xe2,
+  'ICC_PROFILE\0\x01\x01' + profile([['rXYZ', 'XYZ \0\0\0\0primaries...']]),
+);
 const ADOBE = segment(0xee, 'Adobe\0d\0\0\0\0\x01');
 const TABLE = segment(0xdb, '\0' + '\x10'.repeat(64));
 // The image data of a scan, with a stuffed 0xFF and a restart marker inside it.
@@ -502,7 +506,7 @@ describe('photo metadata inside a PDF (D78)', () => {
     expect(problems(indirect)).toEqual([]);
     expect(scanPdfImages(indirect).jpegs[0]!.blocks.map((block) => block.kind)).toEqual(['EXIF']);
     // The words "endstream" and "endobj" inside a picture do not end it: its length does.
-    const wordy = jpeg(iccSegment(' endstream endobj '), EXIF);
+    const wordy = jpeg(iccSegment(profile([['desc', 'desc\0\0\0\0 endstream endobj ']])), EXIF);
     const file = pdf(page, image(wordy), content);
     expect(problems(file)).toEqual([]);
     const [found] = scanPdfImages(file).jpegs;
@@ -658,7 +662,7 @@ describe('photo metadata inside a PDF (D78)', () => {
   });
 
   it('leaves other streams alone, even when their bytes say "stream"', () => {
-    const tricky = jpeg(`${segment(0xe2, 'ICC_PROFILE\0\x01\x01 x >>\nstream\n')}`, EXIF);
+    const tricky = jpeg(iccSegment(profile([['desc', 'desc\0\0\0\0 x >>\nstream\n']])), EXIF);
     const other = `<< /Length 24 >>\nstream\nBT (>> stream\n) Tj ET ok\nendstream`;
     const file = pdf(other, image(tricky), content);
     const before = textOf(file);
@@ -710,6 +714,304 @@ describe('photo metadata inside a PDF (D78)', () => {
   });
 });
 
+describe('everything a PDF holds besides its photos’ segments (D78)', () => {
+  const clean = jpeg(ICC, ADOBE);
+  /** The same file with a trailer that names object `id` as the document information. */
+  const withInfo = (id: number, file: Uint8Array) =>
+    bytesOf(textOf(file).replace('<< /Size', `<< /Info ${id} 0 R /Size`));
+  /** A compressed object stream that holds these objects, as a PDF 1.5 writer packs them. */
+  function objectStream(objects: Array<[id: number, body: string]>): string {
+    const heads: string[] = [];
+    let bodies = '';
+    for (const [id, body] of objects) {
+      heads.push(`${id} ${bodies.length}`);
+      bodies += `${body}\n`;
+    }
+    const header = `${heads.join(' ')}\n`;
+    return stream(
+      `/Type /ObjStm /N ${objects.length} /First ${header.length} /Filter /FlateDecode`,
+      flate(header + bodies),
+    );
+  }
+  const AUTHORS = (n: number) =>
+    `${n} author record${n === 1 ? '' : 's'} outside the document information, such as a figure’s own`;
+
+  it('reports every photo and every problem, not only the first', () => {
+    const credentials = segment(0xeb, 'JP\0\x01 made-up credentials: Sample Person');
+    const file = pdf(
+      page,
+      image(jpeg(EXIF)),
+      image(clean),
+      image(jpeg(COMMENT, credentials)),
+      content,
+    );
+    expect(pdfPhotoFindings(file).metadata).toEqual(['EXIF', 'comment', 'APP11']);
+    expect(blankPdfImageMetadata(file).map((line) => line.replace(/, \d+ bytes$/, ''))).toEqual([
+      'image 1: EXIF',
+      'image 3: comment',
+      'image 3: APP11',
+    ]);
+    for (const gone of ['MADE-UP-GPS', 'sample tool', 'Sample Person'])
+      expect(textOf(file), gone).not.toContain(gone);
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+    // Two things it cannot vouch for: both are listed.
+    const two = pdf(
+      page,
+      image('\0\0\0\x0cjP  \r\n\x87\n', '/JPXDecode'),
+      stream('/Type /EmbeddedFile', 'a,b\n1,2\n'),
+      content,
+    );
+    expect(problems(two)).toEqual(['a JPEG 2000 image stream', 'a file attachment']);
+    // What check:privacy reads lists both too.
+    expect(pdfPhotoFindings(two).unhandled.map((line) => line.replace(/ at byte \d+/, ''))).toEqual(
+      ['a JPEG 2000 image stream', 'a file attachment'],
+    );
+  });
+
+  it('finds each JPEG outside the image streams, wherever it sits and however long its segments', () => {
+    // One starts with a 400-byte application segment, the other with tables and a comment.
+    const first = `\xff\xd8${segment(0xe1, 'x'.repeat(396))}${TABLE}${SCAN}${END}`;
+    const second = `\xff\xd8${TABLE}${COMMENT}${SCAN}${END}`;
+    const file = pdf(page, image(clean), stream('', first), image(clean), stream('', second));
+    const text = textOf(file);
+    expect(scanPdfImages(file).unhandled).toEqual(
+      [first, second].map(
+        (hidden) =>
+          `JPEG data at byte ${text.indexOf(hidden)} outside the image streams this scan found`,
+      ),
+    );
+    expect(scanPdfImages(file).jpegs).toHaveLength(2);
+  });
+
+  it('counts an APP15 segment with something in it as metadata, and big-endian EXIF too', () => {
+    const app15 = segment(0xef, 'made-up text: Sample Person');
+    const file = pdf(page, image(jpeg(app15)), content);
+    expect(scanPdfImages(file).jpegs[0]!.blocks.map((block) => block.kind)).toEqual(['APP15']);
+    blankPdfImageMetadata(file);
+    expect(textOf(file)).not.toContain('Sample Person');
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+    // EXIF in Motorola byte order, where only the backstops can see it.
+    const big = 'Exif\0\0MM\0*\0\0\0\x08 MADE-UP-GPS';
+    const cut = `\xff\xd8${JFIF}\xff\xe1\x40\0${big}`;
+    expect(pdfPhotoFindings(pdf(page, image(cut))).metadata).toEqual(['EXIF']);
+    expect(problems(pdf(page, stream('/Filter /FlateDecode', flate(big))))).toEqual([
+      'EXIF inside a compressed stream',
+    ]);
+  });
+
+  it('knows every namespace of camera, location and contact fields', () => {
+    const namespaces = [
+      'exif',
+      'exifEX',
+      'tiff',
+      'aux',
+      'crs',
+      'photoshop',
+      'Iptc4xmpCore',
+      'Iptc4xmpExt',
+    ];
+    for (const ns of namespaces) {
+      const packet = `<x:xmpmeta><rdf:Description xmlns:${ns}="http://example.invalid/${ns}/"/></x:xmpmeta>`;
+      expect(problems(pdf(page, stream('/Type /Metadata /Subtype /XML', packet))), ns).toEqual([
+        'a metadata stream with camera, location or contact fields',
+      ]);
+    }
+  });
+
+  it('reads what real papers have: every restart marker, long dictionaries, dictionaries without spaces', () => {
+    // A restart interval, and scan data that cycles through RST0 to RST7.
+    const restarts = Array.from(
+      { length: 8 },
+      (_, k) => `\x12\x34\xff${String.fromCharCode(0xd0 + k)}`,
+    );
+    const scan = `\xff\xda\0\x08\x01\x01\0\0\x3f\0${restarts.join('')}\x56\x78`;
+    const photo = `\xff\xd8${JFIF}${EXIF}${TABLE}${segment(0xdd, '\0\x04')}${scan}${END}`;
+    const file = pdf(page, image(photo), content);
+    expect(scanPdfImages(file).unhandled).toEqual([]);
+    expect(blankPdfImageMetadata(file).map((line) => line.replace(/, \d+ bytes$/, ''))).toEqual([
+      'image 1: EXIF',
+    ]);
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+
+    // Dictionaries of 700 bytes, with what matters at their two ends.
+    const note = `/Note (${'x'.repeat(600)})`;
+    const long = jpeg(EXIF);
+    const longImage = `<< /Subtype /Image /Filter /DCTDecode /Width 4 /Height 4 ${note} /Length ${long.length} /Metadata 9 0 R >>\nstream\n${long}\nendstream`;
+    const xrefData = flate('\x02\x01\0\0\x10');
+    const longXref = `<< /Type /XRef ${note} /Filter /FlateDecode /Length ${xrefData.length} /DecodeParms << /Predictor 12 /Columns 4 >> >>\nstream\n${xrefData}\nendstream`;
+    const longFile = pdf(page, longImage, longXref);
+    expect(scanPdfImages(longFile).jpegs[0]!.blocks.map((block) => block.kind)).toEqual(['EXIF']);
+    expect(problems(longFile)).toEqual(['an image with a metadata stream of its own']);
+
+    // The same cases written without spaces.
+    const packet = '<x:xmpmeta><exif:GPSLatitude>12,34.5N</exif:GPSLatitude></x:xmpmeta>';
+    const packed = flate('7 0 <</Type/Filespec/F(data.csv)>>');
+    const compact = [
+      `<</Type/XObject/Subtype/Image/Width 4/Height 4/Filter/DCTDecode/Length ${clean.length}/Metadata 9 0 R>>stream\n${clean}\nendstream`,
+      `<</Type/Metadata/Subtype/XML/Length ${packet.length}>>stream\n${packet}\nendstream`,
+      `<</Type/ObjStm/N 1/First 4/Filter/FlateDecode/Length ${packed.length}>>stream\n${packed}\nendstream`,
+      `<</Type/XRef/Filter/FlateDecode/DecodeParms<</Predictor 12/Columns 4>>/Length ${xrefData.length}>>stream\n${xrefData}\nendstream`,
+    ];
+    expect(problems(pdf(page, ...compact))).toEqual([
+      'an image with a metadata stream of its own',
+      'a metadata stream with camera, location or contact fields',
+      'a file attachment',
+    ]);
+  });
+
+  it('reports author records outside the document information, as a drawing program leaves one per figure', () => {
+    const info = '<< /Author (Made-Up Writer) /Title (A paper) >>';
+    const record =
+      '<< /Author (Made-Up Person) /Creator (A drawing program) /Title (figure1.eps) >>';
+    // The document's own information is fine, and so is a file without any.
+    expect(problems(withInfo(1, pdf(info, page, content)))).toEqual([]);
+    expect(problems(pdf(page, content))).toEqual([]);
+    // Two figures' records, as plain objects.
+    expect(problems(withInfo(1, pdf(info, page, content, record, record)))).toEqual([AUTHORS(2)]);
+    // Without a trailer that names it, even the document's information counts.
+    expect(problems(pdf(info, page, content))).toEqual([AUTHORS(1)]);
+    // In a compressed object stream, which may hold the document information too.
+    const packed = objectStream([
+      [7, info],
+      [8, record],
+    ]);
+    expect(problems(withInfo(7, pdf(page, content, packed)))).toEqual([AUTHORS(1)]);
+    expect(problems(withInfo(7, pdf(page, content, objectStream([[7, info]]))))).toEqual([]);
+    // In a page's content, as a marked-content property list.
+    const marked = stream(
+      '/Filter /FlateDecode',
+      flate('/EmbeddedDocument << /Author (Made-Up Person) >> BDC q Q EMC'),
+    );
+    expect(problems(withInfo(1, pdf(info, page, marked)))).toEqual([AUTHORS(1)]);
+  });
+
+  it('reports what pdfTeX keeps of an included figure, an application’s private data, and a figure’s own XMP', () => {
+    const form = (extra: string) =>
+      stream(`/Type /XObject /Subtype /Form /BBox [0 0 10 10] ${extra}`, 'q Q');
+    for (const key of [
+      '/PTEX.FileName (/home/sample/figures/plot.pdf)',
+      '/PTEX_FileName (plot.pdf)',
+      '/PTEX.InfoDict 9 0 R',
+    ])
+      expect(problems(pdf(page, form(key))), key).toEqual([
+        'an included figure’s file name or information (pdfTeX)',
+      ]);
+    const piece = '<< /Type /Page /PieceInfo << /Illustrator << /Private 9 0 R >> >> >>';
+    expect(problems(pdf(piece, content))).toEqual(['an application’s private data (/PieceInfo)']);
+    expect(problems(pdf(page, objectStream([[7, piece]])))).toEqual([
+      'an application’s private data (/PieceInfo)',
+    ]);
+    expect(problems(pdf(page, objectStream([[7, '<< /PTEX.FileName (plot.pdf) >>']])))).toEqual([
+      'an included figure’s file name or information (pdfTeX)',
+    ]);
+    expect(problems(pdf(page, form('/Metadata 9 0 R')))).toEqual([
+      'a figure with a metadata stream of its own',
+    ]);
+  });
+
+  it('finds photo metadata without its JPEG wrapper, as private data keeps it', () => {
+    const tiff = 'II*\0\x08\0\0\0 made-up directory with GPS';
+    const motorola = 'MM\0*\0\0\0\x08 made-up directory';
+    const iptc = '8BIM\x04\x04\0\0\0\0\0\x10made-up caption';
+    const packet = '<x:xmpmeta><exif:GPSLatitude>12,34.5N</exif:GPSLatitude></x:xmpmeta>';
+    const cases: Array<[string, string]> = [
+      [tiff, 'TIFF/EXIF inside a compressed stream'],
+      [motorola, 'TIFF/EXIF inside a compressed stream'],
+      [iptc, 'IPTC/Photoshop inside a compressed stream'],
+      [packet, 'camera, location or contact fields in a stream'],
+      [jpeg(COMMENT), 'JPEG data inside a compressed stream'],
+    ];
+    for (const [data, line] of cases)
+      expect(problems(pdf(page, stream('/Filter /FlateDecode', flate(data)))), line).toEqual([
+        line,
+      ]);
+    // Not compressed: the backstop over the file's bytes sees it.
+    expect(pdfPhotoFindings(pdf(page, stream('', tiff))).metadata).toEqual(['TIFF/EXIF']);
+    expect(pdfPhotoFindings(pdf(page, stream('', iptc))).metadata).toEqual(['IPTC/Photoshop']);
+    // A multi-picture index has the same header after its own name, and is reported as itself.
+    const mpf = segment(0xe2, 'MPF\0MM\0*\0\0\0\x08 made-up index');
+    const file = pdf(page, image(jpeg(mpf)));
+    expect(pdfPhotoFindings(file).metadata).toEqual(['MPF']);
+    blankPdfImageMetadata(file);
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+  });
+
+  it('blanks a profile’s metadata dictionary, and leaves alone a profile it cannot read whole', () => {
+    const META = 'meta\0\0\0\0made-up EDID serial 0123456789';
+    const icc = profile([
+      ['rXYZ', XYZ],
+      ['meta', META],
+    ]);
+    const file = pdf(
+      page,
+      image(`\xff\xd8${JFIF}${iccSegment(icc)}${TABLE}${SCAN}${END}`),
+      content,
+    );
+    expect(scanPdfImages(file).jpegs[0]!.blocks.map((block) => block.kind)).toEqual([DISPLAY]);
+    blankPdfImageMetadata(file);
+    expect(textOf(file)).not.toContain('EDID serial');
+    expect(textOf(file)).toContain(XYZ);
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+    // In a profile stream of its own.
+    expect(problems(pdf(page, stream('/N 3 /Filter /FlateDecode', flate(icc))))).toEqual([
+      'a color profile with the details of one display',
+    ]);
+    const cannot =
+      'a JPEG image stream that has a color profile with display details this tool cannot place';
+    // A first segment too short for the tag table: the details may be in the second one.
+    const display = profile([
+      ['rXYZ', XYZ],
+      ['mmod', MMOD],
+    ]);
+    const split =
+      iccSegment(display.slice(0, 100), '\x01\x02') + iccSegment(display.slice(100), '\x02\x02');
+    // A display tag whose data would be the tag table, or the header.
+    const pointing = (offset: number) => {
+      const crafted = Buffer.from(display, 'latin1');
+      crafted.writeUInt32BE(offset, 136 + 12);
+      return iccSegment(crafted.toString('latin1'));
+    };
+    for (const segments of [split, pointing(132), pointing(0)]) {
+      const crafted = pdf(page, image(`\xff\xd8${JFIF}${segments}${TABLE}${SCAN}${END}`));
+      const before = textOf(crafted);
+      expect(problems(crafted)).toEqual([cannot]);
+      expect(blankPdfImageMetadata(crafted)).toEqual([]);
+      expect(textOf(crafted)).toBe(before);
+    }
+  });
+
+  it('reads a filter’s short name and an escaped name, and reports a filter or a segment it does not know', () => {
+    const photo = jpeg(EXIF);
+    // A plain JPEG, however its filter is spelled.
+    for (const filter of ['/DCT', '/DCTDecod#65', '[ /DCT ]']) {
+      const file = pdf(page, image(photo, filter));
+      expect(
+        scanPdfImages(file).jpegs[0]!.blocks.map((block) => block.kind),
+        filter,
+      ).toEqual(['EXIF']);
+    }
+    // Behind another filter, however spelled.
+    for (const filter of ['[ /Fl /DCT ]', '[ /A85 /DCT ]', '[ /FlateDecode /DCTDecod#65 ]'])
+      expect(problems(pdf(page, image(photo, filter))), filter).toEqual([
+        'a JPEG image stream behind another filter',
+      ]);
+    // Pixels behind filters that hold only pixels are fine; another filter is reported.
+    expect(problems(pdf(page, image('made-up pixels', '[ /A85 /Fl ]')))).toEqual([]);
+    expect(problems(pdf(page, image('made-up pixels', '/Crypt')))).toEqual([
+      'an image stream with a filter this scan does not know (/Crypt)',
+    ]);
+    // Segments a decoder skips: a number-of-lines segment with more in it, and a kind that no
+    // decoder reads. A number-of-lines segment of its own size is fine.
+    expect(problems(pdf(page, image(jpeg(segment(0xdc, '\0\x10')))))).toEqual([]);
+    expect(problems(pdf(page, image(jpeg(segment(0xdc, 'made-up name')))))).toEqual([
+      'a JPEG image stream that has a number-of-lines segment with more in it',
+    ]);
+    expect(problems(pdf(page, image(jpeg(segment(0xf0, 'made-up name')))))).toEqual([
+      'a JPEG image stream that has a segment of a kind this tool does not know (0xf0)',
+    ]);
+  });
+});
+
 describe('npm run strip-pdf (D78)', () => {
   const run = (...files: string[]) => {
     try {
@@ -723,6 +1025,49 @@ describe('npm run strip-pdf (D78)', () => {
       return { status: failed.status, text: failed.stdout + failed.stderr };
     }
   };
+
+  it('exits with an error for each way a file can fail, alone, and says how to use it', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'strip-pdf-'));
+    try {
+      expect(run().status).toBe(2);
+      expect(run().text).toContain('Usage: npm run strip-pdf -- <file.pdf> [...]');
+      const missing = join(dir, 'missing.pdf');
+      expect(run(missing)).toEqual({
+        status: 1,
+        text: `${missing}: could not be processed (ENOENT)\n`,
+      });
+      const notes = join(dir, 'notes.pdf');
+      writeFileSync(notes, 'Not a PDF, just text.');
+      expect(run(notes)).toEqual({ status: 1, text: `${notes}: not a PDF\n` });
+      expect(readFileSync(notes, 'utf8')).toBe('Not a PDF, just text.');
+      // EXIF where no JPEG is: the tool cannot blank it, and says so.
+      const loose = join(dir, 'loose.pdf');
+      writeFileSync(loose, pdf(page, stream('', 'Exif\0\0II*\0\x08\0\0\0 MADE-UP-GPS')));
+      const still = run(loose);
+      expect(still.status).toBe(1);
+      expect(still.text).toBe(`${loose}: 0 JPEG image(s); nothing to blank\n  STILL THERE: EXIF\n`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('saves a file with one block blanked, and the output says what it did', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'strip-pdf-'));
+    try {
+      const paper = join(dir, 'paper.pdf');
+      const original = pdf(page, image(jpeg(EXIF)), content);
+      writeFileSync(paper, original);
+      expect(run(paper)).toEqual({
+        status: 0,
+        text: `${paper}: 1 JPEG image(s); blanked 1 range(s)\n  image 1: EXIF, ${EXIF.length - 4} bytes\n`,
+      });
+      const stripped = new Uint8Array(readFileSync(paper));
+      expect(stripped.length).toBe(original.length);
+      expect(textOf(stripped)).not.toContain('MADE-UP-GPS');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 
   it('blanks a file in place, goes on after a file it cannot read, and exits with an error for it', () => {
     const dir = mkdtempSync(join(tmpdir(), 'strip-pdf-'));

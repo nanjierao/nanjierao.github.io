@@ -558,6 +558,10 @@ Copies of the papers (D78). Jimmy sent PDFs of nine papers on Nov 28, 2026 for t
 - Other people's details and work: the papers print their authors' email addresses, and in [1]
   two coauthors give personal addresses rather than university ones. [9] Fig. 5 reproduces two
   paintings by Norman Rockwell, and the paper links two files on Google Drive.
+- Hidden records that `npm run strip-pdf` reports and does not remove: [3] keeps the image's own
+  metadata stream and four author records that its figures' drawing program left, naming people
+  the paper does not; [8] keeps a stamping tool's private data. Each comes out, or is reviewed,
+  before its file is hosted.
 - The publisher's notice: IEEE and Springer let an author host the accepted version on a
   personal site only with their notice and the DOI on it (as web search reported their policy
   pages on Nov 28, 2026). [1] carries Springer's. [4], [5], [9], [11] and [12] carry none.
