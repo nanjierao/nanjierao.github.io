@@ -105,9 +105,12 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   metadata, unreadable images, and files it can't look inside (PDF, video, audio, office files)
   are errors until someone reviews the exact file and allowlists its printed fingerprint.
 - `npm run strip-images -- <files>` — removes EXIF/XMP/IPTC from images before they are committed.
-- `npm run strip-pdf -- <files>` — blanks the EXIF/XMP/IPTC blocks of photos embedded in PDFs, in
-  place, before they are committed (D78). The file keeps its length and every page renders as
-  before. `check:privacy` fails on a PDF that still has any.
+- `npm run strip-pdf -- <files>` — blanks the metadata of photos embedded in PDFs (the EXIF, XMP,
+  Photoshop and comment segments of their JPEG image streams), in place, before they are
+  committed (D78). The file keeps its length and every page renders as before. `check:privacy`
+  fails on a PDF that still has any, and on what the scan cannot vouch for (an image stream it
+  cannot read, a picture with more data after it, an image with a metadata stream of its own, a
+  file attachment); `strip-pdf` prints where.
 
 ## Content rules (non-negotiable)
 
@@ -192,19 +195,24 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
 
 ## Paper PDFs (D78)
 
-- A copy of a paper goes in `public/papers/<publication id>.pdf`, so its address stays the same,
-  and the publication lists link it. No copy is hosted yet: facts.md §15 keeps participant
-  quotations and photos of children out of the repository, and published papers contain them, so
-  each paper waits on Jimmy's word (facts.md §6 lists what each one waits on).
-- Host only a version the publisher allows on a personal site. IEEE, Springer and ACM: the
-  author's accepted version, with the publisher's notice and the DOI on its first page; never
-  the publisher's own PDF. AAAI: not the proceedings version. An open-access copy under a license
-  that allows it (CC BY) may be hosted with its attribution on /credits. When no version may be
-  hosted, link the DOI.
+- A copy of a paper goes in `public/papers/<publication id>.pdf`, so its address stays the same.
+  The publication lists will link it beside the DOI; the field and the link for that come with
+  the first hosted file. No copy is hosted yet: facts.md §15 keeps participant quotations and
+  photos of children out of the repository, and published papers contain them, so each paper
+  waits on Jimmy's word (facts.md §6 lists what each one waits on).
+- Host only a version the publisher allows on a personal site, as its policy pages were reported
+  by web search on Nov 28, 2026 (they are not reachable from a session; check before relying on
+  them). IEEE, Springer and ACM: the author's accepted version, with the publisher's notice and
+  the DOI on its first page; never the publisher's own PDF. AAAI: unsettled for the proceedings
+  version, so link the DOI. An open-access copy under a license that allows it (CC BY) may be
+  hosted with its attribution on /credits. When no version may be hosted, link the DOI.
 - Before a PDF is committed: read every page (figures included), run `npm run strip-pdf` on it,
-  and add its fingerprint from `check:privacy` to `scripts/privacy-allowlist.json` with a reason.
-  Photos in papers often carry EXIF with the author's name, capture times and sometimes GPS.
-- Jimmy's files are author's copies he made; never add to or change their pages without his word.
+  look at whatever it reports as not handled, and add the file's fingerprint from
+  `check:privacy` to `scripts/privacy-allowlist.json` with a reason. Photos in papers often carry
+  EXIF with the author's name, capture times and sometimes GPS; never write such values into a
+  file, a commit message or a pull request.
+- Never add to or change the pages of a file Jimmy sent without his word. Blanking hidden photo
+  metadata changes no page.
 
 ## GitHub activity and latest video (D40, D50)
 

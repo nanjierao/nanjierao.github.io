@@ -549,15 +549,20 @@ Copies of the papers (D78). Jimmy sent PDFs of nine papers on Nov 28, 2026 for t
 - §15 keeps participant quotations and photos of children out of the repository, and the papers
   contain both (anonymous quotations in most; children in the figures of [5] and [8]). Hosting
   a published paper as published needs his exception to §15.
-- People in figures (D31): [1] Fig. 2 (a participant's mouth and chin), [9] Fig. 4 (a woman's
-  face), [12] Fig. 6 (a participant from behind), [5] Figs. 2 and 3 (photos of children).
+- People in figures (D31): [1] Fig. 1 (a participant's hands and torso) and Fig. 2 (a
+  participant's mouth and chin), [9] Fig. 4 (a woman's face), [12] Fig. 6 (a participant from
+  behind), [5] Figs. 2 and 3 (photos of children), [11] Fig. 2 (six people on video, faces
+  blurred).
 - The publisher's notice: IEEE and Springer let an author host the accepted version on a
-  personal site only with their notice and the DOI on it. [1] carries Springer's. [4], [5], [9],
-  [11] and [12] carry none.
+  personal site only with their notice and the DOI on it (as web search reported their policy
+  pages on Nov 28, 2026). [1] carries Springer's. [4], [5], [9], [11] and [12] carry none.
 - [3] is the copy from IFIP's open library on HAL (hal-05770892), which its cover page
   distributes under CC BY 4.0, so it may be hosted once §15 allows.
-- [7] and [8] came as the publishers' own versions, which AAAI and ACM do not let authors host.
-  Both are free to read at the publisher, so the site links their DOI.
+- [7] and [8] came as the publishers' own versions. ACM lets authors host only their own
+  version, not this one. For AAAI the sources disagree (its copyright form is reported to allow
+  the author's own page; its permissions page is reported to keep the published version to its
+  library), so [7] waits on the form Jimmy signed. Both papers are reported free to read at the
+  publisher (`TODO(jimmy)` check), and the site links their DOI.
 - Still to come from Jimmy: [2], [6] and [10].
 
 Refereed conference papers

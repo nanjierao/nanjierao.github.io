@@ -196,7 +196,9 @@ Full spec and copy: `content/life-portal.md`. Five acts:
   listed after the contexts under "Ongoing" on the overview, the home page and the CV page (D69). The first one is the class study
   (facts.md §5.9): Jimmy's words, design only, no names and no course number.
 - **Publications**: from facts.md §6, a TL;DR under first-author papers once approved (D28),
-  filters that work without JS, BibTeX copy; Working papers only if approved.
+  filters that work without JS, BibTeX copy; Working papers only if approved. Each paper links
+  its DOI where facts.md has one, and a hosted copy (`/papers/<id>.pdf`) where the publisher and
+  facts.md §15 allow it (D78; none is hosted yet).
 - **Builds**: datasheet cards with an optional "Hardest bug & fix" (D29), plus "On GitHub".
 - **Teaching**.
 - **CV**: rendered from the same content, plus a downloadable PDF that Jimmy supplies (no phone, no
@@ -340,4 +342,5 @@ Later
 
 Headline (facts.md §3) and bio; status line (§2); umbrella line (D45); working
 papers and the 2019 Chinese paper (D28); reflections (D12, D34); design direction (S2); optional
-touches (D36); statement PDFs on /cv; whether and when to switch on live AI (S8).
+touches (D36); statement PDFs on /cv; whether and when to switch on live AI (S8); which paper
+PDFs to host, and his exception to facts.md §15 for published papers (D78).

@@ -7,7 +7,7 @@
 // `npm run check:privacy` afterwards: it checks the result and prints the fingerprint that the
 // reviewed file is allowlisted under.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { blankPdfImageMetadata, pdfMetadataSignatures, scanPdfImages } from './lib/pdf-images.ts';
+import { blankPdfImageMetadata, isPdf, pdfPhotoFindings, scanPdfImages } from './lib/pdf-images.ts';
 
 const files = process.argv.slice(2);
 if (files.length === 0) {
@@ -18,29 +18,27 @@ if (files.length === 0) {
 let failed = false;
 for (const file of files) {
   const bytes = new Uint8Array(readFileSync(file));
-  if (Buffer.from(bytes.subarray(0, 5)).toString('latin1') !== '%PDF-') {
+  if (!isPdf(bytes)) {
     console.error(`${file}: not a PDF`);
     failed = true;
     continue;
   }
   const blanked = blankPdfImageMetadata(bytes);
-  const after = scanPdfImages(bytes);
-  const left = [
-    ...after.jpegs.flatMap((jpeg) => jpeg.blocks.map((block) => block.kind)),
-    ...pdfMetadataSignatures(bytes),
-  ];
+  const images = scanPdfImages(bytes).jpegs.length;
+  const after = pdfPhotoFindings(bytes);
   if (blanked.length > 0) writeFileSync(file, bytes);
   console.log(
-    `${file}: ${after.jpegs.length} JPEG image(s); ` +
+    `${file}: ${images} JPEG image(s); ` +
       (blanked.length > 0 ? `blanked ${blanked.length} block(s)` : 'nothing to blank'),
   );
   for (const line of blanked) console.log(`  ${line}`);
+  // What the tool cannot vouch for: someone has to look at these before the file is committed.
   for (const problem of after.unhandled) {
     console.error(`  NOT HANDLED: ${problem}`);
     failed = true;
   }
-  if (left.length > 0) {
-    console.error(`  STILL THERE: ${[...new Set(left)].join(', ')}`);
+  if (after.metadata.length > 0) {
+    console.error(`  STILL THERE: ${after.metadata.join(', ')}`);
     failed = true;
   }
 }

@@ -113,6 +113,26 @@ describe('publications (facts.md §6)', () => {
     }
   });
 
+  it('gives each paper only the volume, pages and status its facts.md §6 entry has (D78)', () => {
+    const facts = readFileSync(join(ROOT, 'content', 'facts.md'), 'utf8');
+    const section = facts.slice(facts.indexOf('\n## 6. '), facts.indexOf('\n## 7. '));
+    /** The entry "N. ..." of §6, up to the next numbered entry or blank line. */
+    const entry = (number: number) =>
+      (new RegExp(`\\n${number}\\. [^]*?(?=\\n\\d+\\. |\\n\\n)`).exec(section)?.[0] ?? '').replace(
+        /\s+/g,
+        ' ',
+      );
+    for (const pub of published) {
+      const own = entry(pub.factsNumber!);
+      expect(own, pub.id).not.toBe('');
+      for (const number of `${pub.details ?? ''}`.match(/\d+(?:–\d+)?/g) ?? [])
+        expect(own, `${pub.id}: ${number}`).toContain(number);
+      // A paper is "accepted" or "to appear" on the site only while facts.md says so.
+      const waiting = /accepted|to appear/i;
+      if (!waiting.test(own)) expect(pub.notes.join(' '), pub.id).not.toMatch(waiting);
+    }
+  });
+
   it('marks first authorship exactly when Jimmy is listed first', () => {
     for (const pub of publications) {
       expect(pub.firstAuthor, pub.id).toBe(isSelf(pub.authors[0]!));

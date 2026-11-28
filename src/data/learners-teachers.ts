@@ -129,7 +129,7 @@ export const LEARNER_STUDIES: Study[] = [
     id: 'icids-2026',
     label: 'Gaze and interaction logs in story writing',
     title: 'Hands as Narrators: Characterizing Idea Reuptake from Hand Enactment in Story Writing',
-    where: 'ICIDS 2026, full paper, accepted (to appear)',
+    where: 'ICIDS 2026, full paper',
     observed:
       'A remote web platform logged every video scrub and keystroke alongside a WebGazer.js gaze stream.',
     who: '24 participants in a two-part study.',
