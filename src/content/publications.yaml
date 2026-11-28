@@ -84,7 +84,8 @@
   venue: 'IEEE ICALT 2021'
   venueShort: 'ICALT'
   details: 'pp. 14–16'
-  # No `award` while its wording is VERIFY (facts.md §6 [5], §10; Jimmy, Nov 25, 2026).
+  # Jimmy's wording, Nov 28, 2026 (facts.md §6 [5], §10; D77).
+  award: 'Best Short Paper nomination'
   url: 'https://doi.org/10.1109/ICALT52272.2021.00011'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [5]).
