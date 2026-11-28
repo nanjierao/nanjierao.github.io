@@ -2280,8 +2280,30 @@ test.describe('the Experiments page (D74)', () => {
       '10.1109/ICALT52272.2021.00011',
       '10.1007/978-3-030-77599-5_46',
       '10.1007/978-3-031-42286-7_9',
+      // D78: the DOI the CHI 2020 paper prints, and two found by web search.
+      '10.1145/3313831.3376331',
+      '10.1609/hcomp.v8i1.7466',
+      '10.1007/978-3-030-33894-7_42',
     ])
       await expect(table.locator(`a[href="https://doi.org/${doi}"]`)).toHaveCount(1);
+    // The publication list links them too, and ICIDS 2026 as its author's copy prints it (D78).
+    await page.goto('/publications/');
+    for (const [id, doi] of [
+      ['icids-2026-hands-as-narrators', '10.1007/978-3-032-46125-4_11'],
+      ['chi-2020-self-avatars', '10.1145/3313831.3376331'],
+      ['hcomp-2020-explanation-types', '10.1609/hcomp.v8i1.7466'],
+      ['icids-2019-emotional-priming', '10.1007/978-3-030-33894-7_42'],
+    ] as const)
+      await expect(page.locator(`li[id="${id}"] a`)).toHaveAttribute(
+        'href',
+        `https://doi.org/${doi}`,
+      );
+    await expect(page.locator('li[id="icids-2026-hands-as-narrators"]')).toContainText(
+      'ICIDS 2026, Springer LNCS vol. 17343, pp. 144–163. Full paper.',
+    );
+    // No copy of a paper is hosted yet.
+    await expect(page.locator('a[href^="/papers/"]')).toHaveCount(0);
+    await page.goto(PATH);
     // Each sketch scene drawn from a paper is linked by name and opens on its own.
     for (const [href, name] of [
       ['/#sk-dorm', 'Dorm, laptop'],

@@ -38,6 +38,7 @@ import {
   readImageMetadata,
   unscannableKind,
 } from './lib/image-metadata.ts';
+import { isPdf, pdfPhotoFindings } from './lib/pdf-images.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -353,6 +354,35 @@ async function scanDataUris(
   return results;
 }
 
+/**
+ * Photos embedded in a PDF keep their EXIF (sometimes with GPS), XMP and Photoshop blocks.
+ * `npm run strip-pdf` blanks the ones in JPEG image streams; this fails on any that are left,
+ * and on whatever the scan cannot vouch for. The file as a whole still needs a review and its
+ * fingerprint on the allowlist, and so does each finding here that a reviewer accepts. Each
+ * finding's fingerprint is tied to the file's bytes, not to its path, so an entry for public/
+ * also covers the copy in dist/, and stops covering the file when it changes.
+ */
+function scanPdf(file: string, bytes: Uint8Array): Result[] {
+  const found = pdfPhotoFindings(bytes);
+  const hash = `sha256:${sha(bytes)}`;
+  return [
+    ...found.metadata.map((kind): Result => ({
+      file,
+      line: 0,
+      category: `photo metadata inside a PDF: ${kind} (run npm run strip-pdf on the file)`,
+      match: `${kind} in ${hash}`,
+      severity: 'error',
+    })),
+    ...found.unhandled.map((problem): Result => ({
+      file,
+      line: 0,
+      category: `inside a PDF, ${problem.replace(/ at byte \d+/, '')}: this check can't vouch for it (npm run strip-pdf prints where; review it, then allowlist it)`,
+      match: `${problem.replace(/ at byte \d+/, '')} in ${hash}`,
+      severity: 'error',
+    })),
+  ];
+}
+
 async function scan(
   files: string[],
   scope: 'repo' | 'dist',
@@ -377,8 +407,11 @@ async function scan(
       if (!isFontFile(bytes)) results.push(unscannable(`a ${ext} file that is not a font`));
     } else {
       const kind = unscannableKind(bytes) ?? (UNSCANNABLE_EXTENSIONS.has(ext) ? ext : null);
-      if (kind) results.push(unscannable(kind));
-      else if (bytes.subarray(0, 8192).includes(0))
+      if (kind) {
+        results.push(unscannable(kind));
+        // What can be checked inside a PDF: the metadata its photos brought along (D78).
+        if (ext === '.pdf' || isPdf(bytes)) results.push(...scanPdf(file, bytes));
+      } else if (bytes.subarray(0, 8192).includes(0))
         results.push(unscannable(`${ext || 'a'} binary file`));
       else {
         const text = bytes.toString('utf8');

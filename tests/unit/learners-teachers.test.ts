@@ -87,6 +87,27 @@ describe('copy of the home page section and its sketch scenes', () => {
     }
   });
 
+  it('calls no paper "accepted" or "to appear" unless its facts.md §6 entry does (D78)', () => {
+    // The ICIDS 2026 card still said "accepted (to appear)" after the publication list had the
+    // volume and the pages.
+    const section = FACTS.slice(FACTS.indexOf('\n## 6. '), FACTS.indexOf('\n## 7. '));
+    const entries = section
+      .split(/\n(?=\d+\. )/)
+      .map((entry) => entry.split('\n\n')[0]!.replace(/[*_]/g, '').replace(/\s+/g, ' '));
+    const waiting = /accepted|to appear/i;
+    let checked = 0;
+    for (const study of page.LEARNER_STUDIES) {
+      const entry = entries.find((text) => text.includes(plain(study.title)));
+      if (!entry) continue;
+      checked++;
+      if (!waiting.test(entry)) expect(study.where, study.id).not.toMatch(waiting);
+    }
+    expect(checked).toBeGreaterThanOrEqual(3);
+    expect(page.LEARNER_STUDIES.find((study) => study.id === 'icids-2026')!.where).toBe(
+      'ICIDS 2026, full paper',
+    );
+  });
+
   it('keeps each number with the study and the meaning facts.md gives it', () => {
     const [dissertation, icalt, icids, ieeevr] = page.LEARNER_STUDIES;
     const coding = page.STEPS[2]!.items[2]!.detail;
