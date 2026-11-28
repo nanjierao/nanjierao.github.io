@@ -73,6 +73,18 @@ Compared and not used:
   and "nothing from YouTube before a click", so `src/components/YouTubeFacade.astro` is a small
   custom element (a link that becomes a youtube-nocookie.com iframe on click) with local posters.
 
+- **Photo metadata inside PDFs (D78, 28 Nov 2026).** No tool found strips the metadata of the
+  images inside a PDF and leaves the rest of the file as it was (web search, Nov 28, 2026; the
+  tools' own pages were not read). ExifTool (Artistic/GPL) and `qpdf` (Apache-2.0) remove
+  file-level metadata only, and ExifTool's change to a PDF is an appended update that can be
+  taken back. `mat2` (LGPL-3.0) cleans a PDF by drawing its pages again, which changes the
+  pages. Ghostscript and MuPDF (AGPL-3.0) are outside the allowed licenses and rewrite the file.
+  `pdf-lib` (MIT) loads and saves a PDF but does not look inside an image stream, and saving
+  writes every object anew. `scripts/lib/pdf-images.ts` has no dependency: it finds the JPEG
+  image streams in the file's bytes and blanks the metadata in place, so the file keeps its
+  length and every other byte, and a test can show that the pages and the colors are unchanged.
+  It runs only in development and CI; nothing of it reaches a visitor.
+
 - **Sketch scenes (D68, 24 Nov 2026).** Jimmy's design notes looked at Rough.js (MIT;
   hand-drawn rendering on canvas or SVG), Vivus (MIT; SVG line-drawing animation),
   perfect-freehand (MIT), Excalidraw (MIT) and lottie-web (MIT), and used none of them: a

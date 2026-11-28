@@ -358,9 +358,9 @@ async function scanDataUris(
  * Photos embedded in a PDF keep their EXIF (sometimes with GPS), XMP and Photoshop blocks.
  * `npm run strip-pdf` blanks the ones in JPEG image streams; this fails on any that are left,
  * and on whatever the scan cannot vouch for. The file as a whole still needs a review and its
- * fingerprint on the allowlist. Each finding's fingerprint is tied to the file's bytes, not to
- * its path, so an entry for public/ also covers the copy in dist/, and stops covering the file
- * when it changes.
+ * fingerprint on the allowlist, and so does each finding here that a reviewer accepts. Each
+ * finding's fingerprint is tied to the file's bytes, not to its path, so an entry for public/
+ * also covers the copy in dist/, and stops covering the file when it changes.
  */
 function scanPdf(file: string, bytes: Uint8Array): Result[] {
   const found = pdfPhotoFindings(bytes);

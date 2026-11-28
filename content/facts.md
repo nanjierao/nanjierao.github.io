@@ -549,10 +549,15 @@ Copies of the papers (D78). Jimmy sent PDFs of nine papers on Nov 28, 2026 for t
 - §15 keeps participant quotations and photos of children out of the repository, and the papers
   contain both (anonymous quotations in most; children in the figures of [5] and [8]). Hosting
   a published paper as published needs his exception to §15.
-- People in figures (D31): [1] Fig. 1 (a participant's hands and torso) and Fig. 2 (a
-  participant's mouth and chin), [9] Fig. 4 (a woman's face), [12] Fig. 6 (a participant from
-  behind), [5] Figs. 2 and 3 (photos of children), [11] Fig. 2 (six people on video, faces
-  blurred).
+- People in figures (D31), in six of the nine: [1] Fig. 1 (a participant's hands and torso) and
+  Fig. 2 (a participant's mouth and chin), [5] Figs. 2 and 3 (photos of children), [8] Fig. 1
+  (two children, faces covered) and Fig. 2 (a child, small), [9] Fig. 4 (a person's face),
+  [11] Fig. 2 (six people on video, faces blurred), [12] Fig. 6 (a participant from behind).
+  Three of these are images D53 took out of the repository: [1] Fig. 2, [9] Fig. 4 and
+  [12] Fig. 6.
+- Other people's details and work: the papers print their authors' email addresses, and in [1]
+  two coauthors give personal addresses rather than university ones. [9] Fig. 5 reproduces two
+  paintings by Norman Rockwell, and the paper links two files on Google Drive.
 - The publisher's notice: IEEE and Springer let an author host the accepted version on a
   personal site only with their notice and the DOI on it (as web search reported their policy
   pages on Nov 28, 2026). [1] carries Springer's. [4], [5], [9], [11] and [12] carry none.
@@ -570,7 +575,9 @@ Refereed conference papers
    Hands as Narrators: Characterizing Idea Reuptake from Hand Enactment in Story Writing. ICIDS
    2026, Part II, Springer LNCS vol. 17343, pp. 144–163. Full paper. First online Nov 24, 2026
    (the volume is dated 2027). DOI 10.1007/978-3-032-46125-4_11. Volume, pages, date and DOI as
-   the first page of the author's copy Jimmy sent on Nov 28, 2026 prints them.
+   the first page of the author's copy Jimmy sent on Nov 28, 2026 prints them. The site lists
+   the paper under 2026, the year of the conference and of its first appearance online; the
+   volume's own year is 2027. `TODO(jimmy)`: say which year the lists should show.
 2. *Rao, N., Huang, Z., Kulkarni, A., Ragan, E., & Chu, S. L. (2026). Identifying Student
    Interests for Interest-Based Learning: A Comparison of Interest Extraction from Browsing
    History and Social Media Posts. IEEE ICALT 2026. Full paper. DOI 10.1109/ICALT68022.2026.00023

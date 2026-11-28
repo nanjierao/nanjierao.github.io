@@ -119,7 +119,8 @@
   venue: 'AAAI HCOMP 2020'
   venueShort: 'HCOMP'
   # Pages as the proceedings print them; the DOI was found by web search on Nov 28, 2026 and
-  # waits on Jimmy's check (facts.md §6 [7]). The paper is free to read at AAAI.
+  # waits on Jimmy's check (facts.md §6 [7]). The paper is reported free to read at AAAI, which
+  # Jimmy checks too.
   details: 'pp. 83–91'
   url: 'https://doi.org/10.1609/hcomp.v8i1.7466'
   firstAuthor: false

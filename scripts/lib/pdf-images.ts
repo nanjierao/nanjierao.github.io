@@ -5,17 +5,19 @@
 // keeps its length, so nothing else in the PDF moves, and every page renders as before.
 //
 // The scan fails closed. What it cannot vouch for is listed as "unhandled", and a file with
-// anything unhandled fails `npm run check:privacy` until someone has looked at it: an image
-// stream it cannot walk, JPEG data outside the image streams it found, a picture followed by
-// more data, an image that keeps XMP in a stream of its own, a file attachment.
+// anything unhandled fails `npm run check:privacy` until someone has looked at it: an encrypted
+// file, an image stream it cannot walk or whose length does not add up, a picture followed by
+// more data, JPEG data outside the image streams it found, a stream it cannot decode, an image
+// that keeps XMP in a stream of its own, camera fields in a metadata stream, a display's details
+// in a color profile it cannot blank, a file attachment.
 import { inflateSync } from 'node:zlib';
 
 export interface PdfJpegBlock {
-  /** What the segment holds: EXIF, XMP, IPTC/Photoshop, comment, MPF, or the marker's name. */
+  /** What the range holds: EXIF, XMP, IPTC/Photoshop, comment, MPF, or the marker's name. */
   kind: string;
-  /** Offset of the segment's marker byte (the byte after 0xFF) in the file. */
+  /** Offset in the file of the marker byte to make neutral, or -1 when the segment keeps it. */
   marker: number;
-  /** The payload's byte range in the file. */
+  /** The byte range in the file that is blanked. */
   start: number;
   end: number;
 }
@@ -36,41 +38,119 @@ export interface PdfImageScan {
 const latin1 = (bytes: Uint8Array, start = 0, end = bytes.length) =>
   Buffer.from(bytes.buffer, bytes.byteOffset + start, Math.max(0, end - start)).toString('latin1');
 
-/** An image dictionary that stores its stream as a JPEG and nothing else. */
-const PLAIN_JPEG = /\/Filter\s*(?:\/DCTDecode\b|\[\s*\/DCTDecode\s*\])/;
-const ANY_JPEG = /\/(?:DCTDecode|DCT)\b/;
-const JPEG_2000 = /\/JPXDecode\b/;
 const IS_IMAGE = /\/Subtype\s*\/Image\b/;
 /** A blanked segment becomes an application segment that no reader gives a meaning to. */
 const NEUTRAL_MARKER = 0xef;
+/** No stream of a paper inflates to more than this; a larger one is not read. */
+const MAX_INFLATED = 128 * 1024 * 1024;
 
 /**
- * What a header segment holds, or null for the ones a decoder needs or that carry nothing:
- * the JFIF header, the color profile, Adobe's color-transform segment, and a segment this tool
- * blanked earlier. Every other application segment and every comment counts as metadata, also
- * the kinds this file has never heard of.
+ * A display's color profile says which display it was measured on. Apple's profiles keep that in
+ * two tags of their own: 'mmod' (make, model, serial number, date of manufacture) and 'ndin'
+ * (the panel's native values). No color engine reads either, so their contents can be blanked
+ * and the profile converts colors exactly as before. The profile's name and its calibration
+ * curves ('vcgt') stay: a color engine may read them, and they identify no single display.
  */
-function classify(marker: number, payload: Uint8Array): string | null {
-  const head = latin1(payload, 0, Math.min(payload.length, 64));
-  if (marker === 0xe0 && head.startsWith('JFIF\0')) return null;
-  if (marker === 0xe2 && head.startsWith('ICC_PROFILE\0')) return null;
-  if (marker === 0xee && head.startsWith('Adobe')) return null;
-  if (marker === NEUTRAL_MARKER && payload.every((byte) => byte === 0)) return null;
-  if (marker === 0xe1) {
-    if (head.startsWith('Exif\0\0')) return 'EXIF';
-    if (head.startsWith('http://ns.adobe.com/x') || latin1(payload).includes('<x:xmpmeta'))
-      return 'XMP';
+const DISPLAY_TAGS = new Set(['mmod', 'ndin']);
+const DISPLAY_KIND = 'display details in a color profile';
+
+interface DisplayDetails {
+  /** Ranges in the profile that hold the details: each tag's data after its 8-byte head. */
+  ranges: Array<[from: number, to: number]>;
+  /** The profile has such tags, but where their data lies could not be settled. */
+  unsure: boolean;
+}
+
+function displayDetails(profile: Uint8Array): DisplayDetails {
+  if (profile.length < 132 || latin1(profile, 36, 40) !== 'acsp')
+    return { ranges: [], unsure: false };
+  const u32 = (at: number) =>
+    Buffer.from(profile.buffer, profile.byteOffset + at, 4).readUInt32BE(0);
+  const tags: Array<{ name: string; from: number; to: number }> = [];
+  for (let i = 0, count = u32(128); i < count; i++) {
+    const at = 132 + i * 12;
+    // A tag table that runs past the profile: not a profile this code can read.
+    if (at + 12 > profile.length) return { ranges: [], unsure: true };
+    tags.push({
+      name: latin1(profile, at, at + 4),
+      from: u32(at + 4),
+      to: u32(at + 4) + u32(at + 8),
+    });
   }
-  if (marker === 0xed) return 'IPTC/Photoshop';
-  if (marker === 0xfe) return 'comment';
-  if (marker === 0xe2 && head.startsWith('MPF\0')) return 'MPF';
-  return `APP${marker - 0xe0}`;
+  const details: DisplayDetails = { ranges: [], unsure: false };
+  for (const tag of tags) {
+    if (!DISPLAY_TAGS.has(tag.name) || tag.to - tag.from <= 8) continue;
+    // Tags may share their data. Shared with a tag a color engine reads, it stays as it is.
+    const shared = tags.some(
+      (other) => !DISPLAY_TAGS.has(other.name) && other.from < tag.to && tag.from < other.to,
+    );
+    if (shared || tag.to > profile.length) details.unsure = true;
+    else if (profile.subarray(tag.from + 8, tag.to).some((byte) => byte !== 0))
+      details.ranges.push([tag.from + 8, tag.to]);
+  }
+  return details;
+}
+
+interface Classified {
+  /** Ranges of the payload to blank. A range that keeps its marker leaves the segment in use. */
+  blank: Array<{ kind: string; from: number; to: number; keepMarker: boolean }>;
+  /** Something in the segment that this code can neither blank nor vouch for. */
+  note?: string | undefined;
+}
+
+const KEEP: Classified = { blank: [] };
+
+/**
+ * What a header segment holds that should go. Kept: what a decoder needs and what carries
+ * nothing, which is the JFIF header (without a thumbnail), a color profile (without the details
+ * of one display), Adobe's color-transform segment, and a segment this tool blanked earlier.
+ * Every other application segment and every comment counts as metadata, also the kinds this
+ * file has never heard of.
+ */
+function classify(marker: number, payload: Uint8Array): Classified {
+  const head = latin1(payload, 0, Math.min(payload.length, 64));
+  const whole = (kind: string): Classified => ({
+    blank: [{ kind, from: 0, to: payload.length, keepMarker: false }],
+  });
+  const tail = (kind: string, from: number): Classified =>
+    payload.subarray(from).some((byte) => byte !== 0)
+      ? { blank: [{ kind, from, to: payload.length, keepMarker: true }] }
+      : KEEP;
+  if (marker === NEUTRAL_MARKER && payload.every((byte) => byte === 0)) return KEEP;
+  // "JFIF\0", version, units and density: 12 bytes. Then a thumbnail's size and its pixels.
+  if (marker === 0xe0 && head.startsWith('JFIF\0')) return tail('JFIF thumbnail', 12);
+  // "Adobe", version, two flag words and the color transform: 12 bytes.
+  if (marker === 0xee && head.startsWith('Adobe')) return tail('data after the Adobe segment', 12);
+  if (marker === 0xe2 && head.startsWith('ICC_PROFILE\0')) {
+    // A large profile spans segments. Only the first one starts as a profile does, with the
+    // header and the tag table; for the others there is nothing to read here.
+    const { ranges, unsure } = displayDetails(payload.subarray(14));
+    return {
+      blank: ranges.map(([from, to]) => ({
+        kind: DISPLAY_KIND,
+        from: 14 + from,
+        to: 14 + to,
+        keepMarker: true,
+      })),
+      note: unsure ? 'has a color profile with display details this tool cannot place' : undefined,
+    };
+  }
+  if (marker === 0xe1) {
+    if (head.startsWith('Exif\0\0')) return whole('EXIF');
+    if (head.startsWith('http://ns.adobe.com/x') || latin1(payload).includes('<x:xmpmeta'))
+      return whole('XMP');
+  }
+  if (marker === 0xed) return whole('IPTC/Photoshop');
+  if (marker === 0xfe) return whole('comment');
+  if (marker === 0xe2 && head.startsWith('MPF\0')) return whole('MPF');
+  return whole(`APP${marker - 0xe0}`);
 }
 
 const isMetadataMarker = (marker: number) => (marker >= 0xe0 && marker <= 0xef) || marker === 0xfe;
 
 interface JpegWalk {
   blocks: PdfJpegBlock[];
+  notes: string[];
   /** Offset just after the end-of-image marker, when the walk reached it. */
   end?: number;
   problem?: string;
@@ -84,15 +164,17 @@ interface JpegWalk {
  */
 function walkJpeg(bytes: Uint8Array, start: number, limit: number): JpegWalk {
   const blocks: PdfJpegBlock[] = [];
+  const notes: string[] = [];
+  const stop = (problem: string): JpegWalk => ({ blocks: [], notes: [], problem });
   let i = start + 2;
   while (i + 2 <= limit) {
-    if (bytes[i] !== 0xff) return { blocks: [], problem: 'is not a JPEG all the way through' };
+    if (bytes[i] !== 0xff) return stop('is not a JPEG all the way through');
     const marker = bytes[i + 1]!;
     if (marker === 0xff) {
       i++; // a fill byte
       continue;
     }
-    if (marker === 0xd9) return { blocks, end: i + 2 };
+    if (marker === 0xd9) return { blocks, notes, end: i + 2 };
     if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
       i += 2;
       continue;
@@ -101,11 +183,18 @@ function walkJpeg(bytes: Uint8Array, start: number, limit: number): JpegWalk {
     const length = (bytes[i + 2]! << 8) | bytes[i + 3]!;
     const payloadStart = i + 4;
     const payloadEnd = i + 2 + length;
-    if (length < 2 || payloadEnd > limit)
-      return { blocks: [], problem: 'has a segment that runs past the end of the stream' };
+    if (length < 2) return stop('has a segment with an impossible length');
+    if (payloadEnd > limit) return stop('has a segment that runs past the end of the stream');
     if (isMetadataMarker(marker)) {
-      const kind = classify(marker, bytes.subarray(payloadStart, payloadEnd));
-      if (kind) blocks.push({ kind, marker: i + 1, start: payloadStart, end: payloadEnd });
+      const found = classify(marker, bytes.subarray(payloadStart, payloadEnd));
+      for (const range of found.blank)
+        blocks.push({
+          kind: range.kind,
+          marker: range.keepMarker ? -1 : i + 1,
+          start: payloadStart + range.from,
+          end: payloadStart + range.to,
+        });
+      if (found.note !== undefined) notes.push(found.note);
     }
     i = payloadEnd;
     if (marker === 0xda) {
@@ -119,7 +208,7 @@ function walkJpeg(bytes: Uint8Array, start: number, limit: number): JpegWalk {
       }
     }
   }
-  return { blocks: [], problem: 'has no end-of-image marker' };
+  return stop('has no end-of-image marker');
 }
 
 /** A run of bytes that reads as the start of a JPEG file: two well-formed segments in a row. */
@@ -153,32 +242,104 @@ function signatures(text: string): string[] {
   return found;
 }
 
-/** Camera and location fields in an XMP packet: what a photo's metadata stream would hold. */
-const PHOTO_XMP = /<(?:exif|exifEX|tiff|photoshop|Iptc4xmpCore|aux|crs):|GPS(?:Latitude|Longitude)/;
+/**
+ * Camera, location and contact fields in an XMP packet. A packet has to declare the namespace
+ * of every field it uses, as elements or as attributes, so the declarations are what to look for.
+ */
+const PHOTO_XMP =
+  /xmlns:(?:exif|exifEX|tiff|aux|crs|photoshop|Iptc4xmpCore|Iptc4xmpExt)\s*=|GPS(?:Latitude|Longitude)/;
+/** An inline image in a page's content that is stored as a JPEG. */
+const INLINE_JPEG = /\/(?:DCT|DCTDecode)\b[^]{0,200}?\bID\s/;
+/** A file attached to the PDF: the name tree, a file specification, or the file's own stream. */
+const ATTACHMENT = /\/EmbeddedFiles?\b|\/Type\s*\/Filespec\b|\/EF\s*(?:<<|\d+\s+\d+\s+R)/;
+
+function asciiHex(text: string): Buffer {
+  const digits = text.split('>')[0]!.replace(/\s+/g, '');
+  if (/[^0-9a-fA-F]/.test(digits)) throw new Error('not ASCIIHex');
+  return Buffer.from(digits.length % 2 ? `${digits}0` : digits, 'hex');
+}
+
+function ascii85(text: string): Buffer {
+  const body = text.split('~>')[0]!.replace(/\s+/g, '').replace(/^<~/, '');
+  const out: number[] = [];
+  let group: number[] = [];
+  const flush = (count: number) => {
+    let value = 0;
+    for (let k = 0; k < 5; k++) value = value * 85 + (group[k] ?? 84);
+    out.push(
+      ...[value >>> 24, (value >>> 16) & 255, (value >>> 8) & 255, value & 255].slice(0, count),
+    );
+    group = [];
+  };
+  for (const char of body) {
+    if (char === 'z' && group.length === 0) {
+      out.push(0, 0, 0, 0);
+      continue;
+    }
+    const digit = char.charCodeAt(0) - 33;
+    if (digit < 0 || digit > 84) throw new Error('not ASCII85');
+    group.push(digit);
+    if (group.length === 5) flush(4);
+  }
+  if (group.length > 1) flush(group.length - 1);
+  return Buffer.from(out);
+}
+
+/** A stream's contents after its filters, as text; null when a filter is not one of these. */
+function decoded(bytes: Uint8Array, filters: string[]): string | null {
+  let data = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  for (const filter of filters) {
+    if (filter === '/FlateDecode') data = inflateSync(data, { maxOutputLength: MAX_INFLATED });
+    else if (filter === '/ASCIIHexDecode') data = asciiHex(data.toString('latin1'));
+    else if (filter === '/ASCII85Decode') data = ascii85(data.toString('latin1'));
+    else return null;
+  }
+  return data.toString('latin1');
+}
 
 interface PdfStream {
   dict: string;
+  filters: string[];
   start: number;
   end: number;
+  /** Where the stream ends could not be settled from its length and the "endstream" word. */
+  unsure: boolean;
 }
 
 /**
  * The streams of a PDF with their dictionaries, read from the file's own text: "12 0 obj << ...
  * >> stream ... endstream". Image streams are always objects of their own, also in PDFs that
- * compress their other objects. Bytes inside a stream that happen to read ">> stream" are
- * skipped, because the search goes on after the stream's end.
+ * compress their other objects. A stream ends where its /Length says, when "endstream" follows
+ * there; without a number in the dictionary it ends at the next "endstream". Bytes inside a
+ * stream that happen to read ">> stream" are skipped: the search goes on after the stream's end.
  */
 function pdfStreams(text: string): PdfStream[] {
   const streams: PdfStream[] = [];
   const opener = />>\s*stream(?:\r\n|\n|\r(?!\n))/g;
   for (let match = opener.exec(text); match; match = opener.exec(text)) {
     const dictEnd = match.index + 2;
-    const dictStart = Math.max(text.lastIndexOf(' obj', dictEnd), dictEnd - 8192, 0);
+    const window = text.slice(Math.max(0, dictEnd - 8192), dictEnd);
+    const object = window.lastIndexOf(' obj');
+    const dict = object < 0 ? window : window.slice(object);
     const start = match.index + match[0].length;
-    const endstream = text.indexOf('endstream', start);
-    const end = endstream < 0 ? text.length : endstream;
-    streams.push({ dict: text.slice(dictStart, dictEnd), start, end });
-    opener.lastIndex = end;
+    const keyword = text.indexOf('endstream', start);
+    let end = keyword < 0 ? text.length : keyword;
+    let unsure = keyword < 0;
+    const length = /\/Length\s+(\d+)\b(?!\s+\d+\s+R\b)/.exec(dict);
+    if (length) {
+      const stated = start + Number(length[1]);
+      if (/^(?:\r\n|\r|\n)?endstream/.test(text.slice(stated, stated + 11))) end = stated;
+      else unsure = true;
+    } else if (text.slice(start, end).includes('endobj')) unsure = true;
+    const filter = /\/Filter\s*(\[[^\]]*\]|\/[A-Za-z0-9]+)/.exec(dict);
+    streams.push({
+      dict,
+      filters: filter?.[1]!.match(/\/[A-Za-z0-9]+/g) ?? [],
+      start,
+      end,
+      unsure,
+    });
+    opener.lastIndex = Math.max(end, start);
   }
   return streams;
 }
@@ -189,10 +350,18 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
   const jpegs: PdfJpeg[] = [];
   const unhandled: string[] = [];
   const covered: Array<[number, number]> = [];
-  for (const { dict, start, end } of pdfStreams(text)) {
+  let attachment = ATTACHMENT.test(text);
+  if (/\/Encrypt\s*(?:<<|\d+\s+\d+\s+R)/.test(text))
+    unhandled.push('an encrypted file, which this scan cannot read');
+  for (const { dict, filters, start, end, unsure } of pdfStreams(text)) {
     const at = `at byte ${start}`;
-    if (PLAIN_JPEG.test(dict)) {
+    const image = IS_IMAGE.test(dict);
+    if (filters.length === 1 && filters[0] === '/DCTDecode') {
       covered.push([start, end]);
+      if (unsure) {
+        unhandled.push(`a JPEG image stream ${at} whose length does not match where it ends`);
+        continue;
+      }
       if (!(bytes[start] === 0xff && bytes[start + 1] === 0xd8 && bytes[start + 2] === 0xff)) {
         unhandled.push(`a JPEG image stream ${at} that does not start as a JPEG`);
         continue;
@@ -202,41 +371,63 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
         unhandled.push(`a JPEG image stream ${at} that ${walk.problem ?? 'cannot be read'}`);
         continue;
       }
+      for (const note of walk.notes) unhandled.push(`a JPEG image stream ${at} that ${note}`);
       // After the picture's end only the line break before "endstream" may follow. Anything
       // else is a second picture (a depth map, an original, a video) or a maker's trailer.
       if (/[^\r\n]/.test(text.slice(walk.end, end)))
         unhandled.push(`a JPEG image stream ${at} with more data after the picture's end`);
       jpegs.push({ start, end, blocks: walk.blocks });
-    } else if (ANY_JPEG.test(dict) && IS_IMAGE.test(dict)) {
+    } else if (filters.includes('/DCTDecode')) {
       covered.push([start, end]);
       unhandled.push(`a JPEG image stream ${at} behind another filter`);
-    } else if (JPEG_2000.test(dict)) {
+    } else if (filters.includes('/JPXDecode')) {
       unhandled.push(`a JPEG 2000 image stream ${at}`);
+    } else if (/\/Filter\s+\d+\s+\d+\s+R\b/.test(dict)) {
+      unhandled.push(`a stream ${at} whose filter is named in another object`);
+    } else if (!image) {
+      // Everything that is not a picture's pixels: page content, object streams, metadata,
+      // fonts, color profiles, attachments. Read it after its filters, or say that it could
+      // not be read. (A cross-reference stream holds only offsets.)
+      let inside: string | null;
+      let why = filters.join(' ');
+      try {
+        inside = decoded(bytes.subarray(start, end), filters);
+        if (/\/Predictor\s+(?:[2-9]|1\d)\b/.test(dict) && !/\/Type\s*\/XRef\b/.test(dict)) {
+          inside = null;
+          why = 'stored with a predictor';
+        }
+      } catch {
+        inside = null;
+      }
+      if (inside === null) {
+        unhandled.push(`a stream ${at} that this scan cannot read (${why})`);
+      } else {
+        if (filters.length > 0)
+          for (const kind of signatures(inside))
+            unhandled.push(`${kind} inside a compressed stream ${at}`);
+        if (INLINE_JPEG.test(inside)) unhandled.push(`an inline JPEG image inside a stream ${at}`);
+        if (/\/Type\s*\/Metadata\b/.test(dict) && PHOTO_XMP.test(inside))
+          unhandled.push(`a metadata stream ${at} with camera, location or contact fields`);
+        if (/\/Type\s*\/ObjStm\b/.test(dict) && ATTACHMENT.test(inside)) attachment = true;
+        // A color profile the PDF itself carries can describe one display, too.
+        if (inside.startsWith('acsp', 36)) {
+          const profile = displayDetails(Buffer.from(inside, 'latin1'));
+          if (profile.unsure || profile.ranges.length > 0)
+            unhandled.push(`a color profile ${at} with the details of one display`);
+        }
+      }
     }
     // XMP that the PDF keeps for an image in a stream of its own.
-    if (IS_IMAGE.test(dict) && /\/Metadata\b/.test(dict))
+    if (image && /\/Metadata\b/.test(dict))
       unhandled.push(`an image ${at} with a metadata stream of its own`);
-    if (/\/Type\s*\/Metadata\b/.test(dict) && PHOTO_XMP.test(text.slice(start, end)))
-      unhandled.push(`a metadata stream ${at} with camera or location fields`);
-    if (/\/Type\s*\/EmbeddedFile\b/.test(dict)) unhandled.push(`a file attachment ${at}`);
-    // What sits inside a compressed stream: photo metadata, or an inline JPEG.
-    if (/\/Filter\s*(?:\/FlateDecode\b|\[\s*\/FlateDecode\s*\])/.test(dict)) {
-      let inflated = '';
-      try {
-        inflated = inflateSync(bytes.subarray(start, end)).toString('latin1');
-      } catch {
-        // Not readable as plain deflate (a predictor, an encrypted file): nothing to search.
-      }
-      for (const kind of signatures(inflated))
-        unhandled.push(`${kind} inside a compressed stream ${at}`);
-      if (/\/(?:DCT|DCTDecode)\b[^]{0,200}?\bID\s/.test(inflated))
-        unhandled.push(`an inline JPEG image inside a compressed stream ${at}`);
-    }
   }
+  if (attachment) unhandled.push('a file attachment');
   // JPEG data anywhere else in the file: an image stream the search above did not pair with a
   // dictionary. A thumbnail inside a photo's EXIF lies within that photo's stream.
+  let next = 0;
   for (let at = text.indexOf('\xff\xd8\xff'); at >= 0; at = text.indexOf('\xff\xd8\xff', at + 1)) {
-    if (covered.some(([start, end]) => at >= start && at < end)) continue;
+    while (next < covered.length && covered[next]![1] <= at) next++;
+    if (next < covered.length && at >= covered[next]![0]) continue;
     if (looksLikeJpeg(bytes, at))
       unhandled.push(`JPEG data at byte ${at} outside the image streams this scan found`);
   }
@@ -244,15 +435,17 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
 }
 
 /**
- * Blank every metadata segment of the PDF's JPEG streams, in place. Each payload becomes zeros
- * and its marker a neutral one, so decoders skip it as they did before. Returns what was blanked.
+ * Blank every metadata range of the PDF's JPEG streams, in place. Each range becomes zeros, and
+ * its segment's marker a neutral one, unless a decoder needs the segment: a JFIF header loses
+ * only its thumbnail, a display's color profile only the tags that describe the display.
+ * Decoders skip what is left as they did before. Returns what was blanked.
  */
 export function blankPdfImageMetadata(bytes: Uint8Array): string[] {
   const done: string[] = [];
   scanPdfImages(bytes).jpegs.forEach((jpeg, index) => {
     for (const block of jpeg.blocks) {
       bytes.fill(0, block.start, block.end);
-      bytes[block.marker] = NEUTRAL_MARKER;
+      if (block.marker >= 0) bytes[block.marker] = NEUTRAL_MARKER;
       done.push(`image ${index + 1}: ${block.kind}, ${block.end - block.start} bytes`);
     }
   });

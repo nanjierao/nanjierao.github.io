@@ -105,12 +105,14 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   metadata, unreadable images, and files it can't look inside (PDF, video, audio, office files)
   are errors until someone reviews the exact file and allowlists its printed fingerprint.
 - `npm run strip-images -- <files>` — removes EXIF/XMP/IPTC from images before they are committed.
-- `npm run strip-pdf -- <files>` — blanks the metadata of photos embedded in PDFs (the EXIF, XMP,
-  Photoshop and comment segments of their JPEG image streams), in place, before they are
-  committed (D78). The file keeps its length and every page renders as before. `check:privacy`
-  fails on a PDF that still has any, and on what the scan cannot vouch for (an image stream it
-  cannot read, a picture with more data after it, an image with a metadata stream of its own, a
-  file attachment); `strip-pdf` prints where.
+- `npm run strip-pdf -- <files>` — blanks the metadata of photos embedded in PDFs, in place,
+  before they are committed (D78): in their JPEG image streams, the EXIF, XMP, Photoshop,
+  comment and other application segments, a JFIF thumbnail, and what a display's color profile
+  says about the display. The file keeps its length and every page renders as before.
+  `check:privacy` fails on a PDF that still has any, and on what the scan cannot vouch for (an
+  encrypted file, a stream it cannot read, an image stream whose length does not add up, a
+  picture with more data after it, an image with a metadata stream of its own, camera fields in
+  a metadata stream, a file attachment); `strip-pdf` prints where.
 
 ## Content rules (non-negotiable)
 
@@ -207,8 +209,9 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   version, so link the DOI. An open-access copy under a license that allows it (CC BY) may be
   hosted with its attribution on /credits. When no version may be hosted, link the DOI.
 - Before a PDF is committed: read every page (figures included), run `npm run strip-pdf` on it,
-  look at whatever it reports as not handled, and add the file's fingerprint from
-  `check:privacy` to `scripts/privacy-allowlist.json` with a reason. Photos in papers often carry
+  look at whatever it reports as not handled, and add the fingerprint of every finding
+  `check:privacy` prints for the file to `scripts/privacy-allowlist.json`, each with its own
+  reason. Photos in papers often carry
   EXIF with the author's name, capture times and sometimes GPS; never write such values into a
   file, a commit message or a pull request.
 - Never add to or change the pages of a file Jimmy sent without his word. Blanking hidden photo

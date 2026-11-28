@@ -1,6 +1,10 @@
 // Photo metadata inside PDFs (D78): scripts/lib/pdf-images.ts finds the JPEG image streams of a
-// PDF and blanks their metadata segments in place, and lists whatever it cannot vouch for. The
-// files here are built in the test: a few PDF objects around JPEG data, with made-up values.
+// PDF and blanks their metadata in place, and lists whatever it cannot vouch for. The files here
+// are built in the test: a few PDF objects around JPEG data, with made-up values.
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { deflateSync } from 'node:zlib';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
@@ -46,6 +50,7 @@ const LAYOUTS: Record<string, Layout> = {
   'stream right after the dictionary, CR LF': (dict, data) =>
     `${dict}stream\r\n${data}\r\nendstream`,
   'CR, stream, LF': (dict, data) => `${dict}\rstream\n${data}\rendstream`,
+  'stream, then a CR alone': (dict, data) => `${dict}\nstream\r${data}\nendstream`,
 };
 
 function pdf(...objects: string[]): Uint8Array {
@@ -58,9 +63,71 @@ const imageDict = (length: number, filter = '/DCTDecode', extra = '') =>
   `<< /Type /XObject /Subtype /Image /Width 4 /Height 4 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter ${filter} /Length ${length}${extra} >>`;
 const image = (data: string, filter?: string, extra?: string) =>
   LAYOUTS['newline, stream, newline']!(imageDict(data.length, filter, extra), data);
+/** Any other stream: its dictionary's entries, then the data. */
+const stream = (entries: string, data: string) =>
+  `<< ${entries} /Length ${data.length} >>\nstream\n${data}\nendstream`;
+const flate = (text: string) => deflateSync(Buffer.from(text, 'latin1')).toString('latin1');
 
 const page = '<< /Type /Page /Contents 3 0 R >>';
 const content = `<< /Length 21 >>\nstream\nq 4 0 0 4 0 0 cm /Im1 Do Q\nendstream`;
+
+/** What the scan cannot vouch for, without the byte offsets. */
+const problems = (file: Uint8Array) =>
+  scanPdfImages(file).unhandled.map((line) => line.replace(/ at byte \d+/, ''));
+
+/** ASCII85 as PDF writes it. */
+function ascii85(text: string): string {
+  const bytes = Buffer.from(text, 'latin1');
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 4) {
+    const chunk = bytes.subarray(i, i + 4);
+    let value = 0;
+    for (let k = 0; k < 4; k++) value = value * 256 + (chunk[k] ?? 0);
+    let group = '';
+    for (let k = 0; k < 5; k++) {
+      group = String.fromCharCode(33 + (value % 85)) + group;
+      value = Math.floor(value / 85);
+    }
+    out += group.slice(0, chunk.length + 1);
+  }
+  return `${out}~>`;
+}
+
+/**
+ * A color profile as its bytes lay it out: a 128-byte header, the tag table, the tags' data.
+ * A tag given `sharedWith` points at another tag's data, as real profiles do for equal curves.
+ */
+function profile(tags: Array<[name: string, data: string, sharedWith?: string]>): string {
+  const head = Buffer.alloc(128);
+  head.write('acsp', 36, 'latin1');
+  const table = Buffer.alloc(4 + tags.length * 12);
+  table.writeUInt32BE(tags.length, 0);
+  const offsets = new Map<string, number>();
+  let offset = head.length + table.length;
+  let body = '';
+  tags.forEach(([name, data, sharedWith], i) => {
+    const at = sharedWith === undefined ? offset : offsets.get(sharedWith)!;
+    offsets.set(name, at);
+    table.write(name, 4 + i * 12, 'latin1');
+    table.writeUInt32BE(at, 8 + i * 12);
+    table.writeUInt32BE(data.length, 12 + i * 12);
+    if (sharedWith === undefined) {
+      body += data;
+      offset += data.length;
+    }
+  });
+  const whole = Buffer.concat([head, table, Buffer.from(body, 'latin1')]);
+  whole.writeUInt32BE(whole.length, 0);
+  return whole.toString('latin1');
+}
+
+const DISPLAY = 'display details in a color profile';
+const XYZ = 'XYZ \0\0\0\0primaries...';
+const CURVE = 'vcgt\0\0\0\0calibration.';
+const MMOD = 'mmod\0\0\0\0MADE-UP SERIAL 0123456789 ABCDEF';
+const NDIN = 'ndin\0\0\0\0made-up native panel values';
+const iccSegment = (icc: string, chunk = '\x01\x01') =>
+  segment(0xe2, `ICC_PROFILE\0${chunk}${icc}`);
 
 describe('photo metadata inside a PDF (D78)', () => {
   const withMetadata = jpeg(EXIF, XMP, PHOTOSHOP, COMMENT, ICC, ADOBE);
@@ -84,6 +151,11 @@ describe('photo metadata inside a PDF (D78)', () => {
         'comment',
       ]);
       expect(scan.jpegs[1]!.blocks).toEqual([]);
+      // Each stream is the picture, from its first byte to its end-of-image marker.
+      for (const found of scan.jpegs) {
+        expect(textOf(file.subarray(found.start, found.start + 3))).toBe('\xff\xd8\xff');
+        expect(textOf(file.subarray(found.end - 2, found.end))).toBe(END);
+      }
       // Each block's range is the payload, as the file holds it.
       const exif = scan.jpegs[0]!.blocks[0]!;
       expect(textOf(file.subarray(exif.start, exif.start + 6))).toBe('Exif\0\0');
@@ -97,6 +169,17 @@ describe('photo metadata inside a PDF (D78)', () => {
         'XMP in an image',
       ]);
     });
+
+  it('reads a dictionary written without spaces', () => {
+    const dict = `<</Type/XObject/Subtype/Image/Width 4/Height 4/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${withMetadata.length}>>`;
+    const file = pdf(page, `${dict}stream\n${withMetadata}\nendstream`, content);
+    const scan = scanPdfImages(file);
+    expect(scan.unhandled).toEqual([]);
+    expect(scan.jpegs).toHaveLength(1);
+    expect(scan.jpegs[0]!.blocks).toHaveLength(4);
+    blankPdfImageMetadata(file);
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+  });
 
   it('blanks them in place: same length, same picture data, nothing left to find', () => {
     const file = pdf(page, image(withMetadata), content);
@@ -188,6 +271,187 @@ describe('photo metadata inside a PDF (D78)', () => {
     expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
   });
 
+  it('takes a thumbnail out of the JFIF header and extra data out of Adobe’s segment, and keeps both segments', () => {
+    const header = 'JFIF\0\x01\x01\0\0\x01\0\x01';
+    const thumbnail = '\x02\x02made-up-rgb';
+    const adobe = 'Adobe\0d\0\0\0\0\x01';
+    const picture = `\xff\xd8${segment(0xe0, header + thumbnail)}${segment(0xee, `${adobe}made-up tail`)}${TABLE}${SCAN}${END}`;
+    const file = pdf(page, image(picture), content);
+    const [found] = scanPdfImages(file).jpegs;
+    expect(found!.blocks.map((block) => block.kind)).toEqual([
+      'JFIF thumbnail',
+      'data after the Adobe segment',
+    ]);
+    // Neither segment gives up its marker: a decoder still reads the header in front.
+    expect(found!.blocks.map((block) => block.marker)).toEqual([-1, -1]);
+    const before = textOf(file);
+    blankPdfImageMetadata(file);
+    const after = textOf(file);
+    expect(after).toContain(segment(0xe0, header + '\0'.repeat(thumbnail.length)));
+    expect(after).toContain(segment(0xee, adobe + '\0'.repeat('made-up tail'.length)));
+    expect(after).not.toContain('made-up');
+    expect([...after].filter((char, i) => char !== before[i])).toHaveLength(
+      thumbnail.length + 'made-up tail'.length,
+    );
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+  });
+
+  it('blanks what a display’s color profile says about the display, and nothing else in it', () => {
+    const icc = profile([
+      ['rXYZ', XYZ],
+      ['mmod', MMOD],
+      ['vcgt', CURVE],
+      ['ndin', NDIN],
+    ]);
+    const picture = `\xff\xd8${JFIF}${iccSegment(icc)}${TABLE}${SCAN}${END}`;
+    const file = pdf(page, image(picture), content);
+    const before = textOf(file);
+    const [found] = scanPdfImages(file).jpegs;
+    expect(found!.blocks.map((block) => block.kind)).toEqual([DISPLAY, DISPLAY]);
+    expect(found!.blocks.map((block) => block.marker)).toEqual([-1, -1]);
+    expect(blankPdfImageMetadata(file)).toEqual([
+      `image 1: ${DISPLAY}, ${MMOD.length - 8} bytes`,
+      `image 1: ${DISPLAY}, ${NDIN.length - 8} bytes`,
+    ]);
+    const after = textOf(file);
+    expect(after).not.toContain('MADE-UP SERIAL');
+    expect(after).not.toContain('native panel');
+    // The profile keeps its header, its tag table and every tag a color engine reads; the two
+    // display tags keep their place and their type.
+    expect(after).toContain(icc.slice(0, 128 + 4 + 4 * 12));
+    expect(after).toContain(XYZ);
+    expect(after).toContain(CURVE);
+    expect(after).toContain(`mmod\0\0\0\0${'\0'.repeat(MMOD.length - 8)}`);
+    expect(after).toContain(`ndin\0\0\0\0${'\0'.repeat(NDIN.length - 8)}`);
+    expect([...after].filter((char, i) => char !== before[i])).toHaveLength(
+      MMOD.length - 8 + NDIN.length - 8,
+    );
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+    expect(blankPdfImageMetadata(file)).toEqual([]);
+  });
+
+  it('leaves a display’s profile alone, and says so, when it cannot tell where the details lie', () => {
+    const line =
+      'a JPEG image stream that has a color profile with display details this tool cannot place';
+    // The display tag points at data that a tag for the colors also uses.
+    const shared = profile([
+      ['rXYZ', XYZ],
+      ['mmod', XYZ, 'rXYZ'],
+    ]);
+    // The profile is spread over two segments, and the display tag's data is in the second.
+    const long = profile([
+      ['rXYZ', XYZ],
+      ['mmod', MMOD],
+    ]);
+    const cut = long.length - 10;
+    const twoSegments =
+      iccSegment(long.slice(0, cut), '\x01\x02') + iccSegment(long.slice(cut), '\x02\x02');
+    // A tag table that claims more tags than the profile has room for.
+    const broken = Buffer.from(profile([['rXYZ', XYZ]]), 'latin1');
+    broken.writeUInt32BE(1000, 128);
+    for (const profileSegments of [
+      iccSegment(shared),
+      twoSegments,
+      iccSegment(broken.toString('latin1')),
+    ]) {
+      const file = pdf(page, image(`\xff\xd8${JFIF}${profileSegments}${TABLE}${SCAN}${END}`));
+      const before = textOf(file);
+      expect(problems(file)).toEqual([line]);
+      expect(scanPdfImages(file).jpegs[0]!.blocks).toEqual([]);
+      expect(blankPdfImageMetadata(file)).toEqual([]);
+      expect(textOf(file)).toBe(before);
+    }
+  });
+
+  it('reports a display’s profile that the PDF keeps in a stream of its own', () => {
+    const display = profile([
+      ['rXYZ', XYZ],
+      ['mmod', MMOD],
+    ]);
+    const line = 'a color profile with the details of one display';
+    expect(problems(pdf(page, stream('/N 3', display)))).toEqual([line]);
+    expect(problems(pdf(page, stream('/N 3 /Filter /FlateDecode', flate(display))))).toEqual([
+      line,
+    ]);
+    // A profile without such tags, and one whose display tags are blank, are fine.
+    expect(problems(pdf(page, stream('/N 3', profile([['rXYZ', XYZ]]))))).toEqual([]);
+    const blank = profile([
+      ['rXYZ', XYZ],
+      ['mmod', `mmod\0\0\0\0${'\0'.repeat(32)}`],
+    ]);
+    expect(problems(pdf(page, stream('/N 3 /Filter /FlateDecode', flate(blank))))).toEqual([]);
+  });
+
+  it('keeps the colors of a photo with a display’s profile, in a decoder that reads the profile', async () => {
+    // A photo in Display P3 as sharp writes it. Its profile then gets the two tags an Apple
+    // display profile has, with made-up contents.
+    const p3 = await sharp({
+      create: { width: 16, height: 16, channels: 3, background: { r: 220, g: 40, b: 60 } },
+    })
+      .withIccProfile('p3')
+      .jpeg({ quality: 90 })
+      .toBuffer();
+    const { icc } = await sharp(p3).metadata();
+    expect(icc).toBeDefined();
+    const count = icc!.readUInt32BE(128);
+    const tableEnd = 132 + count * 12;
+    const added: Array<[string, string]> = [
+      ['mmod', MMOD],
+      ['ndin', NDIN],
+    ];
+    const table = Buffer.from(icc!.subarray(128, tableEnd));
+    table.writeUInt32BE(count + added.length, 0);
+    for (let i = 0; i < count; i++)
+      table.writeUInt32BE(table.readUInt32BE(8 + i * 12) + added.length * 12, 8 + i * 12);
+    let offset = icc!.length + added.length * 12;
+    const entries = added.map(([name, data]) => {
+      const entry = Buffer.alloc(12);
+      entry.write(name, 0, 'latin1');
+      entry.writeUInt32BE(offset, 4);
+      entry.writeUInt32BE(data.length, 8);
+      offset += data.length;
+      return entry;
+    });
+    const display = Buffer.concat([
+      icc!.subarray(0, 128),
+      table,
+      ...entries,
+      icc!.subarray(tableEnd),
+      Buffer.from(added.map(([, data]) => data).join(''), 'latin1'),
+    ]);
+    display.writeUInt32BE(display.length, 0);
+
+    // The photo's own segments, with the profile's segment replaced (or left out).
+    const rebuilt = (replacement: string) => {
+      let out = '\xff\xd8';
+      let i = 2;
+      while (p3[i + 1] !== 0xda) {
+        const next = i + 2 + p3.readUInt16BE(i + 2);
+        out += p3[i + 1] === 0xe2 ? replacement : p3.toString('latin1', i, next);
+        i = next;
+      }
+      return out + p3.toString('latin1', i);
+    };
+    const photo = rebuilt(iccSegment(display.toString('latin1')));
+    const pixels = (data: string | Uint8Array) =>
+      sharp(typeof data === 'string' ? Buffer.from(data, 'latin1') : Buffer.from(data))
+        .raw()
+        .toBuffer();
+    const original = await pixels(p3);
+    // The decoder reads the profile: without it the same picture data gives other colors.
+    expect((await pixels(rebuilt(''))).equals(original)).toBe(false);
+    expect((await pixels(photo)).equals(original)).toBe(true);
+
+    const file = pdf(page, image(photo), content);
+    const [found] = scanPdfImages(file).jpegs;
+    expect(found!.blocks.map((block) => block.kind)).toEqual([DISPLAY, DISPLAY]);
+    blankPdfImageMetadata(file);
+    expect(textOf(file)).not.toContain('MADE-UP SERIAL');
+    expect(textOf(file)).not.toContain('native panel');
+    expect((await pixels(file.subarray(found!.start, found!.end))).equals(original)).toBe(true);
+    expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+  });
+
   it('finds a comment between the scans of a progressive picture', () => {
     const progressive = `\xff\xd8${JFIF}${TABLE}${SCAN}${COMMENT}${SCAN}${END}`;
     const file = pdf(image(progressive));
@@ -198,66 +462,199 @@ describe('photo metadata inside a PDF (D78)', () => {
   });
 
   it('never writes outside a damaged picture: a segment that runs past its stream is left alone', () => {
-    // The EXIF segment claims 0x4000 bytes; the stream ends long before that.
+    // The EXIF segment claims 0x4000 bytes. The stream ends long before that, but the file goes
+    // on for longer: another object, and a second picture with EXIF of its own.
     const cut = `\xff\xd8${JFIF}\xff\xe1\x40\0Exif\0\0II*\0\x08\0\0\0 MADE-UP-GPS`;
-    const next = '<< /Producer (the object after the picture) >>';
-    const file = pdf(image(cut), next, content);
+    const next = `<< /Producer (the object after the picture: ${'x'.repeat(0x5000)}) >>`;
+    const file = pdf(image(cut), next, content, image(jpeg(EXIF)));
     const before = textOf(file);
     const scan = scanPdfImages(file);
-    expect(scan.jpegs).toEqual([]);
     expect(scan.unhandled).toHaveLength(1);
     expect(scan.unhandled[0]).toMatch(/has a segment that runs past the end of the stream/);
-    expect(blankPdfImageMetadata(file)).toEqual([]);
-    expect(textOf(file)).toBe(before);
+    // Only the second picture is found, and only its EXIF is blanked.
+    expect(scan.jpegs).toHaveLength(1);
+    expect(blankPdfImageMetadata(file)).toHaveLength(1);
+    const after = textOf(file);
+    const second = before.lastIndexOf('\xff\xd8');
+    expect(after.slice(0, second)).toBe(before.slice(0, second));
+    expect(after).toContain(next);
     // The backstop still reports the EXIF it could not remove.
     expect(pdfPhotoFindings(file).metadata).toEqual(['EXIF']);
+  });
+
+  it('takes a stream’s end from its /Length, and leaves the stream alone when that does not add up', () => {
+    const data = jpeg(EXIF);
+    const mismatch = 'a JPEG image stream whose length does not match where it ends';
+    // A length that stops short of the picture's end.
+    const short = pdf(page, `${imageDict(data.length - 7)}\nstream\n${data}\nendstream`, content);
+    // A length kept in another object, and no "endstream" before the next object begins.
+    const elsewhere = imageDict(0).replace('/Length 0', '/Length 9 0 R');
+    const open = pdf(page, `${elsewhere}\nstream\n${data}`, content);
+    for (const file of [short, open]) {
+      const before = textOf(file);
+      expect(problems(file)).toEqual([mismatch]);
+      expect(scanPdfImages(file).jpegs).toEqual([]);
+      expect(blankPdfImageMetadata(file)).toEqual([]);
+      expect(textOf(file)).toBe(before);
+    }
+    // A length kept in another object: the stream ends at "endstream".
+    const indirect = pdf(page, `${elsewhere}\nstream\n${data}\nendstream`, content);
+    expect(problems(indirect)).toEqual([]);
+    expect(scanPdfImages(indirect).jpegs[0]!.blocks.map((block) => block.kind)).toEqual(['EXIF']);
+    // The words "endstream" and "endobj" inside a picture do not end it: its length does.
+    const wordy = jpeg(iccSegment(' endstream endobj '), EXIF);
+    const file = pdf(page, image(wordy), content);
+    expect(problems(file)).toEqual([]);
+    const [found] = scanPdfImages(file).jpegs;
+    expect(found!.end - found!.start).toBe(wordy.length);
+    expect(found!.blocks.map((block) => block.kind)).toEqual(['EXIF']);
   });
 
   it('reports what it cannot vouch for', () => {
     const two = `${jpeg(EXIF)}${jpeg()}`;
     const trailer = `${jpeg()}SEFT made-up trailer`;
     const noEnd = `\xff\xd8${JFIF}${TABLE}${SCAN}`;
+    const junk = `\xff\xd8${JFIF}JUNK${EXIF}${TABLE}${SCAN}${END}`;
+    const zero = `\xff\xd8${JFIF}\xff\xe1\0\0${EXIF}${TABLE}${SCAN}${END}`;
     const cases: Array<[stream: string, problem: RegExp]> = [
       [image('x\x9c\x01\x02\x03', '[ /FlateDecode /DCTDecode ]'), /behind another filter/],
+      [image('<~9jqo^~>', '[ /ASCII85Decode /DCTDecode ]'), /behind another filter/],
       [image('\0\0\0\x0cjP  \r\n\x87\n', '/JPXDecode'), /JPEG 2000/],
       [image('not a jpeg at all'), /does not start as a JPEG/],
       [image(two), /more data after the picture's end/],
       [image(trailer), /more data after the picture's end/],
       [image(noEnd), /has no end-of-image marker/],
+      [image(junk), /is not a JPEG all the way through/],
+      [image(zero), /has a segment with an impossible length/],
       [
         image(clean, '/DCTDecode', ' /Metadata 9 0 R'),
         /an image .* with a metadata stream of its own/,
       ],
       [
-        `<< /Type /Metadata /Subtype /XML /Length 90 >>\nstream\n<x:xmpmeta><exif:GPSLatitude>12,34.5N</exif:GPSLatitude></x:xmpmeta>\nendstream`,
-        /a metadata stream .* with camera or location fields/,
+        stream(
+          '/Type /Metadata /Subtype /XML',
+          '<x:xmpmeta><exif:GPSLatitude>12,34.5N</exif:GPSLatitude></x:xmpmeta>',
+        ),
+        /a metadata stream .* with camera, location or contact fields/,
       ],
-      [`<< /Type /EmbeddedFile /Length 5 >>\nstream\nhello\nendstream`, /a file attachment/],
+      // Fields written as attributes, in a packet that is compressed.
+      [
+        stream(
+          '/Type /Metadata /Subtype /XML /Filter /FlateDecode',
+          flate(
+            '<x:xmpmeta><rdf:Description xmlns:tiff="http://ns.adobe.com/tiff/1.0/" tiff:Model="Sample Camera"/></x:xmpmeta>',
+          ),
+        ),
+        /a metadata stream .* with camera, location or contact fields/,
+      ],
+      [
+        stream('/Filter /FlateDecode', 'hello'),
+        /a stream .* that this scan cannot read \(\/FlateDecode\)/,
+      ],
+      [
+        stream('/Filter /LZWDecode', 'hello'),
+        /a stream .* that this scan cannot read \(\/LZWDecode\)/,
+      ],
+      [stream('/Filter /ASCIIHexDecode', '48 65 6c 6c 6f zz>'), /cannot read \(\/ASCIIHexDecode\)/],
+      [stream('/Filter /ASCII85Decode', '<~87cURD]\x7f~>'), /cannot read \(\/ASCII85Decode\)/],
+      [stream('/Filter 9 0 R', 'hello'), /a stream .* whose filter is named in another object/],
+      [
+        stream('/Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 4 >>', flate('hello')),
+        /a stream .* that this scan cannot read \(stored with a predictor\)/,
+      ],
     ];
-    for (const [stream, problem] of cases) {
-      const scan = scanPdfImages(pdf(page, stream, content));
+    for (const [body, problem] of cases) {
+      const file = pdf(page, body, content);
+      const scan = scanPdfImages(file);
       expect(scan.unhandled, String(problem)).toHaveLength(1);
       expect(scan.unhandled[0]).toMatch(problem);
+      // Nothing is blanked in a stream the scan could not walk. (A picture it did walk is
+      // blanked, also when more data follows it: that is reported, and its bytes stay.)
+      const before = textOf(file);
+      const walked = scan.jpegs.flatMap((found) => found.blocks).length;
+      expect(blankPdfImageMetadata(file), String(problem)).toHaveLength(walked);
+      if (walked === 0) expect(textOf(file), String(problem)).toBe(before);
+      else expect(textOf(file).slice(scan.jpegs[0]!.end)).toBe(before.slice(scan.jpegs[0]!.end));
     }
   });
 
-  it('finds a JPEG that no image dictionary announces, and metadata inside a compressed stream', () => {
+  it('reads what it can of the other streams, and reports nothing for the ones that are fine', () => {
+    const fine = [
+      stream('/Filter /FlateDecode', flate('BT (Hello) Tj ET')),
+      stream('/Filter [ /ASCII85Decode /FlateDecode ]', ascii85(flate('BT (Hello) Tj ET'))),
+      stream('/Filter /ASCIIHexDecode', '48 65 6c 6c 6f>'),
+      // A cross-reference stream holds offsets; its predictor hides nothing.
+      stream(
+        '/Type /XRef /Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 4 >>',
+        flate('\x02\x01\0\0\x10'),
+      ),
+      // Bytes that start like a JPEG and are not one.
+      stream(
+        '',
+        '\xff\xd8\xff\0 not a picture \xff\xd8\xff\xe0\xff\xff \xff\xd8\xff\xe0\0\x04ab-- \xff\xd8\xff\xe0\0\x04ab\xff\xdb\0\x04cd-- \xff\xd8\xff\0\0\x04ab\xff\0\0\x04cd\xff',
+      ),
+      stream(
+        '/Type /Metadata /Subtype /XML',
+        '<x:xmpmeta xmlns:dc="http://purl.org/dc/elements/1.1/"/>',
+      ),
+    ];
+    expect(problems(pdf(page, ...fine))).toEqual([]);
+  });
+
+  it('reports an encrypted file', () => {
+    const file = textOf(pdf(page, image(clean), content)).replace(
+      '<< /Size',
+      '<< /Encrypt 9 0 R /Size',
+    );
+    expect(problems(bytesOf(file))).toEqual(['an encrypted file, which this scan cannot read']);
+  });
+
+  it('reports a file attachment, however the PDF names it', () => {
+    const line = ['a file attachment'];
+    const names = '<< /Type /Catalog /Names << /EmbeddedFiles 7 0 R >> >>';
+    const filespec = '<< /Type /Filespec /F (data.csv) /UF (data.csv) >>';
+    const reference = '<< /F (data.csv) /EF << /F 8 0 R >> >>';
+    const file = stream('/Type /EmbeddedFile', 'a,b\n1,2\n');
+    // In a PDF that compresses its objects, only the object stream names the attachment.
+    const packed = stream(
+      '/Type /ObjStm /N 1 /First 4 /Filter /FlateDecode',
+      flate(`7 0 ${filespec}`),
+    );
+    for (const body of [names, filespec, reference, file, packed])
+      expect(problems(pdf(page, body, content)), body.slice(0, 40)).toEqual(line);
+    expect(problems(pdf(page, names, filespec, reference, file, packed))).toEqual(line);
+    expect(problems(pdf(page, content))).toEqual([]);
+  });
+
+  it('finds a JPEG that no image dictionary announces, and metadata inside an encoded stream', () => {
     // A whole JPEG in a stream whose dictionary does not say what it is.
-    const stray = `<< /Length ${withMetadata.length} >>\nstream\n${withMetadata}\nendstream`;
-    const hidden = scanPdfImages(pdf(page, stray));
+    const hidden = scanPdfImages(pdf(page, stream('', withMetadata)));
     expect(hidden.jpegs).toEqual([]);
     expect(hidden.unhandled).toHaveLength(1);
     expect(hidden.unhandled[0]).toMatch(/JPEG data at byte \d+ outside the image streams/);
 
-    const packed = deflateSync(Buffer.from(`q BI /W 4 /H 4 /F /DCT ID ${EXIF} EI Q`, 'latin1'));
-    const compressed = `<< /Length ${packed.length} /Filter /FlateDecode >>\nstream\n${packed.toString('latin1')}\nendstream`;
-    const scan = scanPdfImages(pdf(page, compressed));
-    expect(scan.unhandled.map((line) => line.replace(/ at byte \d+/, ''))).toEqual([
-      'EXIF inside a compressed stream',
-      'an inline JPEG image inside a compressed stream',
-    ]);
-    // The raw bytes show nothing, so only the scan finds it.
-    expect(pdfMetadataSignatures(pdf(page, compressed))).toEqual([]);
+    // An inline image in a page's content, under each way of writing its filter and the stream's.
+    const inline = `q BI /W 4 /H 4 /F /DCT ID ${EXIF} EI Q`;
+    const long = `q BI /Width 4 /Height 4 /Filter /DCTDecode ID ${EXIF} EI Q`;
+    const found = ['EXIF inside a compressed stream', 'an inline JPEG image inside a stream'];
+    const encoded = [
+      stream('/Filter /FlateDecode', flate(inline)),
+      stream('/Filter [ /FlateDecode ]', flate(long)),
+      stream('/Filter [ /ASCII85Decode /FlateDecode ]', ascii85(flate(inline))),
+      stream('/Filter /ASCIIHexDecode', `${Buffer.from(long, 'latin1').toString('hex')}>`),
+      // "z" stands for four zero bytes.
+      stream('/Filter /ASCII85Decode', `z${ascii85(inline)}`),
+    ];
+    for (const body of encoded) {
+      const file = pdf(page, body);
+      expect(problems(file), body.slice(0, 50)).toEqual(found);
+      // The raw bytes show nothing, so only the scan finds it.
+      expect(pdfMetadataSignatures(file)).toEqual([]);
+    }
+    // Not compressed: the raw bytes show the EXIF, the scan the inline image.
+    const plain = pdf(page, stream('', long));
+    expect(problems(plain)).toEqual(['an inline JPEG image inside a stream']);
+    expect(pdfMetadataSignatures(plain)).toEqual(['EXIF']);
   });
 
   it('leaves other streams alone, even when their bytes say "stream"', () => {
@@ -278,8 +675,10 @@ describe('photo metadata inside a PDF (D78)', () => {
   });
 
   it('does not take a PDF’s own XMP packet for a photo’s', () => {
-    const packet =
-      '<< /Type /Metadata /Subtype /XML /Length 120 >>\nstream\n<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:Description xmlns:xap="http://ns.adobe.com/xap/1.0/"/></x:xmpmeta>\nendstream';
+    const packet = stream(
+      '/Type /Metadata /Subtype /XML',
+      '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:Description xmlns:xap="http://ns.adobe.com/xap/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:pdf="http://ns.adobe.com/pdf/1.3/"/></x:xmpmeta>',
+    );
     const file = pdf(packet, image(clean));
     expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
   });
@@ -308,5 +707,55 @@ describe('photo metadata inside a PDF (D78)', () => {
     expect(isPdf(pdf(page))).toBe(true);
     expect(isPdf(bytesOf(`\n\n%PDF-1.4\n`))).toBe(true);
     expect(isPdf(bytesOf('Not a PDF, just text.'))).toBe(false);
+  });
+});
+
+describe('npm run strip-pdf (D78)', () => {
+  const run = (...files: string[]) => {
+    try {
+      const out = execFileSync(process.execPath, ['scripts/strip-pdf-metadata.ts', ...files], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      return { status: 0, text: out };
+    } catch (error) {
+      const failed = error as { status: number; stdout: string; stderr: string };
+      return { status: failed.status, text: failed.stdout + failed.stderr };
+    }
+  };
+
+  it('blanks a file in place, goes on after a file it cannot read, and exits with an error for it', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'strip-pdf-'));
+    try {
+      const paper = join(dir, 'paper.pdf');
+      const notes = join(dir, 'notes.pdf');
+      const missing = join(dir, 'missing.pdf');
+      const original = pdf(page, image(jpeg(EXIF, COMMENT)), content);
+      writeFileSync(paper, original);
+      writeFileSync(notes, 'Not a PDF, just text.');
+      const first = run(missing, notes, paper);
+      expect(first.status).toBe(1);
+      expect(first.text).toContain(`${missing}: could not be processed (ENOENT)`);
+      expect(first.text).toContain(`${notes}: not a PDF`);
+      expect(first.text).toContain(`${paper}: 1 JPEG image(s); blanked 2 range(s)`);
+      const stripped = new Uint8Array(readFileSync(paper));
+      expect(stripped.length).toBe(original.length);
+      expect(textOf(stripped)).not.toContain('MADE-UP-GPS');
+      expect(pdfPhotoFindings(stripped)).toEqual({ metadata: [], unhandled: [] });
+      // The file it could not read is as it was.
+      expect(readFileSync(notes, 'utf8')).toBe('Not a PDF, just text.');
+      // A second run finds nothing to do and succeeds.
+      const second = run(paper);
+      expect(second).toEqual({ status: 0, text: `${paper}: 1 JPEG image(s); nothing to blank\n` });
+      expect(Buffer.from(readFileSync(paper)).equals(Buffer.from(stripped))).toBe(true);
+      // What the tool cannot vouch for is an error, too.
+      const odd = join(dir, 'odd.pdf');
+      writeFileSync(odd, pdf(page, image(`${jpeg()}made-up trailer`), content));
+      const third = run(odd);
+      expect(third.status).toBe(1);
+      expect(third.text).toMatch(/NOT HANDLED: a JPEG image stream at byte \d+ with more data/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
