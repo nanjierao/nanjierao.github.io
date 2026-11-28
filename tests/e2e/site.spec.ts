@@ -776,28 +776,31 @@ test.describe('learners and teachers on the home page (D66)', () => {
     await isolate(page);
     await page.goto('/');
     const section = page.locator(SECTION);
-    await expect(section.locator('h2')).toHaveText('How AI learns about people and places');
+    await expect(section.locator('h2')).toHaveText('The studies these scenes come from');
     await expect(section.locator('.lt__part > h3')).toHaveText([
       'Observing learners',
       'Modeling teachers',
       'Supporting breadth',
     ]);
-    // Home page order: intro strip, word cloud, this section, then Research and Recent.
+    // Home page order (D79): intro strip, the scenes, the word cloud, this section, then Research
+    // and Recent.
     await expect(page.locator('main h2')).toHaveText([
-      'Topics',
       'How AI learns about people and places',
+      'Topics',
+      'The studies these scenes come from',
       'Research',
       'Recent',
     ]);
-    // Inside the section: the lede, the sketch scenes, then the diagram and the three parts.
+    // Inside the section: the lede, then the diagram and the three parts. The scenes have a
+    // section of their own (D79).
     const order = await section.evaluate((el) =>
-      ['.lede', '.sk', '.fig', '.lt__part'].map((selector) => {
+      ['.lede', '.fig', '.lt__part'].map((selector) => {
         const first = el.querySelector(selector)!;
         return [...el.children].findIndex((child) => child === first || child.contains(first));
       }),
     );
     expect(order).toEqual([...order].sort((x, y) => x - y));
-    expect(new Set(order).size).toBe(4);
+    expect(new Set(order).size).toBe(3);
     await expect(section.locator('.study')).toHaveCount(4);
     // Each card: a short label as its heading, then the work's own title as a citation.
     await expect(section.locator('.study h4').first()).toHaveText(
@@ -886,7 +889,7 @@ test.describe('learners and teachers on the home page (D66)', () => {
 });
 
 test.describe('sketch scenes on the home page (D68)', () => {
-  const SK = '#learners-and-teachers .sk';
+  const SK = '#scenes .sk';
   const SCENES = ['tracker', 'dorm', 'dining', 'puppet', 'city'];
   const scene = (page: Page, id: string) => page.locator(`${SK} [data-scene="${id}"]`);
   const tab = (page: Page, id: string) => page.locator(`${SK} [data-scene-button="${id}"]`);
@@ -924,7 +927,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
     page,
   }) => {
     await openStill(page);
-    await expect(page.locator(`${SK} .sk__sub`)).toHaveText(
+    await expect(page.locator(`${SK} .sk__sub`)).toContainText(
       'Each scene shows where the data comes from, what the system builds from it, and who checks it.',
     );
     await expect(page.locator(`${SK} [data-scene-button]`)).toHaveText([
@@ -951,7 +954,8 @@ test.describe('sketch scenes on the home page (D68)', () => {
       ).toHaveCount(count);
     await expect(page.getByRole('button', { name: 'Replay' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Show all' })).toBeVisible();
-    // A cue over the buttons names them; no scene is a link away any more (D76).
+    // The cue that ends the line over the buttons names them; no scene is a link away any more
+    // (D76, D79).
     await expect(page.locator(`${SK} .sk__cue`)).toHaveText(/^Pick a scene/);
     await expect(
       page.getByRole('group', { name: 'Pick a scene', exact: true }).getByRole('button'),
@@ -1300,6 +1304,9 @@ test.describe('sketch scenes on the home page (D68)', () => {
     page,
   }) => {
     await isolate(page);
+    // A short window: the scenes are first on the page (D79), and a taller one shows enough of
+    // the first drawing for it to start as the page opens (tested further down).
+    await page.setViewportSize({ width: page.viewportSize()!.width, height: 600 });
     await page.goto('/');
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '25'));
     const tracker = scene(page, 'tracker');
@@ -1312,6 +1319,18 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await page.locator(`${SK} .sk__sub`).evaluate((el) => el.scrollIntoView({ block: 'end' }));
     await page.waitForTimeout(400);
     await expect(tracker.locator('[data-step][data-on]')).toHaveCount(0);
+    // Nor is a third of the drawing, when it is reached by scrolling: it starts at half (D79).
+    const third = await tracker.locator('svg[data-svg]').evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      window.scrollBy(0, box.top + box.height / 3 - window.innerHeight);
+      const now = el.getBoundingClientRect();
+      return (window.innerHeight - now.top) / now.height;
+    });
+    expect(third).toBeGreaterThan(0.25);
+    expect(third).toBeLessThan(0.45);
+    await page.waitForTimeout(400);
+    await expect(tracker.locator('[data-step][data-on]')).toHaveCount(0);
+    expect(await undrawn(tracker)).toBeGreaterThan(20);
     // Record everything the live region is ever given during the automatic drawing.
     await live.evaluate((el) => {
       const said: string[] = [];
@@ -1350,6 +1369,8 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await expect(mark).toBeChecked();
 
     // On a fresh page, leave the first scene before it has drawn: it draws when picked again.
+    // (A short window, so the drawing has not started by itself: D79.)
+    await page.setViewportSize({ width: page.viewportSize()!.width, height: 600 });
     await page.goto('/');
     await page.locator(SK).evaluate((el) => ((el as HTMLElement).dataset.speed = '100'));
     await tab(page, 'puppet').click();
@@ -1464,6 +1485,25 @@ test.describe('sketch scenes on the home page (D68)', () => {
     // The scene buttons could do nothing, so none is shown.
     await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
     await expect(page.locator(`${SK} .sk__cue`)).toBeHidden();
+    // The nine scenes come before everything else on the page (D79), so a link leads past them.
+    const skip = page.locator(`${SK} .sk__skip a`);
+    await expect(skip).toBeVisible();
+    await expect(skip).toHaveText('Skip the scenes');
+    await skip.click();
+    await expect(page).toHaveURL(/#topics-heading$/);
+    const landed = await page.evaluate(() => {
+      const target = document.querySelector(':target')!;
+      const scenes = document.querySelector('#scenes')!.getBoundingClientRect();
+      return {
+        id: target.id,
+        top: target.getBoundingClientRect().top,
+        scenesBottom: scenes.bottom,
+      };
+    });
+    expect(landed.id).toBe('topics-heading');
+    // The scenes are above the window now, and the topics begin in it.
+    expect(landed.scenesBottom).toBeLessThanOrEqual(landed.top);
+    expect(landed.top).toBeLessThan(page.viewportSize()!.height);
     await expect(page.locator(`${SK} .sk__ctl`)).toBeHidden();
     await expect(page.getByRole('button', { name: 'Turn the puppet' })).toBeHidden();
     await expect(page.locator(`${SK} .sk__locked:visible`)).toHaveCount(0);
@@ -1513,7 +1553,19 @@ test.describe('sketch scenes on the home page (D68)', () => {
     await isolate(page);
     await page.route(/SketchScenes.*\.js$/, (route) => route.abort());
     await page.goto('/');
+    // Until the script starts, the open scene is blank paper (D79): the finished drawing the
+    // page ships would be wiped a moment later, in the first screen. Hidden, not removed, so
+    // the scene keeps its place.
+    const ink = scene(page, 'tracker').locator('.sk__ink').first();
+    const entry = scene(page, 'tracker').locator('.sk__entry').first();
+    await expect(ink).toHaveCSS('visibility', 'hidden');
+    await expect(entry).toHaveCSS('visibility', 'hidden');
+    expect(await ink.evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThan(0);
+    await expect(page.locator(`${SK} .sk__skip`)).toBeHidden();
     await expect(page.locator(SK)).toHaveAttribute('data-failed', '', { timeout: 8_000 });
+    await expect(ink).toHaveCSS('visibility', 'visible');
+    await expect(entry).toHaveCSS('visibility', 'visible');
+    await expect(page.locator(`${SK} .sk__skip a`)).toBeVisible();
     await expect(page.locator(`${SK} .sk__scene:visible`)).toHaveCount(9);
     await expect(page.locator(`${SK} [data-scene-button]:visible`)).toHaveCount(0);
     await expect(page.locator(`${SK} .sk__ctl`)).toBeHidden();
@@ -1535,7 +1587,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
           if (finished) await page.getByRole('button', { name: 'Show all' }).click();
           await expect(scene(page, id)).toHaveAttribute('data-state', finished ? 'done' : 'ready');
           const results = await new AxeBuilder({ page })
-            .include('#learners-and-teachers .sk')
+            .include('#scenes .sk')
             .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
             .analyze();
           expect(
@@ -1628,6 +1680,155 @@ test.describe('sketch scenes on the home page (D68)', () => {
     );
   });
 
+  test('come right after the intro strip, before the word cloud and the studies (D79)', async ({
+    page,
+  }) => {
+    await openStill(page);
+    const ids = await page
+      .locator('main > section')
+      .evaluateAll((sections) => sections.map((el) => el.getAttribute('aria-labelledby')));
+    expect(ids).toEqual([
+      'intro-name',
+      'scenes-heading',
+      'topics-heading',
+      'lt-heading',
+      'research-heading',
+      'recent-heading',
+    ]);
+    await expect(page.locator('#scenes > h2')).toHaveText('How AI learns about people and places');
+    await expect(page.locator('#learners-and-teachers .sk')).toHaveCount(0);
+    // With the scenes one at a time, there is nothing to skip.
+    await expect(page.locator(`${SK} .sk__skip`)).toBeHidden();
+    // The heading of the scenes is in the first screen.
+    const heading = await page.locator('#scenes-heading').evaluate((el) => {
+      window.scrollTo(0, 0);
+      return el.getBoundingClientRect().top;
+    });
+    expect(heading).toBeLessThan(page.viewportSize()!.height);
+  });
+
+  test('the scene buttons are equal tiles: one row on a wide screen, two on a tablet, four on a phone', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await isolate(page);
+    const LABELS = [
+      'Desk, browser',
+      'Dorm, laptop',
+      'Dining hall, phone',
+      'Classroom, puppet',
+      'Street, flood',
+      'Classroom, tablet',
+      'Classroom, Kinect pilot',
+      'Zoom class, laptop',
+      'Staff room, focus group',
+    ];
+    for (const [width, rows] of [
+      [1280, 1],
+      // Both breakpoints at their edges: 67rem and 37.5rem.
+      [1072, 1],
+      [1071, 2],
+      [768, 2],
+      [600, 2],
+      [599, 4],
+      [390, 4],
+      [320, 4],
+    ] as const) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/');
+      const tiles = page.locator(`${SK} [data-scene-button]`);
+      await expect(tiles).toHaveCount(9);
+      // offsetTop, not the painted box: the open scene's tile is drawn 2 px lower.
+      const boxes = await tiles.evaluateAll((els) =>
+        els.map((el) => ({
+          top: (el as HTMLElement).offsetTop,
+          width: Math.round((el as HTMLElement).offsetWidth),
+          height: (el as HTMLElement).offsetHeight,
+          // Neither line of a label wraps or is cut off.
+          lines: [...el.querySelectorAll('.sk__tab-place, .sk__tab-thing')].map(
+            (line) => line.getClientRects().length,
+          ),
+          spill: el.scrollWidth - el.clientWidth,
+        })),
+      );
+      expect(new Set(boxes.map((box) => box.top)).size, `${width}px: rows`).toBe(rows);
+      expect(new Set(boxes.map((box) => box.height)).size, `${width}px: one height`).toBe(1);
+      expect(Math.min(...boxes.map((box) => box.height)), `${width}px`).toBeGreaterThanOrEqual(44);
+      if (rows === 1)
+        expect(new Set(boxes.map((box) => box.width)).size, `${width}px: one width`).toBe(1);
+      for (const box of boxes) {
+        expect(box.lines, `${width}px`).toEqual([1, 1]);
+        expect(box.spill, `${width}px`).toBeLessThanOrEqual(0);
+      }
+      // Two lines to the eye, one name to a screen reader: the comma stays in it.
+      for (const [index, label] of LABELS.entries())
+        await expect(tiles.nth(index), `${width}px`).toHaveAccessibleName(label);
+      // Replay and Show all: beside the scene's heading on a wide screen, in a row of their own
+      // on a narrow one; always after the tiles for the keyboard.
+      const place = await page.locator(SK).evaluate((el) => {
+        const box = (selector: string) => el.querySelector(selector)!.getBoundingClientRect();
+        const [ctl, head, heading, tabs] = [
+          box('.sk__ctl'),
+          box('.sk__scene.is-active .sk__head'),
+          box('.sk__scene.is-active .sk__heading'),
+          box('.sk__tabs'),
+        ];
+        return {
+          besideHeading: Math.abs(ctl.top - head.top) < 1 && ctl.left >= heading.right,
+          belowTiles: ctl.top >= tabs.bottom,
+        };
+      });
+      expect(place.belowTiles, `${width}px`).toBe(true);
+      expect(place.besideHeading, `${width}px`).toBe(width >= 992);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+        `${width}px`,
+      ).toBeLessThanOrEqual(width);
+    }
+  });
+
+  test('the first scene starts as the page opens where a strip of its drawing shows, and waits where less does; reduced motion shows it finished', async ({
+    page,
+  }) => {
+    await isolate(page);
+    const tracker = scene(page, 'tracker');
+    /** The share of the first drawing that is inside the window. */
+    const inView = () =>
+      tracker.locator('svg[data-svg]').evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return Math.max(0, Math.min(window.innerHeight, box.bottom) - box.top) / box.height;
+      });
+    // Most of the drawing in the window, or only a strip of it (a 13-inch laptop): both start
+    // without a scroll (D79).
+    for (const [width, height] of [
+      [1280, 1000],
+      [1440, 790],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto('/');
+      expect(await inView(), `${width}x${height}`).toBeGreaterThanOrEqual(0.15);
+      await expect(
+        tracker.locator('[data-step][data-on]').first(),
+        `${width}x${height}`,
+      ).toBeVisible();
+      await expect(tracker).toHaveAttribute('data-state', 'playing');
+      expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    }
+    // Less than a strip in the window: it waits as blank paper.
+    await page.setViewportSize({ width: 1280, height: 700 });
+    await page.goto('/');
+    expect(await inView()).toBeLessThan(0.15);
+    await page.waitForTimeout(800);
+    await expect(tracker.locator('[data-step][data-on]')).toHaveCount(0);
+    expect(await undrawn(tracker)).toBeGreaterThan(20);
+    // Reduced motion: finished from the start, at any size.
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await expect(tracker).toHaveAttribute('data-state', 'ready');
+    expect(await undrawn(tracker)).toBe(0);
+  });
+
   test('loads under 50 KB of JavaScript on the home page, and no framework runtime', async ({
     page,
   }) => {
@@ -1656,7 +1857,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
 test.describe('teacher scenes, on the home page since D76 (D73)', () => {
   const PATH = '/';
   const TEACHER_PAGE = '/research/teacher-support/';
-  const SK = '#learners-and-teachers .sk';
+  const SK = '#scenes .sk';
   const SCENES = ['views', 'pris', 'zoom', 'context'];
   const scene = (page: Page, id: string) => page.locator(`${SK} [data-scene="${id}"]`);
   const tab = (page: Page, id: string) => page.locator(`${SK} [data-scene-button="${id}"]`);
@@ -2096,8 +2297,8 @@ test.describe('teacher scenes, on the home page since D76 (D73)', () => {
     // The same for the dorm scene, whose marks sit under its drawing.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    await page.locator('#learners-and-teachers .sk [data-scene-button="dorm"]').click();
-    const dorm = page.locator('#learners-and-teachers .sk [data-scene="dorm"]');
+    await page.locator('#scenes .sk [data-scene-button="dorm"]').click();
+    const dorm = page.locator('#scenes .sk [data-scene="dorm"]');
     await dorm.locator('.sk__paper a').focus();
     for (let i = 0; i < 4; i++) {
       await page.keyboard.press('Shift+Tab');
@@ -2450,6 +2651,12 @@ test.describe('the Experiments page (D74)', () => {
       );
       await expect(page.locator(`[data-scene="${id}"]`), path).toBeVisible();
       await expect(page.locator(`#sk-${id}`), path).toBeInViewport();
+      // On a wide screen the row of tiles stays in view too, with this scene's tile pressed, so
+      // the visitor sees that there are more scenes (D79).
+      if (page.viewportSize()!.width >= 1072)
+        await expect(page.locator(`[data-scene-button="${id}"]`), path).toBeInViewport({
+          ratio: 1,
+        });
     }
     // Following a link within the page works too.
     await page.goto('/');
@@ -2698,8 +2905,8 @@ test.describe('who and where in the intro strip (D64)', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
     );
-    // SITE_PLAN §4: the top of the cloud shows in the first screen.
-    expect((await box('[data-wordcloud]')).y).toBeLessThan(page.viewportSize()!.height);
+    // SITE_PLAN §4: the heading of the sketch scenes shows in the first screen (D79).
+    expect((await box('#scenes-heading')).y).toBeLessThan(page.viewportSize()!.height);
   });
 });
 

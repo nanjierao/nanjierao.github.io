@@ -2,7 +2,8 @@
 // The sketch scenes (D68, D73, D76): line drawings, each with a caption for every part of the
 // drawing, a panel that shows what the system builds, one hands-on step, the result that step
 // leads to, and the paper it comes from. The home page's section "How AI learns about people
-// and places" shows all nine, in groups: learners, hands, a city and teachers.
+// and places", right after the intro strip (D79), shows all nine, in groups: learners, hands,
+// a city and teachers.
 //
 // The page ships every scene finished: drawing, captions, sample answers and results. That is
 // what a visitor sees without JavaScript, and what a screen reader finds. With JavaScript,
@@ -31,9 +32,12 @@ import { authorParts, isSelf } from '../lib/format.ts';
 interface Props {
   /** The scenes, in groups of buttons: all of the home page's unless given. */
   groups?: SceneGroup[];
+  /** Where a link past the scenes leads, for a page that shows them all at once (no
+   *  JavaScript, or the script failed): the id of what follows them, as "#topics-heading". */
+  skipTo?: string;
 }
 
-const { groups = SCENE_GROUPS } = Astro.props;
+const { groups = SCENE_GROUPS, skipTo } = Astro.props;
 const sceneById = new Map(SCENES.map((scene) => [scene.id, scene]));
 const scenes: Scene[] = groups.flatMap((group) => group.scenes.map((id) => sceneById.get(id)!));
 const firstId = scenes[0]!.id;
@@ -71,29 +75,49 @@ function chosen(scene: Scene, shape: Shape): boolean {
 ---
 
 <div class="sk" data-sketch data-speed="1" data-shown={CONTROLS.shown}>
-  <p class="sk__sub">{SKETCH_SUBTITLE}</p>
-
-  <div class="sk__bar">
-    <p class="sk__cue" id="sk-cue" data-js-only>
+  <p class="sk__sub">
+    {SKETCH_SUBTITLE}{' '}
+    <span class="sk__cue" id="sk-cue" data-js-only>
       {CONTROLS.pick}
       <span aria-hidden="true"> ↓</span>
+    </span>
+  </p>
+  {skipTo && (
+    <p class="sk__skip">
+      <a href={skipTo}>{CONTROLS.skip}</a>
     </p>
+  )}
+
+  <div class="sk__bar">
     <div class="sk__tabs" role="group" aria-labelledby="sk-cue" data-js-only>
       {groups.map((group) => (
-        <div class="sk__group" role="group" aria-label={group.label}>
+        <div
+          class="sk__group"
+          role="group"
+          aria-label={group.label}
+          data-size={group.scenes.length}
+          style={`--size: ${group.scenes.length}`}
+        >
           <span class="sk__group-label" aria-hidden="true">
             {group.label}
           </span>
-          {group.scenes.map((id) => (
-            <button
-              type="button"
-              class="sk__tab"
-              data-scene-button={id}
-              aria-pressed={id === firstId ? 'true' : 'false'}
-            >
-              {sceneById.get(id)!.label}
-            </button>
-          ))}
+          {group.scenes.map((id) => {
+            const [place, thing] = sceneById.get(id)!.label.split(', ');
+            return (
+              <button
+                type="button"
+                class="sk__tab"
+                data-scene-button={id}
+                aria-pressed={id === firstId ? 'true' : 'false'}
+              >
+                <span class="sk__tab-place">
+                  {place}
+                  {thing && <span class="sk__tab-comma">, </span>}
+                </span>
+                {thing && <span class="sk__tab-thing">{thing}</span>}
+              </button>
+            );
+          })}
         </div>
       ))}
     </div>
@@ -534,8 +558,41 @@ function chosen(scene: Scene, shape: Shape): boolean {
   }
 
   .sk__sub {
-    max-width: var(--measure);
+    margin: 0 0 var(--space-3);
+  }
+
+  /* "Pick a scene": the last words of the line above the buttons. */
+  .sk__cue {
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  /* A way past the scenes, only where all of them are shown one after another (no JavaScript,
+     or the script failed): they come before everything else on the page (D79). */
+  .sk__skip {
     margin: 0 0 var(--space-4);
+  }
+
+  /* A link on a line of its own: tall enough to be a target by itself. */
+  .sk__skip a {
+    display: inline-block;
+    padding-block: var(--space-1);
+  }
+
+  :root.js .sk:not([data-failed]) .sk__skip {
+    display: none;
+  }
+
+  /* Until the script starts, the open scene is blank paper, not the finished drawing the page
+     ships: the script would wipe it a moment later, in the first screen (D79). The scene keeps
+     its size, so nothing moves; after 4 s without the script, data-failed shows everything. */
+  @media (prefers-reduced-motion: no-preference) {
+    :root.js
+      .sk:not([data-enhanced], [data-failed])
+      .sk__scene.is-active
+      :is(.sk__ink, .sk__fill, .sk__steps li, .sk__entry, .sk__prompt, .sk__task, .sk__after) {
+      visibility: hidden;
+    }
   }
 
   /* ------------------------------------------------------------ scene buttons */
@@ -548,8 +605,6 @@ function chosen(scene: Scene, shape: Shape): boolean {
     margin-bottom: var(--space-5);
   }
 
-  .sk__tabs,
-  .sk__group,
   .sk__ctl {
     display: flex;
     flex-wrap: wrap;
@@ -557,22 +612,115 @@ function chosen(scene: Scene, shape: Shape): boolean {
     gap: var(--space-2);
   }
 
-  /* "Pick a scene", on its own line above the buttons. */
-  .sk__cue {
+  /* The scene buttons: equal tiles, each group under its label. A phone has six columns (three
+     learner tiles across; hands and city side by side; the teacher tiles two by two), a tablet
+     two rows, and a wide screen all nine scenes in one row. Each group restates its share of
+     the columns, so the tiles line up without subgrid. */
+  .sk__tabs {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--space-3) var(--space-2);
     flex-basis: 100%;
-    margin: 0;
-    font-weight: 650;
   }
 
-  .sk__tabs {
-    gap: var(--space-2) var(--space-5);
+  .sk__group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* The label's row, then rows of equal height for the tiles. */
+    grid-template-rows: auto;
+    grid-auto-rows: 1fr;
+    grid-column: span 6;
+    gap: var(--space-2);
+  }
+
+  .sk__group[data-size='1'] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-column: span 3;
+  }
+
+  .sk__group:is([data-size='2'], [data-size='4']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* A tablet: learners, hands and city on the first row, the teacher tiles on the second. */
+  @media (min-width: 37.5rem) and (max-width: 66.99rem) {
+    .sk__tabs {
+      grid-template-columns: repeat(20, minmax(0, 1fr));
+    }
+
+    .sk__group[data-size] {
+      grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+      grid-column: span calc(var(--size) * 4);
+    }
+
+    /* The home page's own group sizes, spelled out: the rule above needs calc() inside span,
+       and a browser that refused it would give the group no width at all. */
+    .sk__group[data-size='1'] {
+      grid-column: span 4;
+    }
+
+    .sk__group[data-size='3'] {
+      grid-column: span 12;
+    }
+
+    .sk__group[data-size='4'] {
+      grid-column: span 20;
+    }
+  }
+
+  /* All nine in one row, from the width at which no label wraps. */
+  @media (min-width: 67rem) {
+    .sk__tabs {
+      grid-template-columns: repeat(9, minmax(0, 1fr));
+    }
+
+    .sk__group[data-size] {
+      grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+      grid-column: span var(--size);
+    }
   }
 
   .sk__ctl {
     margin-left: auto;
   }
 
+  /* On a wide screen Replay and Show all sit at the right of the scene's heading, not on a
+     row of their own, so the drawing starts higher. They float there, so the heading wraps
+     around their real width; the order in the page and for the keyboard stays the same. */
+  @media (min-width: 62rem) {
+    .sk__bar {
+      display: contents;
+    }
+
+    .sk__tabs {
+      margin-bottom: var(--space-4);
+    }
+
+    .sk__ctl {
+      float: right;
+      margin-left: var(--space-4);
+    }
+
+    :root.js .sk:not([data-failed]) .sk__head {
+      min-height: 44px;
+    }
+  }
+
+  /* Where a long heading's badge wraps under it, every scene keeps the same height for this
+     row, so the drawing does not move from scene to scene. */
+  @media (min-width: 62rem) and (max-width: 71.99rem) {
+    :root.js .sk:not([data-failed]) .sk__head {
+      min-height: 57px;
+    }
+  }
+
   .sk__group-label {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-self: end;
+    margin-bottom: calc(-1 * var(--space-1));
+    padding-bottom: 2px;
+    border-bottom: 1.5px solid var(--color-border);
     font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -600,10 +748,54 @@ function chosen(scene: Scene, shape: Shape): boolean {
     border-color: var(--color-text);
   }
 
-  /* A scene button looks like one at a glance: a filled chip with a raised lower edge. */
+  /* A scene button looks like one at a glance: a filled tile with a raised lower edge. Its
+     label is a place and a thing, on two lines. */
   .sk__tab {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 0;
+    min-height: 52px;
+    padding: var(--space-1) var(--space-2);
+    border-radius: 10px;
     background: var(--color-surface);
     box-shadow: 0 2px 0 var(--color-border);
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  .sk__tab-place {
+    font-weight: 600;
+  }
+
+  /* Enlarged text stays inside its tile: a long word breaks rather than run under the next. */
+  .sk__tab-place,
+  .sk__tab-thing {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* The pressed tile is moved down and paints above its neighbours; a focused tile's ring must
+     still show in full. */
+  .sk__tab:focus-visible {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* The second line tells three "Classroom" tiles apart: smaller and lighter, not paler. */
+  .sk__tab-thing {
+    font-size: 0.8rem;
+    font-weight: 400;
+  }
+
+  .sk__tab[aria-pressed='true'] .sk__tab-place {
+    font-weight: inherit;
+  }
+
+  /* The comma between the two stays in the button's name; the line break shows it. */
+  .sk__tab-comma {
+    font-size: 0;
   }
 
   .sk__tab:hover {
@@ -651,6 +843,16 @@ function chosen(scene: Scene, shape: Shape): boolean {
 
   .sk__heading {
     margin: 0;
+    /* A link that opens a scene (/#sk-zoom) leaves room for the buttons beside the heading. */
+    scroll-margin-top: var(--space-4);
+  }
+
+  /* On a wide screen such a link also keeps the row of scene buttons in view, so a visitor who
+     arrives from another page sees that there are more scenes. */
+  @media (min-width: 67rem) {
+    :root.js .sk:not([data-failed]) .sk__heading {
+      scroll-margin-top: 7.5rem;
+    }
   }
 
   .sk__badge {
@@ -1452,12 +1654,6 @@ function chosen(scene: Scene, shape: Shape): boolean {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    /* Closer together on a phone, so the scene buttons take fewer rows. */
-    .sk__tabs {
-      gap: var(--space-2) var(--space-3);
-    }
-
-    .sk__tab,
     .sk__btn {
       padding: 0 var(--space-3);
     }

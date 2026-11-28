@@ -196,6 +196,8 @@ export const CONTROLS = {
   off: 'off',
   /** Read out after "Show all". */
   shown: 'The whole scene is shown.',
+  /** The link past the scenes, where the page shows all of them at once (no JavaScript). */
+  skip: 'Skip the scenes',
 } as const;
 
 /** The dorm scene's confirmed interests stay in the learner model when the dining-hall scene opens. */

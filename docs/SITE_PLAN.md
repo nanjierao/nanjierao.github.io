@@ -12,7 +12,8 @@ Replace the 2019-era page at cise.ufl.edu/~nr0 with a site that *shows* what Jim
 running with almost no upkeep. It lives at https://nanjierao.github.io, built by GitHub Actions
 from a public repository that Jimmy maintains with Claude Code cloud sessions. The homepage opens with
 a compact intro strip (name, photo, role, one line, CV, publications, email) for anyone who needs the facts in
-five seconds. Below it are a living word cloud of his research background and three doors.
+five seconds. Below it are the sketch scenes of his research (D79), then a living word cloud of
+his research background and three doors.
 **Hands** (left, most technical) starts telling a story with Jimmy's recorded hand motion, and the
 visitor's own hand can take over through the camera, all in the browser. **Ask** (middle) answers
 questions about his work from a reviewed Q&A library, searchable in the browser. **Life & You**
@@ -47,7 +48,7 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 ## 3. Information architecture
 
 ```
-/                      Intro strip + word cloud + three portals + recent + easter egg
+/                      Intro strip + sketch scenes + word cloud + three portals + recent + easter egg
 /hands                 Left portal: hand-puppet storytelling (scripted first; camera on request)
 /hands/record          Hidden: Jimmy records hand motion for scripted stories (noindex)
 /ask                   Middle portal: Q&A library + in-browser search (+ live chat and Fit check, S8)
@@ -74,9 +75,10 @@ Top to bottom (D21):
   one-line positioning (facts.md §3),
   status line (facts.md §2, only once Jimmy approves one), and three actions: CV (PDF),
   Publications, Email. Small "Elsewhere" links: Google Scholar, GitHub (JimmyRaoUF), YouTube,
-  Zhihu, and whichever of ORCID and LinkedIn facts.md §13 lists. In a 390 × 844 viewport it fits in the first screen with the top of the cloud
-  visible below it; with the browser's bars showing, or on a shorter phone, the cloud starts one
-  scroll lower (D64).
+  Zhihu, and whichever of ORCID and LinkedIn facts.md §13 lists; on a wide screen these links
+  share the row of the three actions (D79). In a 390 × 844 viewport it fits in the first screen
+  with the heading of the sketch scenes below it; the scene buttons start one scroll lower
+  (D64, D79).
 - **Word cloud** (`content/wordcloud.yaml`): ~40 terms weighted by prominence and tagged by portal
   (hands / ask / life). Layout `d3-cloud`, gentle drift with `motion`. Hovering or focusing a
   portal makes its words glow and drift toward it. Clicking a word opens a one-line blurb with a
@@ -85,23 +87,29 @@ Top to bottom (D21):
 - **Three portals** under or around the cloud: Hands (camera glyph), Ask (speech glyph),
   Life & You (spark glyph). Each has one line of copy and a clear action. Desktop: left, middle,
   right. Mobile: stacked in the same order.
-- **How AI learns about people and places** (D66, D68; right after the word cloud until the
-  portals arrive; the section's id stays `learners-and-teachers`). First, nine sketch scenes:
+- **How AI learns about people and places** (D68, D79; right after the intro strip, before the
+  word cloud; the section's id is `scenes`). Nine sketch scenes:
   a browser tracker (prototype), a dorm laptop and a dining-hall phone (synthetic student), a
   classroom puppet, a flooded street (simulated), and the four teacher scenes (D73, D75: a
   classroom tablet, the Kinect pilot, the Zoom study and a staff room), back on the home page
   since D76. Each is a line drawing with a caption per
   region, a panel showing what the system builds, one hands-on step, the result it leads to and,
   when it comes from a paper, the paper's reference with, where facts.md §6 has one, its DOI link
-  (D73). The scene buttons sit
-  under a "Pick a scene" cue, in four groups: learners, hands, city and teachers. Jimmy accepted
+  (D73). The scene buttons are equal two-line tiles (a place, then a thing) in four groups
+  under their labels: learners, hands, city and teachers; four rows on a phone, two on a
+  tablet, one row of nine on a wide screen (D79). A "Pick a scene" cue ends the line above
+  them, and Replay and Show all sit beside the open scene's heading on a wide screen. The first
+  scene draws itself at once when at least 15% of its drawing is in the window as the page
+  opens, and otherwise when half of it has been scrolled into view (D79). Jimmy accepted
   that the home page loads slower with all nine (D76: LCP 2.11–2.26 s, over the 2.0 s budget; its
   JavaScript is unchanged).
   Words in `src/data/sketch-scenes.ts`, drawings in `src/data/sketch-drawings.ts`, behavior in
   `src/scripts/sketch-scenes.ts` (under 4 KB gzipped, no library). Without JavaScript all nine
-  show finished. Then the learner and teacher work: one line of work as a diagram, four study
-  cards, the Study 2 figure with the grounding check, the teacher-facing papers and the
-  supporting papers (`src/data/learners-teachers.ts`).
+  show finished, with a link past them to the topics.
+- **The studies these scenes come from** (D66, D79; after the word cloud until the portals
+  arrive; the section's id stays `learners-and-teachers`): the learner and teacher work, as one
+  line of work in a diagram, four study cards, the Study 2 figure with the grounding check, the
+  teacher-facing papers and the supporting papers (`src/data/learners-teachers.ts`).
 - **Recent**: three dated news items with time-aware wording (D26), then cards: Daily notes
   (D71: links to /notes/ and shows the newest note, bold leads alone), the latest blog post, the latest YouTube
   video (D50), and recent public GitHub activity (D40).
@@ -208,7 +216,8 @@ Full spec and copy: `content/life-portal.md`. Five acts:
 
 ## 8. Design
 
-- Process: S2 builds two (at most three) homepage variants (intro strip + cloud + portals) on
+- Process: S2 builds two (at most three) homepage variants (intro strip + sketch scenes + cloud
+  + portals) on
   `/lab/*` routes; Jimmy picks; the choice is written to `docs/DESIGN.md`.
 - Recommended direction, "Grounded": calm editorial base. Evidence is visible: sidenotes on wide
   screens, and a grounded/inferred annotation convention (solid vs. dotted underline + label +

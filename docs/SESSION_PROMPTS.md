@@ -102,8 +102,9 @@ TODO(jimmy)/VERIFY item. Remind me that Pages must be set to GitHub Actions befo
 Read CLAUDE.md, docs/SITE_PLAN.md §4 and §8, docs/DECISIONS.md (D21, D30), docs/THIRD_PARTY.md,
 content/wordcloud.yaml.
 Build two (at most three) homepage variants on /lab/a, /lab/b (and /lab/c). Each has, in this
-order: the intro strip (D21), the word cloud, the three portal cards (Hands, Ask, Life & You —
-placeholders behind them), "Recent", the footer legend, and the bottom-right luopan glyph (the
+order: the intro strip (D21), the sketch scenes (D79), the word cloud, the three portal cards
+(Hands, Ask, Life & You — placeholders behind them), the studies the scenes come from,
+"Recent", the footer legend, and the bottom-right luopan glyph (the
 panel can be a stub).
 - Word cloud: start from d3-cloud + motion (recommended). In one variant, try an alternative from
   THIRD_PARTY.md (wordcloud2.js or matter-js floating words). Portal ↔ word linking (hover/focus a
@@ -123,7 +124,8 @@ PR; then merge.
 
 ```
 Read CLAUDE.md, docs/DESIGN.md, docs/SITE_PLAN.md §4 and §7, content/wordcloud.yaml,
-content/ideas.yaml. Build the homepage from the chosen design: intro strip, word cloud, portals
+content/ideas.yaml. Build the homepage from the chosen design: intro strip, sketch scenes (D79),
+word cloud, portals
 (pointing to coming-soon pages until the portals exist), "Recent" with time-aware wording (D26),
 and the easter egg (luopan glyph → side panel with the three bilingual idea cards;
 keyboard-reachable last in tab order; accessible name "Things I want to try next"; hint 未完待续 /

@@ -631,14 +631,21 @@ function init(root: HTMLElement): void {
   seen.add(first);
 
   if (!reduce.matches && 'IntersectionObserver' in window) {
-    // The first scene waits as blank paper until half of its drawing is in the window.
+    // The first scene waits as blank paper. If a strip of its drawing (15% or more) is in the
+    // window when the page opens, it starts at once: with the scenes first on the page (D79),
+    // that strip is what the first screen ends with on most laptops. Reached by scrolling, it
+    // starts when half of the drawing is in view, so the visitor sees it begin.
     clear(first);
     armed = true;
+    let opening = true;
     new IntersectionObserver(
       (entries) => {
-        if (armed && entries.some((entry) => entry.isIntersecting)) void play(current, false);
+        const share = opening ? 0.15 : 0.5;
+        opening = false;
+        if (armed && entries.some((entry) => entry.intersectionRatio >= share))
+          void play(current, false);
       },
-      { threshold: 0.5 },
+      { threshold: [0.15, 0.5] },
     ).observe(svgOf(first) ?? root);
     new IntersectionObserver((entries) => {
       // Scrolled away in the middle of a drawing: show it finished rather than draw unseen.

@@ -259,14 +259,17 @@ they supersede the CVs and the research statement wherever they differ.
 - Explanation types and user motivations in recommender systems (AAAI HCOMP 2020, co-author).
 - Everyday-inspired movie recommendation from personal social media (IFIP INTERACT 2023, co-author).
 
-### 5.7 Learner and teacher modeling (the home page's "How AI learns about people and places" section, below its sketch scenes; D66)
+### 5.7 Learner and teacher modeling (the home page's section "The studies these scenes come from", after the word cloud; D66, D79)
 Source: Jimmy's outline (Nov 24, 2026), first for a page of its own, then moved to the home
 page the same day. The section was titled "Modeling Learners and Teachers" until the sketch
 scenes arrived (§5.8, D68). The items marked "check" are not in the sections above: they are
 wording from the outline, or choices made while writing it. They go live with the section under
 the merge rule (D67) and are still Jimmy's to confirm; a correction here goes to the page.
-`TODO(jimmy)`: the lede ("One line of work runs through these papers...") now stands above the
-sketch scenes, as he asked; say if it should move below them or be rewritten to cover them.
+`TODO(jimmy)`: the lede ("One line of work runs through these papers...") stood above the sketch
+scenes, as he asked, until the scenes moved up to follow the intro strip (D79, his request of
+Nov 28, 2026). It now opens the studies, the papers it speaks of, under the heading "The studies
+these scenes come from", which is the session's wording: say if the lede should go back above
+the scenes, and if the heading should read differently.
 
 - Framing: one line of work, building systems that observe how people learn and checking what
   those observations are worth. The term is "learner model", never "world model".
@@ -356,8 +359,9 @@ says so.
     from the focus groups; no separate check of them is recorded here. Design: the staff room,
     the teachers, the lesson plan and the examples.
 - Every scene that comes from a published paper ends with the paper's full reference, linked to
-  its DOI where §6 has one (Jimmy, relayed Nov 25, 2026). The scene buttons sit under a "Pick a
-  scene" cue and look like tabs, with the picked one filled in.
+  its DOI where §6 has one (Jimmy, relayed Nov 25, 2026). The scene buttons follow a "Pick a
+  scene" cue and read as tabs, with the picked one filled in (D73); since D79 each is a tile
+  with a place and a thing on two lines, under its group's label.
 
 ### 5.9 Ongoing: analyzing data through an AI assistant without a programming background (a first-person study of one course; D69)
 Source: Jimmy's page text of Nov 24, 2026 (not in this repository). The page
