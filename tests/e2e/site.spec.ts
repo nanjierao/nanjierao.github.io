@@ -1800,7 +1800,8 @@ test.describe('teacher scenes, on the home page since D76 (D73)', () => {
         id,
       ).not.toMatch(/best paper|award|nominat/i);
     }
-    // Every page that lists the paper shows it, in his wording, never in the one he held back.
+    // The four pages that show the recognition (D77) have it in his wording, never in the one he
+    // held back. /research/experiments/ cites the paper too, for its design only, without it.
     for (const path of ['/', TEACHER_PAGE, '/publications/', '/cv/']) {
       await page.goto(path);
       const body = await page.locator('body').innerText();

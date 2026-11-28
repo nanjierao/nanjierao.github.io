@@ -669,7 +669,8 @@ Other videos from the old site (ask Jimmy what they are before using):
   "Mention Paper")
 - CISE Gartner Group Graduate Fellowship, four times (2021–2024)
 - Best Short Paper nomination, 21st IEEE International Conference on Advanced Learning
-  Technologies (ICALT 2021), for §6 [5], with Sharon Lynn Chu, the paper's coauthor (§1). In
+  Technologies (ICALT 2021), for §6 [5], with Sharon Lynn Chu, the paper's coauthor (§6 [5] lists
+  her as "Chu, S. L."; her full name is in §2 and §4; Jimmy's sentence names no coauthor). In
   Jimmy's words (Nov 28, 2026): "Enhancing the Visual Efficiency for Communicating Students'
   Personal Relevant Information" received a Best Short Paper nomination at the 21st IEEE
   International Conference on Advanced Learning Technologies (ICALT 2021).

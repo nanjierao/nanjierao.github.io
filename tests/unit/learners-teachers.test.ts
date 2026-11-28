@@ -13,6 +13,7 @@ import * as sketch from '../../src/data/sketch-scenes.ts';
 import { CANVAS, DRAWINGS } from '../../src/data/sketch-drawings.ts';
 import { GLYPHS } from '../../src/data/sketch-glyphs.ts';
 import { NAV } from '../../src/data/site.ts';
+import { HONORS, TIMELINE } from '../../src/data/cv.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const FACTS = readFileSync(join(ROOT, 'content', 'facts.md'), 'utf8').replace(/\*\*/g, '');
@@ -499,8 +500,9 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
     // the reference under it, which comes from publications.yaml.
     for (const id of ['views', 'pris', 'zoom', 'context'] as const)
       expect(words(id), id).not.toMatch(/award|best paper|nominat|mention/i);
-    // What the site is built from (pages, data, content, the Q&A library) writes it as Jimmy did,
-    // never as the wording he held back on Nov 25, 2026 ("Nomination"), and only in these places.
+    // What the site is built from (pages, data, content, the Q&A library, the word cloud) writes
+    // it as Jimmy did, never as the wording he held back on Nov 25, 2026 ("Nomination"), and only
+    // in these places.
     const sources = (dir: string): string[] =>
       readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((entry) =>
         entry.isDirectory()
@@ -510,7 +512,12 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
             : [],
       );
     const mentions: Record<string, number> = {};
-    for (const file of [...sources('src'), join('content', 'qa-library.yaml')])
+    for (const file of [
+      ...sources('src'),
+      join('content', 'qa-library.yaml'),
+      // The home page's word cloud, which names no recognition for the teacher papers.
+      join('content', 'wordcloud.yaml'),
+    ])
       for (const [text] of readFileSync(join(ROOT, file), 'utf8').matchAll(
         /(?:\w+\s+)?short\s+paper\s+nominat\w*/gi,
       )) {
@@ -526,6 +533,40 @@ describe('the papers the scenes come from, and the teacher scenes (D73)', () => 
       // The answers on teacher tools and on awards.
       [join('content', 'qa-library.yaml')]: 2,
     });
+    // Each mention sits with ICALT 2021's paper; the other teacher papers' lines name no award.
+    const recognized = (text: string) => /award|best\s+(?:short\s+)?paper|nominat/i.test(text);
+    /** A CV line about a nomination, or about one of the teacher papers' conferences. */
+    const teacherPaper = (text: string) => /nominat|ICALT|HCI International|HCII/i.test(text);
+    expect(
+      page.TEACHER_ITEMS.filter((item) => recognized(`${item.lead} ${item.text}`)).map(
+        (item) => item.where,
+      ),
+    ).toEqual(['IEEE ICALT 2021']);
+    expect(HONORS.filter(teacherPaper)).toEqual([
+      'Best Short Paper nomination, 21st IEEE International Conference on Advanced Learning Technologies (ICALT 2021): “Enhancing the Visual Efficiency for Communicating Students’ Personal Relevant Information”, with Sharon Lynn Chu',
+    ]);
+    expect(
+      TIMELINE.flatMap((group) => group.items).filter((item) => teacherPaper(item.label)),
+    ).toEqual([{ label: 'Best Short Paper nomination, IEEE ICALT', start: '2021', when: '2021' }]);
+    const themeLines = readFileSync(
+      join(ROOT, 'src', 'content', 'themes', 'teacher-support.md'),
+      'utf8',
+    )
+      .split(/\n(?=- )/)
+      .filter(recognized);
+    expect(themeLines).toHaveLength(1);
+    expect(themeLines[0]).toMatch(/\(IEEE ICALT 2021\), a Best Short Paper\s+nomination\.\s*$/);
+    const answers = Object.fromEntries(
+      (
+        parseYaml(readFileSync(join(ROOT, 'content', 'qa-library.yaml'), 'utf8')) as {
+          items: Array<{ id: string; a: string }>;
+        }
+      ).items.map((item) => [item.id, item.a]),
+    );
+    expect(answers['teacher-support']).toContain(
+      'IEEE ICALT 2021 (a Best Short Paper nomination), HCI International 2022 and IEEE ICALT 2023.',
+    );
+    expect(answers.honors).toContain('a Best Short Paper nomination at IEEE ICALT 2021,');
   });
 
   it('keeps the teacher scenes to what facts.md §5.5 says the papers did and found', () => {
