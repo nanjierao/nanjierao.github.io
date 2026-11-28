@@ -166,8 +166,8 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   about people and places" (D68, D79): nine sketch scenes, the five on learners, hands and a
   city and then the four teacher scenes (D73, D75, D76), each with one hands-on step and, when
   it comes from a paper, that paper's reference with, where facts.md §6 has one, its DOI link.
-  Then the word cloud and portals, then the studies the scenes come from (D66: the learner and
-  teacher work, under "The studies these scenes come from"). /research/teacher-support/ lists
+  Then the word cloud and portals, then the learner and teacher studies (D66, under their
+  original title "Modeling learners and teachers"). /research/teacher-support/ lists
   the teacher scenes and links each to the home page. The Research section then
   has an Experiments heading and a line on the controlled experiments, linking
   /research/experiments/ (D74), before its Research overview link. The footer

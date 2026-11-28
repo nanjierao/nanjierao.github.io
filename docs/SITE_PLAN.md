@@ -69,7 +69,7 @@ teaching (COP 3530 discussion sections for ~150 students in total; co-taught gra
 
 ## 4. Homepage
 
-Top to bottom (D21):
+Top to bottom (D21, D79):
 - **Intro strip**: name with 饶楠杰 beside it as live text (D64; optional pronunciation button,
   D36), the headshot, one role line from facts.md §2 (role, lab and advisor, degree date; D64),
   one-line positioning (facts.md §3),
@@ -79,14 +79,6 @@ Top to bottom (D21):
   share the row of the three actions (D79). In a 390 × 844 viewport it fits in the first screen
   with the heading of the sketch scenes below it; the scene buttons start one scroll lower
   (D64, D79).
-- **Word cloud** (`content/wordcloud.yaml`): ~40 terms weighted by prominence and tagged by portal
-  (hands / ask / life). Layout `d3-cloud`, gentle drift with `motion`. Hovering or focusing a
-  portal makes its words glow and drift toward it. Clicking a word opens a one-line blurb with a
-  link. Under reduced motion it is static; it is also rendered as an HTML list for screen readers.
-  On a phone it stays three centered lists of all the words, so each keeps a 24 px target (D60).
-- **Three portals** under or around the cloud: Hands (camera glyph), Ask (speech glyph),
-  Life & You (spark glyph). Each has one line of copy and a clear action. Desktop: left, middle,
-  right. Mobile: stacked in the same order.
 - **How AI learns about people and places** (D68, D79; right after the intro strip, before the
   word cloud; the section's id is `scenes`). Nine sketch scenes:
   a browser tracker (prototype), a dorm laptop and a dining-hall phone (synthetic student), a
@@ -95,18 +87,26 @@ Top to bottom (D21):
   since D76. Each is a line drawing with a caption per
   region, a panel showing what the system builds, one hands-on step, the result it leads to and,
   when it comes from a paper, the paper's reference with, where facts.md §6 has one, its DOI link
-  (D73). The scene buttons are equal two-line tiles (a place, then a thing) in four groups
-  under their labels: learners, hands, city and teachers; four rows on a phone, two on a
-  tablet, one row of nine on a wide screen (D79). A "Pick a scene" cue ends the line above
+  (D73). The scene buttons are two-line tiles (a place, then a thing), one height and one width
+  within each row, in four groups under their labels: learners, hands, city and teachers; four
+  rows on a phone, two on a tablet, one row of nine tiles of one size on a wide screen (D79). A "Pick a scene" cue ends the line above
   them, and Replay and Show all sit beside the open scene's heading on a wide screen. The first
-  scene draws itself at once when at least 15% of its drawing is in the window as the page
-  opens, and otherwise when half of it has been scrolled into view (D79). Jimmy accepted
+  scene draws itself once half of its drawing is in the window, at load or when scrolled to
+  (D79). Jimmy accepted
   that the home page loads slower with all nine (D76: LCP 2.11–2.26 s, over the 2.0 s budget; its
   JavaScript is unchanged).
   Words in `src/data/sketch-scenes.ts`, drawings in `src/data/sketch-drawings.ts`, behavior in
   `src/scripts/sketch-scenes.ts` (under 4 KB gzipped, no library). Without JavaScript all nine
   show finished, with a link past them to the topics.
-- **The studies these scenes come from** (D66, D79; after the word cloud until the portals
+- **Word cloud** (`content/wordcloud.yaml`): ~40 terms weighted by prominence and tagged by portal
+  (hands / ask / life). Layout `d3-cloud`, gentle drift with `motion`. Hovering or focusing a
+  portal makes its words glow and drift toward it. Clicking a word opens a one-line blurb with a
+  link. Under reduced motion it is static; it is also rendered as an HTML list for screen readers.
+  On a phone it stays three centered lists of all the words, so each keeps a 24 px target (D60).
+- **Three portals** under or around the cloud: Hands (camera glyph), Ask (speech glyph),
+  Life & You (spark glyph). Each has one line of copy and a clear action. Desktop: left, middle,
+  right. Mobile: stacked in the same order.
+- **Modeling learners and teachers** (D66, D79; after the word cloud until the portals
   arrive; the section's id stays `learners-and-teachers`): the learner and teacher work, as one
   line of work in a diagram, four study cards, the Study 2 figure with the grounding check, the
   teacher-facing papers and the supporting papers (`src/data/learners-teachers.ts`).

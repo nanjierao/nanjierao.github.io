@@ -9,8 +9,10 @@
  *  city, which that title did not cover (D68). */
 export const TITLE = 'How AI learns about people and places';
 
-/** The heading of the studies, which follow the word cloud (D79). */
-export const STUDIES_TITLE = 'The studies these scenes come from';
+/** The heading of the learner and teacher studies, which follow the word cloud (D79): the
+ *  section's title from Jimmy's outline (D66), which it kept until the scenes, with a puppet and
+ *  a city, joined it (D68). Not every scene comes from these studies, nor every study a scene. */
+export const STUDIES_TITLE = 'Modeling learners and teachers';
 
 export const LEDE =
   'One line of work runs through these papers: I build systems that observe how people learn, and I check what those observations are worth.';

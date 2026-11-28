@@ -776,7 +776,7 @@ test.describe('learners and teachers on the home page (D66)', () => {
     await isolate(page);
     await page.goto('/');
     const section = page.locator(SECTION);
-    await expect(section.locator('h2')).toHaveText('The studies these scenes come from');
+    await expect(section.locator('h2')).toHaveText('Modeling learners and teachers');
     await expect(section.locator('.lt__part > h3')).toHaveText([
       'Observing learners',
       'Modeling teachers',
@@ -787,7 +787,7 @@ test.describe('learners and teachers on the home page (D66)', () => {
     await expect(page.locator('main h2')).toHaveText([
       'How AI learns about people and places',
       'Topics',
-      'The studies these scenes come from',
+      'Modeling learners and teachers',
       'Research',
       'Recent',
     ]);
@@ -927,8 +927,9 @@ test.describe('sketch scenes on the home page (D68)', () => {
     page,
   }) => {
     await openStill(page);
-    await expect(page.locator(`${SK} .sk__sub`)).toContainText(
-      'Each scene shows where the data comes from, what the system builds from it, and who checks it.',
+    // The subtitle, then the cue as its last words (D79).
+    await expect(page.locator(`${SK} .sk__sub`)).toHaveText(
+      /^Each scene shows where the data comes from, what the system builds from it, and who checks it\.\s*Pick a scene\s*↓$/,
     );
     await expect(page.locator(`${SK} [data-scene-button]`)).toHaveText([
       'Desk, browser',
@@ -1339,6 +1340,16 @@ test.describe('sketch scenes on the home page (D68)', () => {
         if (el.textContent) said.push(el.textContent);
       }).observe(el, { childList: true, characterData: true, subtree: true });
     });
+    // A little over half of the drawing in view: it starts.
+    const half = await tracker.locator('svg[data-svg]').evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      window.scrollBy(0, box.top + box.height * 0.56 - window.innerHeight);
+      const now = el.getBoundingClientRect();
+      return (window.innerHeight - now.top) / now.height;
+    });
+    expect(half).toBeGreaterThan(0.5);
+    expect(half).toBeLessThan(0.65);
+    await expect(tracker.locator('[data-step][data-on]').first()).toBeVisible();
     await tracker.locator('svg[data-svg]').evaluate((el) => el.scrollIntoView({ block: 'center' }));
     await expect(tracker).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
     expect(await page.evaluate(() => (window as unknown as { said: string[] }).said)).toEqual([]);
@@ -1696,6 +1707,27 @@ test.describe('sketch scenes on the home page (D68)', () => {
       'recent-heading',
     ]);
     await expect(page.locator('#scenes > h2')).toHaveText('How AI learns about people and places');
+    // From 62rem the Elsewhere links share the row of the three actions, on one line (D79).
+    const intro = await page.evaluate(() => {
+      const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const links = [...document.querySelectorAll('.intro__links a')].map((a) =>
+        Math.round(a.getBoundingClientRect().top),
+      );
+      return {
+        actions: box('.intro__actions'),
+        links: box('.intro__links'),
+        tops: new Set(links).size,
+      };
+    });
+    if (page.viewportSize()!.width >= 992) {
+      expect(intro.tops).toBe(1);
+      expect(
+        Math.abs(
+          intro.links.top + intro.links.height / 2 - (intro.actions.top + intro.actions.height / 2),
+        ),
+      ).toBeLessThan(4);
+      expect(intro.links.left).toBeGreaterThan(intro.actions.right);
+    } else expect(intro.links.top).toBeGreaterThanOrEqual(intro.actions.bottom);
     await expect(page.locator('#learners-and-teachers .sk')).toHaveCount(0);
     // With the scenes one at a time, there is nothing to skip.
     await expect(page.locator(`${SK} .sk__skip`)).toBeHidden();
@@ -1707,7 +1739,7 @@ test.describe('sketch scenes on the home page (D68)', () => {
     expect(heading).toBeLessThan(page.viewportSize()!.height);
   });
 
-  test('the scene buttons are equal tiles: one row on a wide screen, two on a tablet, four on a phone', async ({
+  test('the scene buttons are tiles of one height, one size per row: one row on a wide screen, two on a tablet, four on a phone', async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -1733,6 +1765,8 @@ test.describe('sketch scenes on the home page (D68)', () => {
       [599, 4],
       [390, 4],
       [320, 4],
+      // A phone zoomed in: one tile per row (below 16rem).
+      [240, 9],
     ] as const) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
@@ -1745,8 +1779,12 @@ test.describe('sketch scenes on the home page (D68)', () => {
           width: Math.round((el as HTMLElement).offsetWidth),
           height: (el as HTMLElement).offsetHeight,
           // Neither line of a label wraps or is cut off.
-          lines: [...el.querySelectorAll('.sk__tab-place, .sk__tab-thing')].map(
-            (line) => line.getClientRects().length,
+          // Lines of text in each part: its height over its line height.
+          lines: [...el.querySelectorAll<HTMLElement>('.sk__tab-place, .sk__tab-thing')].map(
+            (line) =>
+              Math.round(
+                line.getBoundingClientRect().height / parseFloat(getComputedStyle(line).lineHeight),
+              ),
           ),
           spill: el.scrollWidth - el.clientWidth,
         })),
@@ -1780,14 +1818,21 @@ test.describe('sketch scenes on the home page (D68)', () => {
       });
       expect(place.belowTiles, `${width}px`).toBe(true);
       expect(place.besideHeading, `${width}px`).toBe(width >= 992);
+      // The tiles fit the window at every width; the page as a whole from 320 px, the narrowest
+      // it is made for (below that the word cloud is wider, as it was before D79).
       expect(
-        await page.evaluate(() => document.documentElement.scrollWidth),
+        await page.locator(`${SK} .sk__tabs`).evaluate((el) => el.getBoundingClientRect().right),
         `${width}px`,
       ).toBeLessThanOrEqual(width);
+      if (width >= 320)
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+          `${width}px`,
+        ).toBeLessThanOrEqual(width);
     }
   });
 
-  test('the first scene starts as the page opens where a strip of its drawing shows, and waits where less does; reduced motion shows it finished', async ({
+  test('the first scene starts as the page opens where half of its drawing shows, and waits where less does; reduced motion shows it finished', async ({
     page,
   }) => {
     await isolate(page);
@@ -1798,29 +1843,34 @@ test.describe('sketch scenes on the home page (D68)', () => {
         const box = el.getBoundingClientRect();
         return Math.max(0, Math.min(window.innerHeight, box.bottom) - box.top) / box.height;
       });
-    // Most of the drawing in the window, or only a strip of it (a 13-inch laptop): both start
-    // without a scroll (D79).
+    // Half of the drawing or more in the first screen: it starts without a scroll (D79).
     for (const [width, height] of [
       [1280, 1000],
-      [1440, 790],
+      [1280, 900],
     ] as const) {
       await page.setViewportSize({ width, height });
       await page.goto('/');
-      expect(await inView(), `${width}x${height}`).toBeGreaterThanOrEqual(0.15);
+      expect(await inView(), `${width}x${height}`).toBeGreaterThanOrEqual(0.5);
       await expect(
         tracker.locator('[data-step][data-on]').first(),
         `${width}x${height}`,
       ).toBeVisible();
-      await expect(tracker).toHaveAttribute('data-state', 'playing');
       expect(await page.evaluate(() => window.scrollY)).toBe(0);
     }
-    // Less than a strip in the window: it waits as blank paper.
-    await page.setViewportSize({ width: 1280, height: 700 });
-    await page.goto('/');
-    expect(await inView()).toBeLessThan(0.15);
-    await page.waitForTimeout(800);
-    await expect(tracker.locator('[data-step][data-on]')).toHaveCount(0);
-    expect(await undrawn(tracker)).toBeGreaterThan(20);
+    // A strip of it (a 13- or 14-inch laptop), or nothing: it waits as blank paper rather than
+    // draw mostly below the window's edge.
+    for (const [width, height] of [
+      [1440, 790],
+      [1366, 768],
+      [1280, 700],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto('/');
+      expect(await inView(), `${width}x${height}`).toBeLessThan(0.5);
+      await page.waitForTimeout(800);
+      await expect(tracker.locator('[data-step][data-on]'), `${width}x${height}`).toHaveCount(0);
+      expect(await undrawn(tracker)).toBeGreaterThan(20);
+    }
     // Reduced motion: finished from the start, at any size.
     await page.setViewportSize({ width: 1280, height: 1000 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -2651,12 +2701,14 @@ test.describe('the Experiments page (D74)', () => {
       );
       await expect(page.locator(`[data-scene="${id}"]`), path).toBeVisible();
       await expect(page.locator(`#sk-${id}`), path).toBeInViewport();
-      // On a wide screen the row of tiles stays in view too, with this scene's tile pressed, so
-      // the visitor sees that there are more scenes (D79).
-      if (page.viewportSize()!.width >= 1072)
-        await expect(page.locator(`[data-scene-button="${id}"]`), path).toBeInViewport({
-          ratio: 1,
-        });
+      // The tiles stay in view too, with this scene's tile pressed, so the visitor sees that
+      // there are more scenes (D79): in these windows the tiles and the drawing fit together.
+      await expect(page.locator(`[data-scene-button="${id}"]`), path).toBeInViewport({
+        ratio: 1,
+      });
+      await expect(page.locator(`[data-scene="${id}"] svg[data-svg]`), path).toBeInViewport({
+        ratio: 1,
+      });
     }
     // Following a link within the page works too.
     await page.goto('/');

@@ -680,6 +680,18 @@ function chosen(scene: Scene, shape: Shape): boolean {
     }
   }
 
+  /* A very narrow window, as a phone zoomed in gives: one tile per row, so no word breaks. */
+  @media (max-width: 15.99rem) {
+    .sk__tabs,
+    .sk__group[data-size] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sk__group[data-size] {
+      grid-column: 1 / -1;
+    }
+  }
+
   .sk__ctl {
     margin-left: auto;
   }
@@ -740,6 +752,8 @@ function chosen(scene: Scene, shape: Shape): boolean {
     font: inherit;
     font-size: var(--text-sm);
     cursor: pointer;
+    /* Scrolled into view by the keyboard, a button keeps its whole focus ring in the window. */
+    scroll-margin-block: 0.5rem;
   }
 
   .sk__tab:hover,
@@ -845,14 +859,6 @@ function chosen(scene: Scene, shape: Shape): boolean {
     margin: 0;
     /* A link that opens a scene (/#sk-zoom) leaves room for the buttons beside the heading. */
     scroll-margin-top: var(--space-4);
-  }
-
-  /* On a wide screen such a link also keeps the row of scene buttons in view, so a visitor who
-     arrives from another page sees that there are more scenes. */
-  @media (min-width: 67rem) {
-    :root.js .sk:not([data-failed]) .sk__heading {
-      scroll-margin-top: 7.5rem;
-    }
   }
 
   .sk__badge {

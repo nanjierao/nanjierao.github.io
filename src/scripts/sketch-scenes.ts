@@ -631,21 +631,17 @@ function init(root: HTMLElement): void {
   seen.add(first);
 
   if (!reduce.matches && 'IntersectionObserver' in window) {
-    // The first scene waits as blank paper. If a strip of its drawing (15% or more) is in the
-    // window when the page opens, it starts at once: with the scenes first on the page (D79),
-    // that strip is what the first screen ends with on most laptops. Reached by scrolling, it
-    // starts when half of the drawing is in view, so the visitor sees it begin.
+    // The first scene waits as blank paper until half of its drawing is in the window, when the
+    // page opens or as it is scrolled to, so the visitor sees most of it drawn (D79). The ratio is
+    // checked, not isIntersecting, which is true for any overlap in some browsers.
     clear(first);
     armed = true;
-    let opening = true;
     new IntersectionObserver(
       (entries) => {
-        const share = opening ? 0.15 : 0.5;
-        opening = false;
-        if (armed && entries.some((entry) => entry.intersectionRatio >= share))
+        if (armed && entries.some((entry) => entry.intersectionRatio >= 0.5))
           void play(current, false);
       },
-      { threshold: [0.15, 0.5] },
+      { threshold: 0.5 },
     ).observe(svgOf(first) ?? root);
     new IntersectionObserver((entries) => {
       // Scrolled away in the middle of a drawing: show it finished rather than draw unseen.
@@ -659,13 +655,29 @@ function init(root: HTMLElement): void {
   });
 
   // An address that names a scene by its heading, such as /#sk-puppet or /#sk-zoom (the
-  // Experiments page links them, D74, D76), opens that scene and brings it into view. Without JavaScript every scene is shown, so the anchor just works.
+  // Experiments page links them, D74, D76), opens that scene and brings it into view. Without
+  // JavaScript every scene is shown, so the anchor just works.
   function openFromHash(): void {
     const id = /^#sk-([a-z]+)$/.exec(window.location.hash)?.[1];
     const scene = id ? sceneOf(id) : undefined;
     if (!scene) return;
     select(scene);
-    scene.querySelector('.sk__heading')?.scrollIntoView({ block: 'start' });
+    const heading = scene.querySelector<HTMLElement>('.sk__heading');
+    if (!heading) return;
+    // Where the scene buttons and the drawing fit in the window together, keep the buttons in
+    // view too, so a visitor from another page sees that there are more scenes (D79). This is a
+    // margin on the heading, not a scroll to the buttons: the browser scrolls to the address's
+    // heading again when the page has loaded, and that scroll honors the margin.
+    heading.style.scrollMarginTop = '';
+    const tabs = root.querySelector<HTMLElement>('.sk__tabs');
+    const svg = svgOf(scene);
+    if (tabs && svg) {
+      const top = tabs.getBoundingClientRect().top;
+      const gap = 16;
+      if (svg.getBoundingClientRect().bottom - top + gap <= window.innerHeight)
+        heading.style.scrollMarginTop = `${Math.round(heading.getBoundingClientRect().top - top + gap)}px`;
+    }
+    heading.scrollIntoView({ block: 'start' });
   }
   openFromHash();
   window.addEventListener('hashchange', openFromHash);

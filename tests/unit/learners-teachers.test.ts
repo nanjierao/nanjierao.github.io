@@ -866,7 +866,7 @@ describe('publications and links in the learners-and-teachers section', () => {
     const part = readFileSync(join(ROOT, 'src', 'components', 'LearnersTeachers.astro'), 'utf8');
     expect(part).not.toContain('SketchScenes');
     expect(part).toContain('{STUDIES_TITLE}');
-    expect(page.STUDIES_TITLE).toBe('The studies these scenes come from');
+    expect(page.STUDIES_TITLE).toBe('Modeling learners and teachers');
     expect(part.indexOf('{LEDE}')).toBeGreaterThan(-1);
     expect(part.indexOf('{LEDE}')).toBeLessThan(
       part.indexOf('<Figure title="Observe, model, check"'),

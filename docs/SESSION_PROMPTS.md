@@ -103,7 +103,7 @@ Read CLAUDE.md, docs/SITE_PLAN.md §4 and §8, docs/DECISIONS.md (D21, D30), doc
 content/wordcloud.yaml.
 Build two (at most three) homepage variants on /lab/a, /lab/b (and /lab/c). Each has, in this
 order: the intro strip (D21), the sketch scenes (D79), the word cloud, the three portal cards
-(Hands, Ask, Life & You — placeholders behind them), the studies the scenes come from,
+(Hands, Ask, Life & You — placeholders behind them), the learner and teacher studies,
 "Recent", the footer legend, and the bottom-right luopan glyph (the
 panel can be a stub).
 - Word cloud: start from d3-cloud + motion (recommended). In one variant, try an alternative from
@@ -111,7 +111,7 @@ panel can be a stub).
   portal → its words glow and drift toward it; click a word → blurb + link), an HTML-list fallback,
   and a reduced-motion static state.
 - On a 390 × 844 phone, the first screen shows the name, the one line, CV / Publications / Email,
-  and the top of the cloud.
+  and the heading of the sketch scenes (D79).
 - Each variant has its own token set (type scale, light/dark colors, spacing). Report WCAG
   contrast ratios. Measure homepage JS (gzipped) and Lighthouse mobile for each variant.
 PR: side-by-side screenshots (phone/desktop, light/dark), a metrics table, a short pros/cons note
