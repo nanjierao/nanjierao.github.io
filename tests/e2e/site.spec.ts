@@ -1766,7 +1766,7 @@ test.describe('teacher scenes, on the home page since D76 (D73)', () => {
     await context.close();
   });
 
-  test('cites each scene’s paper with its DOI, and names no award for the teacher papers', async ({
+  test('cites each scene’s paper with its DOI, and ICALT 2021’s recognition in Jimmy’s wording (D77)', async ({
     page,
   }) => {
     await openStill(page);
@@ -1780,22 +1780,33 @@ test.describe('teacher scenes, on the home page since D76 (D73)', () => {
       const reference = scene(page, id).locator('.sk__paper');
       await expect(reference).toHaveText(/^Paper: Rao, N\., .*\(20\d\d\)\. .+\./);
       await expect(reference.getByRole('link')).toHaveAttribute('href', url);
-      await expect(scene(page, id).locator('.sk__award')).toHaveCount(0);
     }
+    // Only ICALT 2021's paper has one, under the tablet scene (facts.md §5.5, §10).
+    await expect(scene(page, 'views').locator('.sk__award')).toHaveText(
+      'Best Short Paper nomination',
+    );
+    for (const id of ['zoom', 'context'])
+      await expect(scene(page, id).locator('.sk__award'), id).toHaveCount(0);
     // The Kinect scene is the in-person pilot, which the paper does not report (D75): no
     // reference under it.
     await tab(page, 'pris').click();
     await expect(scene(page, 'pris').locator('.sk__paper')).toHaveCount(0);
-    // Every teacher scene's text, the closed ones included. (The city scene beside them on the
-    // home page shows DTRUE 2026's Best Paper Mention, D72.)
-    for (const id of SCENES)
-      expect((await scene(page, id).allTextContents()).join(' '), id).not.toMatch(
-        /best paper|award|nominat/i,
-      );
-    // ICALT 2021's award wording is VERIFY (facts.md §10): on no page that lists the paper.
+    // Every teacher scene's text, the closed ones included, names no other award. (The city
+    // scene beside them on the home page shows DTRUE 2026's Best Paper Mention, D72.)
+    for (const id of SCENES) {
+      const text = (await scene(page, id).allTextContents()).join(' ');
+      expect(
+        id === 'views' ? text.replace('Best Short Paper nomination', '') : text,
+        id,
+      ).not.toMatch(/best paper|award|nominat/i);
+    }
+    // The four pages that show the recognition (D77) have it in his wording, never in the one he
+    // held back. /research/experiments/ cites the paper too, for its design only, without it.
     for (const path of ['/', TEACHER_PAGE, '/publications/', '/cv/']) {
       await page.goto(path);
-      expect(await page.locator('body').innerText(), path).not.toMatch(/short paper nomination/i);
+      const body = await page.locator('body').innerText();
+      expect(body, path).toContain('Best Short Paper nomination');
+      expect(body, path).not.toContain('Short Paper Nomination');
     }
   });
 
