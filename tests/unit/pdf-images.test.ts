@@ -73,7 +73,7 @@ const stream = (entries: string, data: string) =>
 const flate = (text: string) => deflateSync(Buffer.from(text, 'latin1')).toString('latin1');
 
 const page = '<< /Type /Page /Contents 3 0 R >>';
-const content = `<< /Length 21 >>\nstream\nq 4 0 0 4 0 0 cm /Im1 Do Q\nendstream`;
+const content = `<< /Length 26 >>\nstream\nq 4 0 0 4 0 0 cm /Im1 Do Q\nendstream`;
 
 /** What the scan cannot vouch for, without the byte offsets. */
 const problems = (file: Uint8Array) =>
@@ -734,7 +734,7 @@ describe('everything a PDF holds besides its photos’ segments (D78)', () => {
     );
   }
   const AUTHORS = (n: number) =>
-    `${n} author record${n === 1 ? '' : 's'} outside the document information, such as a figure’s own`;
+    `author records outside the document information: ${n} in all, such as a figure’s own`;
 
   it('reports every photo and every problem, not only the first', () => {
     const credentials = segment(0xeb, 'JP\0\x01 made-up credentials: Sample Person');
@@ -934,6 +934,114 @@ describe('everything a PDF holds besides its photos’ segments (D78)', () => {
     expect(pdfPhotoFindings(file).metadata).toEqual(['MPF']);
     blankPdfImageMetadata(file);
     expect(pdfPhotoFindings(file)).toEqual({ metadata: [], unhandled: [] });
+  });
+
+  it('reports a comment or other markup, and a signature, plain or packed, but not links and form fields', () => {
+    const comment =
+      '<< /Type /Annot /Subtype /Text /F 2 /T (Made-Up Reviewer) /Contents (a made-up note) >>';
+    const signature = '<< /Type /Sig /Name (Made-Up Signer) /Location (A made-up place) >>';
+    const link =
+      '<< /Type /Annot /Subtype /Link /A << /S /URI /URI (https://example.invalid) >> >>';
+    const widget = '<< /Type /Annot /Subtype /Widget /FT /Sig /T (Signature1) >>';
+    const MARKUP_LINE = 'a comment or other markup, with its author and its text';
+    const SIGNATURE_LINE = 'a digital signature, which may name the signer and a place';
+    expect(problems(pdf(page, content, link, widget))).toEqual([]);
+    expect(problems(pdf(page, content, comment))).toEqual([MARKUP_LINE]);
+    expect(problems(pdf(page, content, signature))).toEqual([SIGNATURE_LINE]);
+    expect(
+      problems(
+        pdf(
+          page,
+          objectStream([
+            [7, comment],
+            [8, signature],
+          ]),
+        ),
+      ),
+    ).toEqual([MARKUP_LINE, SIGNATURE_LINE]);
+  });
+
+  it('says where each record of the whole file is: the first in the file’s text, or the object stream that holds it', () => {
+    const record = '<< /Author (Made-Up Person) /Creator (A drawing program) >>';
+    const piece = '<< /Type /Page /PieceInfo << /Illustrator << /Private 9 0 R >> >> >>';
+    const file = pdf(page, content, record, piece, record);
+    const text = textOf(file);
+    expect(scanPdfImages(file).unhandled).toEqual([
+      `an application’s private data (/PieceInfo) at byte ${text.indexOf('/PieceInfo')}`,
+      `author records outside the document information at byte ${text.indexOf('/Author')}: 2 in all, such as a figure’s own`,
+    ]);
+    const packed = pdf(
+      page,
+      content,
+      objectStream([
+        [7, piece],
+        [8, record],
+      ]),
+    );
+    const at = textOf(packed).indexOf('stream\n', textOf(packed).indexOf('/ObjStm')) + 7;
+    expect(scanPdfImages(packed).unhandled).toEqual([
+      `an application’s private data (/PieceInfo) at byte ${at}`,
+      `author records outside the document information at byte ${at}: 1 in all, such as a figure’s own`,
+    ]);
+    // An author key in a page's content is placed at that stream.
+    const marked = stream(
+      '/Filter /FlateDecode',
+      flate('/X << /Author (Made-Up Person) >> BDC EMC'),
+    );
+    const inContent = pdf(page, marked);
+    const start =
+      textOf(inContent).indexOf('stream\n', textOf(inContent).indexOf('/FlateDecode')) + 7;
+    expect(scanPdfImages(inContent).unhandled).toEqual([
+      `author records outside the document information at byte ${start}: 1 in all, such as a figure’s own`,
+    ]);
+  });
+
+  it('reports an earlier revision kept in the file, but not a linearized file’s second section or an outline’s links', () => {
+    const update = (file: Uint8Array, prev: number) =>
+      bytesOf(
+        `${textOf(file)}xref\n0 1\n0000000000 65535 f \ntrailer\n<< /Size 3 /Prev ${prev} >>\nstartxref\n0\n%%EOF\n`,
+      );
+    const once = pdf(page, content);
+    const twice = update(once, 9);
+    expect(problems(twice)).toEqual([
+      'an earlier revision kept in the file, with objects no page may show',
+    ]);
+    // Two updates: the place is the newest link.
+    const thrice = update(twice, 99);
+    expect(scanPdfImages(thrice).unhandled).toEqual([
+      `an earlier revision kept in the file at byte ${textOf(thrice).lastIndexOf('/Prev')}, with objects no page may show`,
+    ]);
+    // A linearized file: its first section links the main one once.
+    const linear = pdf(
+      '<< /Linearized 1 /L 1000 /O 2 /E 900 /N 1 /T 800 /H [ 0 0 ] >>',
+      page,
+      content,
+    );
+    expect(problems(update(linear, 9))).toEqual([]);
+    expect(problems(update(update(linear, 9), 99))).toEqual([
+      'an earlier revision kept in the file, with objects no page may show',
+    ]);
+    // An outline item links the one before it: an object, not a revision.
+    expect(
+      problems(pdf(page, content, '<< /Title (Introduction) /Prev 7 0 R /Next 9 0 R >>')),
+    ).toEqual([]);
+  });
+
+  it('reports a stream whose length does not add up, and fields hidden in pixels or after compressed data', () => {
+    // A stream that says it is shorter than it is: what follows is read by no decoder.
+    const data = 'BT (Hello) Tj ET';
+    const short = `<< /Length ${data.length - 5} >>\nstream\n${data}\nendstream`;
+    expect(problems(pdf(page, short))).toEqual([
+      'a stream whose length does not match where it ends',
+    ]);
+    const packet = '<x:xmpmeta><exif:GPSLatitude>12,34.5N</exif:GPSLatitude></x:xmpmeta>';
+    // An image whose stored bytes are a packet.
+    expect(problems(pdf(page, image(packet, '/FlateDecode')))).toEqual([
+      'camera, location or contact fields in an image stream',
+    ]);
+    // A packet after the end of a compressed stream's data, inside its stated length.
+    const tail = stream('/Filter /FlateDecode', `${flate('q Q')}${packet}`);
+    expect(problems(pdf(page, tail))).toEqual(['camera, location or contact fields in a stream']);
   });
 
   it('blanks a profile’s metadata dictionary, and leaves alone a profile it cannot read whole', () => {

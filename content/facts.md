@@ -547,26 +547,33 @@ poster abstract, and waits on Jimmy. [10] has no link yet.
 Copies of the papers (D78). Jimmy sent PDFs of nine papers on Nov 28, 2026 for the site: [1],
 [3], [4], [5], [7], [8], [9], [11] and [12]. None is hosted yet; each waits on his word:
 - §15 keeps participant quotations and photos of children out of the repository, and the papers
-  contain both (anonymous quotations in most; children in the figures of [5] and [8]). Hosting
+  contain both (anonymous quotations in most; a participant's typed story in [1] Fig. 2; children
+  in the figures of [5] and [8]). Hosting
   a published paper as published needs his exception to §15.
 - People in figures (D31), in six of the nine: [1] Fig. 1 (a participant's hands and torso) and
-  Fig. 2 (a participant's mouth and chin), [5] Figs. 2 and 3 (photos of children), [8] Fig. 1
+  Fig. 2 (a participant's mouth and chin, beside their participant ID and their typed story), [5] Figs. 2 and 3 (photos of children), [8] Fig. 1
   (two children, faces covered) and Fig. 2 (a child, small), [9] Fig. 4 (a person's face),
   [11] Fig. 2 (six people on video, faces blurred), [12] Fig. 6 (a participant from behind).
   Three of these are images D53 took out of the repository: [1] Fig. 2, [9] Fig. 4 and
   [12] Fig. 6.
-- Other people's details and work: the papers print their authors' email addresses, and in [1]
-  two coauthors give personal addresses rather than university ones. [9] Fig. 5 reproduces two
-  paintings by Norman Rockwell, and the paper links two files on Google Drive.
+- Other people's details and work: most of the papers print their authors' email addresses ([7]
+  and [9] do not), and in [1] two coauthors give personal addresses rather than university ones.
+  [9] Fig. 5 reproduces two paintings by Norman Rockwell, and the paper links two files on Google
+  Drive. [3] Fig. 1, a screenshot of the study's interface, shows a film's poster with an actor
+  in it, and [12] Fig. 2 is the maker's product photo of the glasses, from its website.
 - Hidden records that `npm run strip-pdf` reports and does not remove: [3] keeps the image's own
   metadata stream and four author records that its figures' drawing program left, naming people
-  the paper does not; [8] keeps a stamping tool's private data. Each comes out, or is reviewed,
-  before its file is hosted.
+  the paper does not; [8] keeps a stamping tool's private data and an earlier revision of the
+  file. Each comes out, or is reviewed, before its file is hosted.
 - The publisher's notice: IEEE and Springer let an author host the accepted version on a
   personal site only with their notice and the DOI on it (as web search reported their policy
   pages on Nov 28, 2026). [1] carries Springer's. [4], [5], [9], [11] and [12] carry none.
-- [3] is the copy from IFIP's open library on HAL (hal-05770892), which its cover page
-  distributes under CC BY 4.0, so it may be hosted once §15 allows.
+- [3] is the copy from IFIP's open library on HAL (hal-05770892). Its two cover pages call it the
+  author manuscript and distribute it under CC BY 4.0, but the paper itself is Springer's typeset
+  version, whose first page says it is under exclusive licence to Springer Nature. `TODO(jimmy)`:
+  say which licence holds (or that IFIP's agreement with Springer allows reposting it) before it
+  is hosted; until then the site links its DOI. The CC BY of the cover pages would not cover the
+  film poster in its Fig. 1.
 - [7] and [8] came as the publishers' own versions. ACM lets authors host only their own
   version, not this one. For AAAI the sources disagree (its copyright form is reported to allow
   the author's own page; its permissions page is reported to keep the published version to its

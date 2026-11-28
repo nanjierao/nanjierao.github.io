@@ -110,12 +110,13 @@ on license, maintenance, bundle size and accessibility, and pick one. Start from
   comment and other application segments, a JFIF thumbnail, and what a display's color profile
   says about the display. The file keeps its length and every page renders as before.
   `check:privacy` fails on a PDF that still has any, and on what the scan cannot vouch for (an
-  encrypted file, a stream it cannot read, an image stream whose length does not add up, a
-  picture with more data after it, a JPEG segment or a filter it does not know, an image or a
-  figure with a metadata stream of its own, camera, location or contact fields in any stream,
-  photo metadata or a JPEG inside a compressed stream, an application's private data, author
-  records outside the document information, pdfTeX's record of an included figure, a file
-  attachment); `strip-pdf` prints where.
+  encrypted file, an earlier revision kept in the file, a stream it cannot read or whose length
+  does not add up, a picture with more data after it, a JPEG segment or a filter it does not
+  know, an image or a figure with a metadata stream of its own, camera, location or contact
+  fields in any stream, photo metadata or a JPEG inside a compressed stream, an application's
+  private data, author records outside the document information, pdfTeX's record of an included
+  figure, a comment or other markup, a digital signature, a file attachment); `strip-pdf` prints
+  where.
 
 ## Content rules (non-negotiable)
 

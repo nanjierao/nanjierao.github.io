@@ -10,7 +10,8 @@
 // more data, JPEG data outside the image streams it found, a stream it cannot decode, an image
 // that keeps XMP in a stream of its own, camera fields in a metadata stream, a display's details
 // in a color profile it cannot blank, a file attachment, an application's private data, an author
-// record outside the document information (a figure's own), an included figure's file name.
+// record outside the document information (a figure's own), an included figure's file name, a
+// comment or a signature, an earlier revision kept in the file.
 import { inflateSync } from 'node:zlib';
 
 export interface PdfJpegBlock {
@@ -305,6 +306,13 @@ const PRIVATE_DATA = /\/PieceInfo\b/;
 /** What pdfTeX keeps of an included PDF figure: its file name (a path) and its information. */
 const INCLUDED_FIGURE = /\/PTEX[._](?:FileName|InfoDict)\b/;
 const AUTHOR = /\/Author\b/g;
+/** A comment or other markup: it keeps who wrote it and what, and may be hidden from the page. */
+const MARKUP =
+  /\/Subtype\s*\/(?:Text|FreeText|Highlight|Underline|Squiggly|StrikeOut|Caret|Ink|Popup|Stamp|Square|Circle|Line|Polygon|PolyLine|Sound|Redact)\b/;
+/** A digital signature: it may name the signer, a place and a way to reach them. */
+const SIGNATURE = /\/Type\s*\/Sig\b/;
+/** A link back to an earlier cross-reference section: the file keeps an earlier revision. */
+const PREVIOUS = /\/Prev\s+\d+\b(?!\s+\d+\s+R\b)/g;
 
 /** A PDF name as it means: "#xx" escapes resolved, and a filter's short name made long. */
 const FILTER_NAMES: Record<string, string> = {
@@ -433,14 +441,15 @@ function pdfStreams(text: string): PdfStream[] {
  */
 function authorsOutsideInfo(
   text: string,
-  objectStreams: Array<{ dict: string; inside: string }>,
-): number {
+  objectStreams: Array<{ dict: string; inside: string; start: number }>,
+): { count: number; first: number } {
   const info = new Set([...text.matchAll(/\/Info\s+(\d+)\s+\d+\s+R\b/g)].map((m) => Number(m[1])));
   const starts = [...text.matchAll(/(?<![0-9])(\d+)\s+\d+\s+obj\b/g)].map((m) => ({
     at: m.index,
     id: Number(m[1]),
   }));
   let outside = 0;
+  let earliest = Infinity;
   for (const { index } of text.matchAll(AUTHOR)) {
     let low = 0;
     let high = starts.length - 1;
@@ -454,9 +463,12 @@ function authorsOutsideInfo(
     }
     const object = found >= 0 ? starts[found]! : undefined;
     const inObject = object && !text.slice(object.at, index).includes('endobj');
-    if (!inObject || !info.has(object.id)) outside++;
+    if (!inObject || !info.has(object.id)) {
+      outside++;
+      earliest = Math.min(earliest, index);
+    }
   }
-  for (const { dict, inside } of objectStreams) {
+  for (const { dict, inside, start } of objectStreams) {
     const first = Number(/\/First\s+(\d+)/.exec(dict)?.[1] ?? NaN);
     const header = inside
       .slice(0, Number.isFinite(first) ? first : 0)
@@ -467,10 +479,13 @@ function authorsOutsideInfo(
       objects.push({ id: Number(header[i]), at: first + Number(header[i + 1]) });
     for (const { index } of inside.matchAll(AUTHOR)) {
       const object = objects.filter((o) => o.at <= index).at(-1);
-      if (!object || !info.has(object.id)) outside++;
+      if (!object || !info.has(object.id)) {
+        outside++;
+        earliest = Math.min(earliest, start);
+      }
     }
   }
-  return outside;
+  return { count: outside, first: earliest };
 }
 
 /** Every image stream of a PDF that is stored as a JPEG, with its metadata segments. */
@@ -479,19 +494,40 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
   const jpegs: PdfJpeg[] = [];
   const unhandled: string[] = [];
   const covered: Array<[number, number]> = [];
-  let attachment = ATTACHMENT.test(text);
-  let privateData = PRIVATE_DATA.test(text);
-  let includedFigure = INCLUDED_FIGURE.test(text);
+  /** Where a record that belongs to the whole file was first seen: in the file's text, or the
+   *  start of the object stream that holds it. */
+  const place = (pattern: RegExp) => {
+    const at = text.search(pattern);
+    return at < 0 ? Infinity : at;
+  };
+  let attachment = place(ATTACHMENT);
+  let privateData = place(PRIVATE_DATA);
+  let includedFigure = place(INCLUDED_FIGURE);
+  let markup = place(MARKUP);
+  let signature = place(SIGNATURE);
   /** Decoded streams that hold objects; author records are looked for in them too. */
-  const objectStreams: Array<{ dict: string; inside: string }> = [];
+  const objectStreams: Array<{ dict: string; inside: string; start: number }> = [];
   /** Author keys in decoded streams that hold no objects (a page's inline property lists). */
   let authorsInContent = 0;
+  let firstAuthorInContent = Infinity;
   if (/\/Encrypt\s*(?:<<|\d+\s+\d+\s+R)/.test(text))
     unhandled.push('an encrypted file, which this scan cannot read');
+  // An incremental update appends a revision and keeps the earlier one: objects a page no longer
+  // shows, such as a photo taken out or an earlier document information, are still in the file.
+  // A linearized file links its two cross-reference sections the same way once.
+  const linearized = /\/Linearized\b/.test(text.slice(0, 2048));
+  const previous = [...text.matchAll(PREVIOUS)].map((m) => m.index);
+  if (previous.length > (linearized ? 1 : 0))
+    unhandled.push(
+      `an earlier revision kept in the file at byte ${previous.at(-1)}, with objects no page may show`,
+    );
   for (const { dict, filters, start, end, unsure } of pdfStreams(text)) {
     const at = `at byte ${start}`;
     const image = IS_IMAGE.test(dict);
-    if (filters.length === 1 && filters[0] === '/DCTDecode') {
+    const jpeg = filters.length === 1 && filters[0] === '/DCTDecode';
+    // Bytes past a stream's stated length are read by no decoder, and can hold anything.
+    if (unsure && !jpeg) unhandled.push(`a stream ${at} whose length does not match where it ends`);
+    if (jpeg) {
       covered.push([start, end]);
       if (unsure) {
         unhandled.push(`a JPEG image stream ${at} whose length does not match where it ends`);
@@ -526,6 +562,8 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
         unhandled.push(
           `an image stream ${at} with a filter this scan does not know (${unknown.join(' ')})`,
         );
+      if (PHOTO_XMP.test(text.slice(start, end)))
+        unhandled.push(`camera, location or contact fields in an image stream ${at}`);
     } else {
       // Everything that is not a picture's pixels: page content, object streams, metadata,
       // fonts, color profiles, attachments. Read it after its filters, or say that it could
@@ -560,20 +598,25 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
             }
         }
         if (INLINE_JPEG.test(inside)) unhandled.push(`an inline JPEG image inside a stream ${at}`);
-        if (PHOTO_XMP.test(inside))
+        // Decoded, and as stored: data after a compressed stream's end is not in the decoded text.
+        if (PHOTO_XMP.test(inside) || PHOTO_XMP.test(text.slice(start, end)))
           unhandled.push(
             /\/Type\s*\/Metadata\b/.test(dict)
               ? `a metadata stream ${at} with camera, location or contact fields`
               : `camera, location or contact fields in a stream ${at}`,
           );
         if (/\/Type\s*\/ObjStm\b/.test(dict)) {
-          objectStreams.push({ dict, inside });
-          if (ATTACHMENT.test(inside)) attachment = true;
-          if (PRIVATE_DATA.test(inside)) privateData = true;
-          if (INCLUDED_FIGURE.test(inside)) includedFigure = true;
+          objectStreams.push({ dict, inside, start });
+          if (ATTACHMENT.test(inside)) attachment = Math.min(attachment, start);
+          if (PRIVATE_DATA.test(inside)) privateData = Math.min(privateData, start);
+          if (INCLUDED_FIGURE.test(inside)) includedFigure = Math.min(includedFigure, start);
+          if (MARKUP.test(inside)) markup = Math.min(markup, start);
+          if (SIGNATURE.test(inside)) signature = Math.min(signature, start);
         } else if (filters.length > 0) {
           // Raw streams are counted with the file's text below.
-          authorsInContent += [...inside.matchAll(AUTHOR)].length;
+          const found = [...inside.matchAll(AUTHOR)].length;
+          authorsInContent += found;
+          if (found > 0) firstAuthorInContent = Math.min(firstAuthorInContent, start);
         }
         // A color profile the PDF itself carries can describe one display, too.
         if (inside.startsWith('acsp', 36)) {
@@ -590,13 +633,21 @@ export function scanPdfImages(bytes: Uint8Array): PdfImageScan {
         unhandled.push(`a figure ${at} with a metadata stream of its own`);
     }
   }
-  if (attachment) unhandled.push('a file attachment');
-  if (privateData) unhandled.push('an application’s private data (/PieceInfo)');
-  if (includedFigure) unhandled.push('an included figure’s file name or information (pdfTeX)');
-  const authors = authorsOutsideInfo(text, objectStreams) + authorsInContent;
-  if (authors > 0)
+  // Records that belong to the whole file, each with the first place it was seen.
+  const records: Array<[number, string, string]> = [
+    [attachment, 'a file attachment', ''],
+    [privateData, 'an application’s private data (/PieceInfo)', ''],
+    [includedFigure, 'an included figure’s file name or information (pdfTeX)', ''],
+    [markup, 'a comment or other markup', ', with its author and its text'],
+    [signature, 'a digital signature', ', which may name the signer and a place'],
+  ];
+  for (const [first, what, more] of records)
+    if (first < Infinity) unhandled.push(`${what} at byte ${first}${more}`);
+  const authors = authorsOutsideInfo(text, objectStreams);
+  const count = authors.count + authorsInContent;
+  if (count > 0)
     unhandled.push(
-      `${authors} author record${authors === 1 ? '' : 's'} outside the document information, such as a figure’s own`,
+      `author records outside the document information at byte ${Math.min(authors.first, firstAuthorInContent)}: ${count} in all, such as a figure’s own`,
     );
   // JPEG data anywhere else in the file: an image stream the search above did not pair with a
   // dictionary. A thumbnail inside a photo's EXIF lies within that photo's stream.
