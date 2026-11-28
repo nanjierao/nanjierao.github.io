@@ -24,8 +24,11 @@
   title: 'Hands as Narrators: Characterizing Idea Reuptake from Hand Enactment in Story Writing'
   venue: 'ICIDS 2026'
   venueShort: 'ICIDS'
-  details: 'Springer'
-  notes: ['Full paper, accepted']
+  # Volume, pages and DOI as the author's copy Jimmy sent on Nov 28, 2026 prints them
+  # (facts.md §6 [1]).
+  details: 'Springer LNCS vol. 17343, pp. 144–163'
+  notes: ['Full paper']
+  url: 'https://doi.org/10.1007/978-3-032-46125-4_11'
   firstAuthor: true
   tldr:
     text: 'Writers who first acted out story ideas with their hands went back to those recordings for about a quarter of their writing time; the paper maps four strategies and five reasons for doing so.'
@@ -115,6 +118,10 @@
   title: 'Understanding the Effects of Explanation Types and User Motivations on Recommender System Use'
   venue: 'AAAI HCOMP 2020'
   venueShort: 'HCOMP'
+  # Pages as the proceedings print them; the DOI was found by web search on Nov 28, 2026 and
+  # waits on Jimmy's check (facts.md §6 [7]). The paper is free to read at AAAI.
+  details: 'pp. 83–91'
+  url: 'https://doi.org/10.1609/hcomp.v8i1.7466'
   firstAuthor: false
 
 - id: chi-2020-self-avatars
@@ -125,6 +132,8 @@
   title: 'Investigating the Effects of Self-Avatars and Story-Relevant Avatars on Children’s Creative Storytelling'
   venue: 'ACM CHI 2020'
   venueShort: 'CHI'
+  # The DOI the paper prints on its first page (facts.md §6 [8]).
+  url: 'https://doi.org/10.1145/3313831.3376331'
   firstAuthor: false
   themes: [embodied-learning]
 
@@ -136,7 +145,10 @@
   title: 'The Effects of Interactive Emotional Priming on Storytelling: An Exploratory Study'
   venue: 'ICIDS 2019'
   venueShort: 'ICIDS'
-  details: 'Springer, pp. 395–404'
+  # The volume and the DOI were found by web search on Nov 28, 2026 and wait on Jimmy's check
+  # (facts.md §6 [9]).
+  details: 'Springer LNCS vol. 11869, pp. 395–404'
+  url: 'https://doi.org/10.1007/978-3-030-33894-7_42'
   firstAuthor: true
   # TODO(jimmy): one-sentence TL;DR (facts.md §6 [9]).
   themes: [embodied-learning]

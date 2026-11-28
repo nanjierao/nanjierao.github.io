@@ -38,6 +38,7 @@ import {
   readImageMetadata,
   unscannableKind,
 } from './lib/image-metadata.ts';
+import { pdfMetadataSignatures, scanPdfImages } from './lib/pdf-images.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -353,6 +354,35 @@ async function scanDataUris(
   return results;
 }
 
+/**
+ * Photos embedded in a PDF keep their EXIF (sometimes with GPS), XMP and Photoshop blocks.
+ * `npm run strip-pdf` blanks them; this fails on any that are left, and on image streams it
+ * cannot read. The file as a whole still needs a review and its fingerprint on the allowlist.
+ */
+function scanPdf(file: string, bytes: Uint8Array): Result[] {
+  const found = scanPdfImages(bytes);
+  const kinds = new Set([
+    ...found.jpegs.flatMap((jpeg) => jpeg.blocks.map((block) => block.kind)),
+    ...pdfMetadataSignatures(bytes),
+  ]);
+  return [
+    ...[...kinds].map((kind): Result => ({
+      file,
+      line: 0,
+      category: 'photo metadata inside a PDF (run npm run strip-pdf on the file)',
+      match: `${kind} in ${file}`,
+      severity: 'error',
+    })),
+    ...found.unhandled.map((problem): Result => ({
+      file,
+      line: 0,
+      category: "an image inside a PDF that this check can't read",
+      match: `${problem} in ${file}`,
+      severity: 'error',
+    })),
+  ];
+}
+
 async function scan(
   files: string[],
   scope: 'repo' | 'dist',
@@ -378,6 +408,8 @@ async function scan(
     } else {
       const kind = unscannableKind(bytes) ?? (UNSCANNABLE_EXTENSIONS.has(ext) ? ext : null);
       if (kind) results.push(unscannable(kind));
+      // What can be checked inside a PDF: the metadata its photos brought along (D78).
+      if (kind === 'PDF') results.push(...scanPdf(file, bytes));
       else if (bytes.subarray(0, 8192).includes(0))
         results.push(unscannable(`${ext || 'a'} binary file`));
       else {

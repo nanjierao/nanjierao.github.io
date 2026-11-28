@@ -276,7 +276,7 @@ sketch scenes, as he asked; say if it should move below them or be rewritten to 
   writing stories), "Modeling teachers" (§5.5 calls these papers teacher-facing, not models of
   teachers) and "Supporting breadth" (check all three).
 - Observing learners: the dissertation, IEEE ICALT 2026, ICIDS 2026 (gaze and interaction logs;
-  accepted, to appear), IEEE VR 2020.
+  first online Nov 24, 2026, §6 [1]), IEEE VR 2020.
 - Modeling teachers: IEEE ICALT 2023, HCI International 2022, IEEE ICALT 2021, and the survey of
   81 studies on teacher autonomy and automation (§5.5).
 - Supporting breadth: ACM CHI 2020, AAAI HCOMP 2020, IFIP INTERACT 2023, ICIDS 2019.
@@ -538,13 +538,34 @@ Do not hard-code citation counts or h-index on the site (they go stale) — link
 DOIs: [2], [4], [5], [6] and [11] carry theirs (found by web search on Nov 25, 2026, from listings
 of the papers; the publisher pages and doi.org are not reachable from the session, so Jimmy
 checks them: `TODO(jimmy)`), and so was the page range of [5] (pp. 14–16), which Jimmy checks
-too. [3] carries the DOI Jimmy gave (Nov 25, 2026). The rest: `TODO`, from a Google Scholar
-BibTeX export.
+too. [3] carries the DOI Jimmy gave (Nov 25, 2026). [1] and [8] carry the DOI their own PDFs
+print, in the copies Jimmy sent on Nov 28, 2026. [7] and [9] carry DOIs found by web search on
+Nov 28, 2026, from listings of the papers, and so do the volume of [9] and the volume and issue
+of [7]; Jimmy checks them: `TODO(jimmy)`. [12] has two IEEE records, a workshop paper and a
+poster abstract, and waits on Jimmy. [10] has no link yet.
+
+Copies of the papers (D78). Jimmy sent PDFs of nine papers on Nov 28, 2026 for the site: [1],
+[3], [4], [5], [7], [8], [9], [11] and [12]. None is hosted yet; each waits on his word:
+- §15 keeps participant quotations and photos of children out of the repository, and the papers
+  contain both (anonymous quotations in most; children in the figures of [5] and [8]). Hosting
+  a published paper as published needs his exception to §15.
+- People in figures (D31): [1] Fig. 2 (a participant's mouth and chin), [9] Fig. 4 (a woman's
+  face), [12] Fig. 6 (a participant from behind), [5] Figs. 2 and 3 (photos of children).
+- The publisher's notice: IEEE and Springer let an author host the accepted version on a
+  personal site only with their notice and the DOI on it. [1] carries Springer's. [4], [5], [9],
+  [11] and [12] carry none.
+- [3] is the copy from IFIP's open library on HAL (hal-05770892), which its cover page
+  distributes under CC BY 4.0, so it may be hosted once §15 allows.
+- [7] and [8] came as the publishers' own versions, which AAAI and ACM do not let authors host.
+  Both are free to read at the publisher, so the site links their DOI.
+- Still to come from Jimmy: [2], [6] and [10].
 
 Refereed conference papers
 1. *Rao, N., Lanzino, A., Chenore, R., Adhikari, I., Brown, S. A., Quek, F., & Chu, S. L. (2026).
    Hands as Narrators: Characterizing Idea Reuptake from Hand Enactment in Story Writing. ICIDS
-   2026, Springer. Full paper, accepted.
+   2026, Part II, Springer LNCS vol. 17343, pp. 144–163. Full paper. First online Nov 24, 2026
+   (the volume is dated 2027). DOI 10.1007/978-3-032-46125-4_11. Volume, pages, date and DOI as
+   the first page of the author's copy Jimmy sent on Nov 28, 2026 prints them.
 2. *Rao, N., Huang, Z., Kulkarni, A., Ragan, E., & Chu, S. L. (2026). Identifying Student
    Interests for Interest-Based Learning: A Comparison of Interest Extraction from Browsing
    History and Social Media Posts. IEEE ICALT 2026. Full paper. DOI 10.1109/ICALT68022.2026.00023
@@ -562,11 +583,17 @@ Refereed conference papers
 6. *Rao, N., Chu, S. L., & Chenore, R. (2021). Flexible Low-Cost Digital Puppet System. HCI
    International (HCII 2021), Springer LNCS. DOI 10.1007/978-3-030-77599-5_46.
 7. Li, Q., Chu, S. L., Rao, N., & Nourani, M. (2020). Understanding the Effects of Explanation
-   Types and User Motivations on Recommender System Use. AAAI HCOMP 2020.
+   Types and User Motivations on Recommender System Use. AAAI HCOMP 2020 (Proceedings of the
+   Eighth AAAI Conference on Human Computation and Crowdsourcing), pp. 83–91, as the proceedings
+   copy Jimmy sent on Nov 28, 2026 prints them. Volume 8, issue 1, DOI 10.1609/hcomp.v8i1.7466
+   (web search, Nov 28, 2026; `TODO(jimmy)` check).
 8. Zarei, N., Chu, S. L., Quek, F., Rao, N. J., & Brown, S. A. (2020). Investigating the Effects
    of Self-Avatars and Story-Relevant Avatars on Children's Creative Storytelling. ACM CHI 2020.
+   DOI 10.1145/3313831.3376331 (as the paper prints it, in the copy Jimmy sent on Nov 28, 2026).
 9. *Rao, N., Chu, S. L., Faris, R. W., & Ospina, D. (2019). The Effects of Interactive Emotional
-   Priming on Storytelling: An Exploratory Study. ICIDS 2019, Springer, pp. 395–404.
+   Priming on Storytelling: An Exploratory Study. ICIDS 2019, Springer LNCS vol. 11869,
+   pp. 395–404. DOI 10.1007/978-3-030-33894-7_42 (volume and DOI: web search, Nov 28, 2026;
+   `TODO(jimmy)` check).
 
 Extended abstracts, posters, workshop papers
 10. *Rao, N., Verma, J., & Prator, A. (2026). A Design Framework for Gamified, LLM-Assisted

@@ -107,7 +107,7 @@ export const FIRST_AUTHOR: ExperimentRow[] = [
     analysis: 'Two-way mixed ANOVA',
   },
   {
-    // TODO(jimmy): a DOI or publisher link for this paper (facts.md §6 [12] has none).
+    // TODO(jimmy): which of the two IEEE records this entry links (facts.md §6 [12]).
     paper: 'ieeevr-2020-ar-smart-glasses',
     note: 'Workshop paper',
     role: 'First author',
@@ -121,7 +121,7 @@ export const FIRST_AUTHOR: ExperimentRow[] = [
     analysis: 'Paired t-tests',
   },
   {
-    // TODO(jimmy): a DOI or publisher link for this paper (facts.md §6 [9] has none).
+    // TODO(jimmy): check the DOI found by web search (facts.md §6 [9]).
     paper: 'icids-2019-emotional-priming',
     role: 'First author',
     design: 'Within-subjects; condition order counterbalanced, story prompts randomized',
@@ -142,7 +142,7 @@ export const CO_AUTHORED: ExperimentRow[] = [
     analysis: 'Paired t-tests',
   },
   {
-    // TODO(jimmy): a DOI or publisher link for this paper (facts.md §6 [7] has none).
+    // TODO(jimmy): check the DOI found by web search (facts.md §6 [7]).
     paper: 'hcomp-2020-explanation-types',
     role: 'Third author',
     design:
@@ -152,7 +152,6 @@ export const CO_AUTHORED: ExperimentRow[] = [
     analysis: 'Mixed ANOVA',
   },
   {
-    // TODO(jimmy): a DOI or publisher link for this paper (facts.md §6 [8] has none).
     paper: 'chi-2020-self-avatars',
     role: 'Fourth author',
     design: 'Within-subjects, counterbalanced',
